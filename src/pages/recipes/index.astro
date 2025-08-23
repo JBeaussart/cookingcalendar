@@ -3,39 +3,60 @@ import Layout from "../../layouts/Layout.astro";
 
 const recipes = await Astro.glob("../../content/recipes/*.md");
 const getSlug = (filePath: string) => filePath.split("/").pop()?.replace(".md", "") ?? "";
+
+const recipeList = recipes.map(r => ({
+  slug: getSlug(r.file),
+  title: r.frontmatter.title,
+  image: r.frontmatter.image || ""
+}));
 ---
 
-<Layout title="Toutes les recettes">
+<Layout title="Recettes">
   <div class="container mx-auto px-4 py-8">
-    <h1 class="text-3xl font-bold mb-8 text-center">📖 Toutes les recettes</h1>
+    <h1 class="text-3xl font-bold mb-6 text-center text-green-600">📚 Recettes</h1>
 
-    <div class="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 justify-center">
-      {recipes.map((recipe) => {
-        const slug = getSlug(recipe.file);
-        const { title, image } = recipe.frontmatter;
+    <!-- Barre de recherche -->
+    <div class="mb-6 flex justify-center">
+      <input
+        type="text"
+        id="searchInput"
+        placeholder="Rechercher une recette..."
+        class="w-full sm:w-96 border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-green-400"
+      >
+    </div>
 
-        return (
-          <div class="bg-white dark:bg-gray-800 rounded-lg shadow hover:shadow-lg transition transform hover:-translate-y-1 flex flex-col w-64 h-96 mx-auto">
-            {image && (
-              <img
-                src={image}
-                alt={title}
-                class="w-full h-48 object-cover rounded-t-lg"
-              />
-            )}
-
-            <div class="p-6 flex flex-col flex-1">
-              <h2 class="text-xl font-semibold mb-4">{title}</h2>
-              <a
-                href={`/recipes/${slug}`}
-                class="mt-auto inline-block bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded text-center transition"
-              >
-                Voir la recette →
-              </a>
-            </div>
+    <!-- Grille des recettes -->
+    <div id="recipeGrid" class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      {recipeList.map(r => (
+        <div class="recipe-card bg-white rounded-lg shadow overflow-hidden hover:shadow-lg transition">
+          {r.image && (
+            <img src={r.image} alt={r.title} class="w-full h-48 object-cover"/>
+          )}
+          <div class="p-4">
+            <h2 class="font-semibold text-lg mb-2">{r.title}</h2>
+            <a href={`/recipes/${r.slug}`} class="text-green-600 hover:text-green-800 font-medium">Voir la recette →</a>
           </div>
-        );
-      })}
+        </div>
+      ))}
     </div>
   </div>
+
+  <script type="module">
+    const searchInput = document.getElementById("searchInput");
+    const recipeGrid = document.getElementById("recipeGrid");
+    const cards = Array.from(recipeGrid.querySelectorAll(".recipe-card"));
+
+    // Fonction pour retirer les accents
+    function removeAccents(str) {
+      return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    }
+
+    searchInput.addEventListener("input", () => {
+      const query = removeAccents(searchInput.value.toLowerCase());
+      cards.forEach(card => {
+        const title = removeAccents(card.querySelector("h2").textContent.toLowerCase());
+        card.style.display = title.includes(query) ? "" : "none";
+      });
+    });
+  </script>
 </Layout>
