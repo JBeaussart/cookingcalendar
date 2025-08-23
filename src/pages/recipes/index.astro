@@ -1,0 +1,41 @@
+---
+import Layout from "../../layouts/Layout.astro";
+
+const recipes = await Astro.glob("../../content/recipes/*.md");
+const getSlug = (filePath: string) => filePath.split("/").pop()?.replace(".md", "") ?? "";
+---
+
+<Layout title="Toutes les recettes">
+  <div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-8 text-center">📖 Toutes les recettes</h1>
+
+    <div class="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 justify-center">
+      {recipes.map((recipe) => {
+        const slug = getSlug(recipe.file);
+        const { title, image } = recipe.frontmatter;
+
+        return (
+          <div class="bg-white dark:bg-gray-800 rounded-lg shadow hover:shadow-lg transition transform hover:-translate-y-1 flex flex-col w-64 h-96 mx-auto">
+            {image && (
+              <img
+                src={image}
+                alt={title}
+                class="w-full h-48 object-cover rounded-t-lg"
+              />
+            )}
+
+            <div class="p-6 flex flex-col flex-1">
+              <h2 class="text-xl font-semibold mb-4">{title}</h2>
+              <a
+                href={`/recipes/${slug}`}
+                class="mt-auto inline-block bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded text-center transition"
+              >
+                Voir la recette →
+              </a>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  </div>
+</Layout>

@@ -1,0 +1,219 @@
+---
+import Layout from "../layouts/Layout.astro";
+
+const recipes = await Astro.glob("../content/recipes/*.md");
+const getSlug = (filePath: string) => filePath.split("/").pop()?.replace(".md", "") ?? "";
+
+const recipeData = Object.fromEntries(
+  recipes.map(recipe => [
+    getSlug(recipe.file),
+    recipe.frontmatter.ingredients
+  ])
+);
+---
+
+<Layout title="Liste de courses">
+  <div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-6 text-center text-green-600">🛒 Liste de courses</h1>
+
+    <form id="addIngredientForm" class="mb-6 flex flex-col sm:flex-row gap-2 justify-center items-center">
+      <input type="text" id="newItemName" placeholder="Nom"
+        class="border rounded p-2 w-64 focus:outline-none focus:ring-2 focus:ring-green-400" required>
+      <input type="text" id="newItemQuantity" placeholder="Quantité"
+        class="border rounded p-2 w-24 focus:outline-none focus:ring-2 focus:ring-green-400">
+      <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition">
+        ➕
+      </button>
+    </form>
+
+    <div class="flex justify-center mb-4">
+      <button id="clearListBtn" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition">
+        Supprimer tous les éléments
+      </button>
+    </div>
+
+    <div id="shoppingList" data-recipes={JSON.stringify(recipeData)}
+      class="bg-white rounded-lg shadow p-6 border border-gray-200">
+      <p class="text-gray-700 text-center">
+        La liste est vide.
+      </p>
+    </div>
+  </div>
+
+  <script type="module">
+    document.addEventListener("DOMContentLoaded", () => {
+      const shoppingListContainer = document.getElementById('shoppingList');
+      const recipeData = JSON.parse(shoppingListContainer.dataset.recipes);
+      const clearBtn = document.getElementById("clearListBtn");
+      const PLAN_SIGNATURE_KEY = "shoppingList_planSignature";
+
+      function getSelectedSlugs() {
+        const slugs = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (!key) continue;
+          const val = localStorage.getItem(key);
+          if (val && recipeData[val]) slugs.push(val);
+        }
+        return slugs;
+      }
+
+      function getPlanSignature() {
+        const counts = {};
+        getSelectedSlugs().forEach(s => { counts[s] = (counts[s] || 0) + 1; });
+        const pairs = Object.keys(counts).sort().map(k => [k, counts[k]]);
+        return JSON.stringify(pairs);
+      }
+
+      function ensurePlanSync() {
+        const cur = getPlanSignature();
+        const prev = localStorage.getItem(PLAN_SIGNATURE_KEY);
+        if (cur !== prev) {
+          localStorage.setItem("removedItems", "[]");
+          Object.keys(localStorage).forEach(k => { if (k.startsWith("checkbox-")) localStorage.removeItem(k); });
+          localStorage.setItem(PLAN_SIGNATURE_KEY, cur);
+        }
+      }
+
+      function pluralizeUnit(q, u) {
+        if (!u) return "";
+        if (Number(q) > 1) {
+          const low = u.toLowerCase();
+          if (low === "pièce") return "pièces";
+          if (low === "g" || low === "ml") return u;
+          return u;
+        }
+        return u;
+      }
+
+      function buildTotals() {
+        ensurePlanSync();
+
+        const removed = JSON.parse(localStorage.getItem("removedItems") || "[]");
+        const slugs = getSelectedSlugs();
+        const counts = {};
+        slugs.forEach(s => counts[s] = (counts[s] || 0) + 1);
+
+        const totals = {};
+        Object.entries(counts).forEach(([slug, count]) => {
+          const ingr = recipeData[slug];
+          if (!ingr) return;
+          ingr.forEach(({ item, quantity, unit }) => {
+            if (!item) return;
+            const low = String(item).toLowerCase();
+            if (low === "sel" || low === "poivre") return;
+            if (removed.includes(item)) return;
+            totals[item] = totals[item] || { quantity: 0, unit };
+            totals[item].quantity += (quantity || 0) * count;
+            if (!totals[item].unit) totals[item].unit = unit || "";
+          });
+        });
+
+        const custom = JSON.parse(localStorage.getItem("customIngredients") || "{}");
+        Object.entries(custom).forEach(([k, v]) => {
+          if (!removed.includes(k)) totals[k] = { quantity: v || "", unit: "" };
+        });
+
+        return totals;
+      }
+
+      function renderList() {
+        const totals = buildTotals();
+        const items = Object.entries(totals).map(([item, { quantity, unit }]) => ({
+          item,
+          quantity,
+          unit,
+          checked: localStorage.getItem(`checkbox-${item}`) === "true"
+        }))
+        .sort((a, b) => (a.checked - b.checked) || a.item.localeCompare(b.item));
+
+        if (!items.length) {
+          shoppingListContainer.innerHTML = `<p class="text-gray-700 text-center">La liste est vide.</p>`;
+          return;
+        }
+
+        shoppingListContainer.innerHTML = `
+          <ul class="space-y-2">
+            ${items.map(({ item, quantity, unit }, i) => {
+              const u = pluralizeUnit(quantity, unit);
+              const text = quantity ? `${item}: ${quantity} ${u}` : item;
+              return `
+                <li class="flex items-center justify-between space-x-3 bg-gray-50 p-3 rounded-lg border border-gray-200 shadow-sm hover:bg-green-50 transition">
+                  <div class="flex items-center space-x-2">
+                    <input type="checkbox" id="item-${i}" class="h-5 w-5 text-green-600 rounded border-gray-300 focus:ring-2 focus:ring-green-400">
+                    <label for="item-${i}" class="text-gray-800 font-medium">${text}</label>
+                  </div>
+                  <button data-key="${item}" class="hover:scale-110 transition-transform" aria-label="Supprimer ${item}">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-red-600 hover:text-red-800 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                  </button>
+                </li>
+              `;
+            }).join("")}
+          </ul>
+        `;
+
+        items.forEach(({ item, checked }, i) => {
+          const cb = document.getElementById(`item-${i}`);
+          const lbl = cb.nextElementSibling;
+          cb.checked = checked;
+          if (checked) lbl.classList.add("line-through", "text-gray-400");
+          else lbl.classList.remove("line-through", "text-gray-400");
+          cb.addEventListener("change", () => {
+            localStorage.setItem(`checkbox-${item}`, cb.checked);
+            renderList();
+          });
+        });
+
+        shoppingListContainer.querySelectorAll("button[data-key]").forEach(btn => {
+          btn.addEventListener("click", () => {
+            const key = btn.dataset.key;
+            const removed = new Set(JSON.parse(localStorage.getItem("removedItems") || "[]"));
+            removed.add(key);
+            localStorage.setItem("removedItems", JSON.stringify([...removed]));
+            localStorage.removeItem(`checkbox-${key}`);
+            const cust = JSON.parse(localStorage.getItem("customIngredients") || "{}");
+            if (cust[key]) {
+              delete cust[key];
+              localStorage.setItem("customIngredients", JSON.stringify(cust));
+            }
+            renderList();
+          });
+        });
+      }
+
+      renderList();
+
+      document.getElementById("addIngredientForm").addEventListener("submit", (e) => {
+        e.preventDefault();
+        const name = document.getElementById("newItemName").value.trim();
+        const qty = document.getElementById("newItemQuantity").value.trim();
+        if (!name) return;
+        const cust = JSON.parse(localStorage.getItem("customIngredients") || "{}");
+        cust[name] = qty || "";
+        localStorage.setItem("customIngredients", JSON.stringify(cust));
+        const removed = new Set(JSON.parse(localStorage.getItem("removedItems") || "[]"));
+        removed.delete(name);
+        localStorage.setItem("removedItems", JSON.stringify([...removed]));
+        e.target.reset();
+        renderList();
+      });
+
+      clearBtn.addEventListener("click", () => {
+        const keys = Array.from(shoppingListContainer.querySelectorAll("button[data-key]")).map(b => b.dataset.key);
+        const removed = new Set(JSON.parse(localStorage.getItem("removedItems") || "[]"));
+        keys.forEach(k => removed.add(k));
+        localStorage.setItem("removedItems", JSON.stringify([...removed]));
+        localStorage.removeItem("customIngredients");
+        Object.keys(localStorage).forEach(k => { if (k.startsWith("checkbox-")) localStorage.removeItem(k); });
+        renderList();
+      });
+
+      window.addEventListener("focus", renderList);
+      document.addEventListener("visibilitychange", () => { if (!document.hidden) renderList(); });
+      window.addEventListener("storage", renderList);
+      window.addEventListener("pageshow", renderList);
+    });
+  </script>
+</Layout>
