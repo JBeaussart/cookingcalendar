@@ -1,10 +1,62 @@
 ---
-import Navbar from '../components/navbar.astro';
-import Layout from '../layouts/Layout.astro';
+import Layout from "../layouts/Layout.astro";
 
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
+const recipes = await Astro.glob("../content/recipes/*.md");
+const getSlug = (filePath: string) => filePath.split("/").pop()?.replace(".md", "") ?? "";
+const getTitle = (recipe) => recipe.frontmatter.title;
+
+const days = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
+const dayColors = ["bg-red-100 dark:bg-red-800", "bg-orange-100 dark:bg-orange-800", "bg-yellow-100 dark:bg-yellow-800", "bg-green-100 dark:bg-green-800", "bg-teal-100 dark:bg-teal-800", "bg-blue-100 dark:bg-blue-800", "bg-purple-100 dark:bg-purple-800"];
 ---
-<Layout>
-  <Navbar/>
+
+<Layout title="Planning des recettes">
+  <div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-8 text-center">🗓️ Planning de la semaine</h1>
+
+    <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      {days.map((day, i) => (
+        <div class={`rounded-lg shadow p-6 flex flex-col ${dayColors[i]}`}>
+          <h2 class="text-xl font-semibold mb-4">{day}</h2>
+
+          <select class="border rounded p-2 text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700">
+            <option value="">-- Choisir une recette --</option>
+            {recipes.map((recipe) => {
+              const slug = getSlug(recipe.file);
+              const title = getTitle(recipe);
+              return <option value={slug}>{title}</option>;
+            })}
+          </select>
+        </div>
+      ))}
+    </div>
+
+    <div class="mt-8 text-center">
+      <button id="resetBtn" class="bg-red-500 hover:bg-red-600 text-white font-medium py-2 px-6 rounded transition">
+        Réinitialiser le planning
+      </button>
+    </div>
+  </div>
+
+  <script>
+    const selects = document.querySelectorAll('select');
+    const days = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
+
+    // Charger les choix depuis localStorage
+    selects.forEach(select => {
+      const day = select.previousElementSibling.textContent;
+      const saved = localStorage.getItem(day);
+      if (saved) select.value = saved;
+
+      select.addEventListener('change', (e) => {
+        localStorage.setItem(day, e.target.value);
+      });
+    });
+
+    // Bouton reset
+    const resetBtn = document.getElementById('resetBtn');
+    resetBtn.addEventListener('click', () => {
+      selects.forEach(select => select.value = "");
+      days.forEach(day => localStorage.removeItem(day));
+    });
+  </script>
 </Layout>
