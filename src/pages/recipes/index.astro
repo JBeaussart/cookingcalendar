@@ -1,57 +1,99 @@
 ---
 import Layout from "../../layouts/Layout.astro";
+import { db } from "../../firebase";
+import { collection, getDocs } from "firebase/firestore";
 
-const recipes = await Astro.glob("../../content/recipes/*.md");
-const getSlug = (filePath: string) => filePath.split("/").pop()?.replace(".md", "") ?? "";
+// Récupère le jour éventuellement passé en query (ex: /recipes?day=lundi)
+const selectedDay = Astro.url.searchParams.get("day");
 
-const recipeList = recipes.map(r => ({
-  slug: getSlug(r.file),
-  title: r.frontmatter.title,
-  image: r.frontmatter.image || ""
-}));
+// Charge les recettes depuis Firestore
+const snap = await getDocs(collection(db, "recipes"));
+const recipes = snap.docs.map((d) => ({ id: d.id, ...d.data() })) as Array<{
+  id: string;
+  title: string;
+  image?: string;
+}>;
 ---
 
 <Layout title="Recettes">
   <div class="container mx-auto px-4 py-8">
-    <!-- Barre de recherche -->
-    <div class="mb-6 flex justify-center">
+
+    <!-- Barre de recherche centrée -->
+    <div class="flex justify-center mb-8">
       <input
-        type="text"
         id="searchInput"
+        type="text"
         placeholder="Rechercher une recette..."
-        class="w-full sm:w-96 border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-green-400"
-      >
+        class="w-full max-w-md px-4 py-2 border rounded-xl shadow-sm focus:ring-2 focus:ring-blue-400 focus:outline-none"
+        value=""
+      />
     </div>
+
+    <!-- Rappel du jour ciblé (si on vient du planning) -->
+    {selectedDay && (
+      <p class="text-center text-sm text-gray-600 mb-4">
+        Jour sélectionné : <span class="font-semibold capitalize">{selectedDay}</span>
+      </p>
+    )}
 
     <!-- Grille des recettes -->
     <div id="recipeGrid" class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-      {recipeList.map(r => (
-        <a href={`/recipes/${r.slug}`} class="recipe-card bg-white rounded-lg shadow overflow-hidden hover:shadow-lg transition block">
-          {r.image && (
-            <img src={r.image} alt={r.title} class="w-full h-48 object-cover"/>
-          )}
-          <div class="p-4">
-            <h2 class="font-semibold text-lg mb-2">{r.title}</h2>
+      {recipes.map((r) => {
+        const img = r.image && String(r.image).trim() ? r.image : "/images/default-recipe.jpg";
+        const detailHref = `/recipes/${r.id}${selectedDay ? `?day=${encodeURIComponent(selectedDay)}` : ""}`;
+        return (
+          <div class="recipe-card bg-white rounded-lg shadow overflow-hidden hover:shadow-lg transition">
+            <a href={detailHref} class="block">
+              <img src={img} alt={r.title} class="w-full h-48 object-cover" />
+            </a>
+            <div class="p-4 flex items-start justify-between gap-3">
+              <a href={detailHref} class="flex-1">
+                <h2 class="font-semibold text-lg">{r.title}</h2>
+              </a>
+
+              {selectedDay && (
+                <form method="post" action={`/api/assign-recipe?day=${encodeURIComponent(selectedDay)}&id=${encodeURIComponent(r.id)}`}>
+                  <button
+                    type="submit"
+                    class="bg-green-600 hover:bg-green-700 text-white p-2 rounded-md shadow-md transition flex items-center justify-center"
+                    title={`Ajouter au ${selectedDay}`}
+                    aria-label={`Ajouter au ${selectedDay}`}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg"
+                         fill="none" viewBox="0 0 24 24"
+                         stroke-width="2" stroke="currentColor"
+                         class="w-5 h-5">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                    </svg>
+                  </button>
+                </form>
+              )}
+            </div>
           </div>
-        </a>
-      ))}
+        );
+      })}
     </div>
   </div>
 
   <script type="module">
+    // Recherche insensible aux accents et à la casse
     const searchInput = document.getElementById("searchInput");
     const recipeGrid = document.getElementById("recipeGrid");
-    const cards = Array.from(recipeGrid.querySelectorAll(".recipe-card"));
+    const cards = Array.from(recipeGrid.children);
 
-    function removeAccents(str) {
-      return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    function normalize(str) {
+      return (str || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase();
     }
 
     searchInput.addEventListener("input", () => {
-      const query = removeAccents(searchInput.value.toLowerCase());
-      cards.forEach(card => {
-        const title = removeAccents(card.querySelector("h2").textContent.toLowerCase());
-        card.style.display = title.includes(query) ? "" : "none";
+      const q = normalize(searchInput.value);
+      cards.forEach((card) => {
+        const titleEl = card.querySelector("h2");
+        const title = normalize(titleEl?.textContent || "");
+        card.style.display = title.includes(q) ? "" : "none";
       });
     });
   </script>

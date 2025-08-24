@@ -1,61 +1,66 @@
 ---
 import Layout from "../layouts/Layout.astro";
+import { db } from "../firebase";
+import { collection, getDocs } from "firebase/firestore";
 
-const recipes = await Astro.glob("../content/recipes/*.md");
-const getSlug = (filePath: string) => filePath.split("/").pop()?.replace(".md", "") ?? "";
-const getTitle = (recipe) => recipe.frontmatter.title;
+const daysOfWeek = ["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"];
 
-const days = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
-const dayColors = ["bg-red-100 dark:bg-red-800", "bg-orange-100 dark:bg-orange-800", "bg-yellow-100 dark:bg-yellow-800", "bg-green-100 dark:bg-green-800", "bg-teal-100 dark:bg-teal-800", "bg-blue-100 dark:bg-blue-800", "bg-purple-100 dark:bg-purple-800"];
+let recipes = [];
+const snapshot = await getDocs(collection(db, "recipes"));
+recipes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+const planning = {};
+for (const day of daysOfWeek) {
+  planning[day] = recipes.find(r => r.day?.toLowerCase() === day) || null;
+}
 ---
 
-<Layout title="Planning des recettes">
-  <div class="container mx-auto px-4 py-8">
+<Layout title="Planning">
+  <div class="max-w-4xl mx-auto p-4 space-y-6">
+    {daysOfWeek.map(day => (
+      <div class="p-4 bg-gray-100 rounded-lg shadow">
+        <h2 class="text-xl font-semibold capitalize mb-2">{day}</h2>
+        {planning[day] ? (
+          <div class="p-3 bg-white rounded-md shadow flex items-center justify-between gap-3">
+            <span class="font-medium">{planning[day].title}</span>
+            <div class="flex items-center gap-3">
+              <!-- Icône Voir (œil) -->
+              <a href={`/recipes/${planning[day].id}`} title="Voir la recette" class="flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg"
+                    fill="none" viewBox="0 0 24 24"
+                    stroke-width="1.5" stroke="currentColor"
+                    class="w-6 h-6 text-blue-600 hover:text-blue-800 transition">
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M2.25 12s3.75-7.5 9.75-7.5S21.75 12 21.75 12s-3.75 7.5-9.75 7.5S2.25 12 2.25 12z" />
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              </a>
 
-    <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-      {days.map((day, i) => (
-        <div class={`rounded-lg shadow p-6 flex flex-col ${dayColors[i]}`}>
-          <h2 class="text-xl font-semibold mb-4">{day}</h2>
+              <!-- Icône Supprimer (corbeille) -->
+              <form method="post" action={`/api/remove-recipe?day=${day}`} class="flex items-center">
+                <button type="submit" title="Retirer la recette">
+                  <svg xmlns="http://www.w3.org/2000/svg"
+                      fill="none" viewBox="0 0 24 24"
+                      stroke-width="1.5" stroke="currentColor"
+                      class="w-6 h-6 text-red-600 hover:text-red-800 transition">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                          d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </form>
+            </div>
+          </div>
+        ) : (
+          <a
+            href={`/recipes?day=${day}`}
+            class="inline-block bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg shadow-md transition"
+          >
+            Choisir une recette
+          </a>
+        )}
 
-          <select class="border rounded p-2 text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700">
-            <option value="">-- Choisir une recette --</option>
-            {recipes.map((recipe) => {
-              const slug = getSlug(recipe.file);
-              const title = getTitle(recipe);
-              return <option value={slug}>{title}</option>;
-            })}
-          </select>
-        </div>
-      ))}
-    </div>
-
-    <div class="mt-8 text-center">
-      <button id="resetBtn" class="bg-red-500 hover:bg-red-600 text-white font-medium py-2 px-6 rounded transition">
-        Réinitialiser le planning
-      </button>
-    </div>
+      </div>
+    ))}
   </div>
-
-  <script>
-    const selects = document.querySelectorAll('select');
-    const days = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
-
-    // Charger les choix depuis localStorage
-    selects.forEach(select => {
-      const day = select.previousElementSibling.textContent;
-      const saved = localStorage.getItem(day);
-      if (saved) select.value = saved;
-
-      select.addEventListener('change', (e) => {
-        localStorage.setItem(day, e.target.value);
-      });
-    });
-
-    // Bouton reset
-    const resetBtn = document.getElementById('resetBtn');
-    resetBtn.addEventListener('click', () => {
-      selects.forEach(select => select.value = "");
-      days.forEach(day => localStorage.removeItem(day));
-    });
-  </script>
 </Layout>

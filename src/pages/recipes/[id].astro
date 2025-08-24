@@ -1,0 +1,110 @@
+---
+export const prerender = false;
+
+import Layout from "../../layouts/Layout.astro";
+import { db } from "../../firebase";
+import { doc, getDoc } from "firebase/firestore";
+
+// id de la recette
+const { id } = Astro.params;
+
+// récupère le jour passé en query (ex: /recipes/abc?day=lundi)
+const selectedDay = Astro.url.searchParams.get("day") || "";
+
+// charge la recette
+let recipe = null;
+try {
+  const snap = await getDoc(doc(db, "recipes", id));
+  if (snap.exists()) recipe = { id: snap.id, ...snap.data() };
+} catch (e) {
+  console.error(e);
+}
+
+const title = recipe?.title ?? "Recette";
+const imageSrc =
+  recipe?.image && String(recipe.image).trim()
+    ? recipe.image
+    : "/images/default-recipe.jpg";
+
+const ingredients = Array.isArray(recipe?.ingredients) ? recipe.ingredients : [];
+const steps = Array.isArray(recipe?.steps) ? recipe.steps : [];
+
+function formatIngredient(i) {
+  if (typeof i === "string") return i;
+  const item = i?.item ?? "";
+  const quantity = i?.quantity;
+  const unit = i?.unit ?? "";
+  return quantity ? `${item}: ${quantity} ${unit}` : item;
+}
+---
+
+<Layout title={title}>
+  <div class="container mx-auto px-4 py-12">
+
+    <!-- Header + bouton + si un jour est fourni -->
+    <div class="flex items-start justify-between gap-4 mb-8">
+      <h1 class="text-3xl md:text-5xl font-extrabold text-gray-900">{title}</h1>
+
+      {selectedDay && recipe && (
+        <form method="post" action={`/api/assign-recipe?day=${encodeURIComponent(selectedDay)}&id=${encodeURIComponent(recipe.id)}`}>
+          <button
+            type="submit"
+            class="inline-flex items-center justify-center rounded-xl p-3 bg-green-600 text-white shadow-md hover:bg-green-700 transition"
+            title={`Ajouter au ${selectedDay}`}
+            aria-label={`Ajouter au ${selectedDay}`}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg"
+                 fill="none" viewBox="0 0 24 24"
+                 stroke-width="2" stroke="currentColor"
+                 class="w-5 h-5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+          </button>
+        </form>
+      )}
+    </div>
+
+    <div class="overflow-hidden rounded-xl shadow-lg mb-10">
+      <img
+        src={imageSrc}
+        alt={title}
+        class="w-full h-72 object-cover transform hover:scale-105 transition duration-500"
+      />
+    </div>
+
+    {recipe ? (
+      <div class="grid gap-8 md:grid-cols-2">
+        <section class="bg-yellow-50 rounded-xl p-6 shadow-lg hover:shadow-2xl transition">
+          <h2 class="flex items-center text-2xl font-semibold mb-4 text-yellow-800">
+            <span class="mr-2">🛒</span> Ingrédients
+          </h2>
+          <ul class="list-disc list-inside space-y-2 text-gray-700">
+            {ingredients.map((i, idx) => <li key={idx}>{formatIngredient(i)}</li>)}
+          </ul>
+        </section>
+
+        <section class="bg-green-50 rounded-xl p-6 shadow-lg hover:shadow-2xl transition">
+          <h2 class="flex items-center text-2xl font-semibold mb-4 text-green-800">
+            <span class="mr-2">👩‍🍳</span> Préparation
+          </h2>
+          <ol class="list-decimal list-inside space-y-2 text-gray-700">
+            {steps.map((s, idx) => <li key={idx}>{s}</li>)}
+          </ol>
+        </section>
+      </div>
+    ) : (
+      <p class="text-center text-gray-500">Recette introuvable.</p>
+    )}
+
+    <div class="mt-12 text-center flex items-center justify-center gap-3">
+      <a href="/recipes" class="inline-flex items-center bg-blue-500 hover:bg-blue-600 text-white font-medium py-3 px-6 rounded-xl shadow-lg transition">
+        ← Retour à toutes les recettes
+      </a>
+      {selectedDay && (
+        <a href={`/?highlight=${encodeURIComponent(selectedDay)}`} class="text-sm text-gray-600 hover:text-gray-800 underline">
+          Voir le planning ({selectedDay})
+        </a>
+      )}
+    </div>
+  </div>
+</Layout>
