@@ -1,66 +1,117 @@
 ---
 import Layout from "../layouts/Layout.astro";
 import { db } from "../firebase";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, doc, getDoc } from "firebase/firestore";
 
-const daysOfWeek = ["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"];
+const days = ["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"];
 
-let recipes = [];
-const snapshot = await getDocs(collection(db, "recipes"));
-recipes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+// Lire planning (doc id = nom du jour, champ: recipeId)
+const planningSnap = await getDocs(collection(db, "planning"));
+const planningMap = new Map(planningSnap.docs.map(d => [d.id, d.data()?.recipeId || ""]));
 
-const planning = {};
-for (const day of daysOfWeek) {
-  planning[day] = recipes.find(r => r.day?.toLowerCase() === day) || null;
+// Charger les recettes référencées
+const entries: Array<{ day: string; recipe: any | null }> = [];
+for (const day of days) {
+  const recipeId = planningMap.get(day) || "";
+  if (!recipeId) {
+    entries.push({ day, recipe: null });
+    continue;
+  }
+  const rSnap = await getDoc(doc(db, "recipes", recipeId));
+  entries.push({ day, recipe: rSnap.exists() ? { id: rSnap.id, ...rSnap.data() } : null });
 }
 ---
 
 <Layout title="Planning">
-  <div class="max-w-4xl mx-auto p-4 space-y-6">
-    {daysOfWeek.map(day => (
-      <div class="p-4 bg-gray-100 rounded-lg shadow">
-        <h2 class="text-xl font-semibold capitalize mb-2">{day}</h2>
-        {planning[day] ? (
-          <div class="p-3 bg-white rounded-md shadow flex items-center justify-between gap-3">
-            <span class="font-medium">{planning[day].title}</span>
-            <div class="flex items-center gap-3">
-              <!-- Icône Voir (œil) -->
-              <a href={`/recipes/${planning[day].id}`} title="Voir la recette" class="flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg"
-                    fill="none" viewBox="0 0 24 24"
-                    stroke-width="1.5" stroke="currentColor"
-                    class="w-6 h-6 text-blue-600 hover:text-blue-800 transition">
-                  <path stroke-linecap="round" stroke-linejoin="round"
-                        d="M2.25 12s3.75-7.5 9.75-7.5S21.75 12 21.75 12s-3.75 7.5-9.75 7.5S2.25 12 2.25 12z" />
-                  <path stroke-linecap="round" stroke-linejoin="round"
-                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-              </a>
-
-              <!-- Icône Supprimer (corbeille) -->
-              <form method="post" action={`/api/remove-recipe?day=${day}`} class="flex items-center">
-                <button type="submit" title="Retirer la recette">
-                  <svg xmlns="http://www.w3.org/2000/svg"
-                      fill="none" viewBox="0 0 24 24"
-                      stroke-width="1.5" stroke="currentColor"
-                      class="w-6 h-6 text-red-600 hover:text-red-800 transition">
-                    <path stroke-linecap="round" stroke-linejoin="round"
-                          d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </form>
-            </div>
-          </div>
-        ) : (
-          <a
-            href={`/recipes?day=${day}`}
-            class="inline-block bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg shadow-md transition"
-          >
-            Choisir une recette
-          </a>
-        )}
-
+  <div class="mx-auto max-w-5xl px-4 py-6 sm:py-8">
+    <header class="mb-6 sm:mb-8 flex items-center justify-between gap-3">
+      <div>
+        <h1 class="text-2xl font-bold tracking-tight text-gray-900">🗓️ Planning de la semaine</h1>
+        <p class="mt-1 text-sm text-gray-600">Sélectionne une recette pour chaque jour.</p>
       </div>
-    ))}
+      <form method="post" action="/api/clear-planning" class="shrink-0">
+        <button
+          type="submit"
+          class="inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-red-700"
+          title="Supprimer tout le planning"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+               fill="none" stroke="currentColor" stroke-width="1.5"
+               class="h-5 w-5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+          Réinitliser le planning
+        </button>
+      </form>
+    </header>
+
+    <div class="grid grid-cols-1 gap-4 sm:gap-5 md:grid-cols-2 lg:grid-cols-3">
+      {entries.map(({ day, recipe }) => {
+        const img = recipe?.image && String(recipe.image).trim()
+          ? recipe.image
+          : "/images/default-recipe.jpg";
+        return (
+          <section class="group rounded-xl border border-gray-200 bg-white shadow-sm transition hover:shadow-md">
+            <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+              <h2 class="text-base font-semibold capitalize text-gray-900">{day}</h2>
+              {recipe ? (
+                <span class="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">Planifié</span>
+              ) : (
+                <span class="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700">À choisir</span>
+              )}
+            </div>
+
+            {recipe ? (
+              <div class="p-4">
+                <div class="flex items-start gap-3">
+                  <img src={img} alt={recipe.title} class="h-16 w-16 flex-none rounded-lg object-cover ring-1 ring-gray-200" />
+                  <div class="min-w-0 flex-1">
+                    <a href={`/recipes/${recipe.id}`} class="block text-sm font-medium text-gray-900 hover:underline leading-snug">
+                      {recipe.title}
+                    </a>
+                  </div>
+
+                  <div class="flex shrink-0 items-center gap-2">
+                    <a href={`/recipes/${recipe.id}`} title="Voir la recette" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 text-blue-600 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 transition">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+                           fill="none" stroke="currentColor" stroke-width="1.5"
+                           class="h-5 w-5">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                              d="M2.25 12s3.75-7.5 9.75-7.5S21.75 12 21.75 12s-3.75 7.5-9.75 7.5S2.25 12 2.25 12z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                      </svg>
+                    </a>
+
+                    <form method="post" action={`/api/remove-recipe?day=${day}`} class="inline-flex">
+                      <button type="submit" title="Retirer la recette"
+                              class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 text-red-600 hover:border-red-300 hover:bg-red-50 hover:text-red-700 transition">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+                             fill="none" stroke="currentColor" stroke-width="1.5"
+                             class="h-5 w-5">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                      </button>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div class="p-6 flex items-center justify-center">
+                <a href={`/recipes?day=${day}`}
+                   class="inline-flex h-12 w-12 items-center justify-center rounded-full bg-blue-600 text-white shadow-sm transition hover:bg-blue-700"
+                   title="Choisir une recette">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+                       fill="none" stroke="currentColor" stroke-width="2"
+                       class="h-6 w-6">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+                  </svg>
+                </a>
+              </div>
+            )}
+          </section>
+        );
+      })}
+    </div>
   </div>
 </Layout>

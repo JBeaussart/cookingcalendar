@@ -19,27 +19,26 @@ const db = getFirestore(app);
 const recettes = [
   {
     title: "Omellete au fromage",
-    day: "lundi",
     ingredients: [
       { item: "Gruyère", quantity: 200, unit: "gr" },
       { item: "oeufs", quantity: 3, unit: "pièces" }
     ],
     steps: ["Mélanger les ingrédients", "Cuire à feu moyen"],
-    image: "https://images.unsplash.com/photo-1692737580558-b9dfdac5599c?q=80&w=1815&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+    image: "https://images.unsplash.com/photo-1692737580558-b9dfdac5599c?q=80&w=1815&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    createdAt: null
   },
   {
     title: "Poulet rôti",
-    day: "mardi",
     ingredients: [
       { item: "poulet", quantity: 1, unit: "pièce" },
       { item: "pommes de terre", quantity: 500, unit: "gr" }
     ],
     steps: ["Préchauffer le four", "Rôtir le poulet", "Ajouter les pommes de terre"],
-    image: "https://images.unsplash.com/photo-1606728035253-49e8a23146de?q=80&w=2670&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+    image: "https://images.unsplash.com/photo-1606728035253-49e8a23146de?q=80&w=2670&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    createdAt: null
   },
   {
   title: "Chou-fleur rôti aux épices et pois chiches",
-  day: "vendredi",
   ingredients: [
     { item: "huile d’olive", quantity: 6, unit: "c. à soupe" },
     { item: "paprika", quantity: 2, unit: "c. à soupe" },
@@ -62,11 +61,11 @@ const recettes = [
       "Rôtir au four sur une plaque avec papier sulfurisé pendant 30-35 minutes (remuer à mi-cuisson)",
       "Servir avec un filet de jus de citron et coriandre fraîche"
     ],
-    image: ""
+    image: "",
+    createdAt: null
   },
   {
     title: "Galettes de courgettes et fromage râpé + salade",
-    day: "",
     ingredients: [
       { item: "farine", quantity: 200, unit: "gr" },
       { item: "œufs", quantity: 4, unit: "pièces" },
@@ -84,11 +83,11 @@ const recettes = [
       "Faire chauffer un peu d’huile dans une poêle et former des galettes avec la préparation",
       "Cuire 3 à 4 minutes de chaque côté jusqu’à ce qu’elles soient bien dorées"
     ],
-    image: ""
+    image: "",
+    createdAt: null
   },
   {
     title: "Riz sauté aux légumes et tofu façon thaï",
-    day: "",
     ingredients: [
       { item: "tofu ferme", quantity: 400, unit: "gr" },
       { item: "oignon", quantity: 2, unit: "pièces" },
@@ -114,11 +113,11 @@ const recettes = [
       "Incorporer le riz, la sauce soja restante, le sucre et le jus de citron vert, cuire encore 2 min",
       "Servir chaud avec des graines de sésame"
     ],
-    image: ""
+    image: "",
+    createdAt: null
   },
   {
     title: "Tartes brocolis, champignons, tomates cerise + salade",
-    day: "dimanche",
     ingredients: [
       { item: "pâte feuilletée ou brisée", quantity: 2, unit: "rouleaux" },
       { item: "champignons de Paris", quantity: 2, unit: "barquettes" },
@@ -143,11 +142,11 @@ const recettes = [
       "Verser le flan sur la garniture",
       "Cuire au four à 180/190°C pendant environ 35 minutes"
     ],
-    image: ""
+    image: "",
+    createdAt: null
   },
   {
     title: "Burger végétarien aux haricots rouges",
-    day: "lundi",
     ingredients: [
       { item: "chapelure", quantity: 50, unit: "g" },
       { item: "œuf", quantity: 1, unit: "" },
@@ -173,11 +172,11 @@ const recettes = [
       "Faire griller les pains à burger",
       "Garnir les burgers avec le steak végétarien, tomate, oignon rouge, salade et fromage"
     ],
-    image: ""
+    image: "",
+    createdAt: null
   },
   {
     title: "Buddha bowl aux légumes rôtis et pois chiches",
-    day: "mardi",
     ingredients: [
       { item: "avocat", quantity: 1, unit: "" },
       { item: "patate", quantity: 1, unit: "" },
@@ -197,7 +196,8 @@ const recettes = [
       "Assembler le tout dans un bol avec la salade et l’avocat coupé en lamelles",
       "Saupoudrer de graines et déguster avec une sauce au yaourt ou au tahini"
     ],
-    image: ""
+    image: "",
+    createdAt: null
   }
 
 
