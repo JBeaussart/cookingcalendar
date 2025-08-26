@@ -1,7 +1,10 @@
 ---
+/* src/pages/index.astro (planning) */
 import Layout from "../layouts/Layout.astro";
 import { db } from "../firebase";
-import { collection, getDocs, doc, getDoc } from "firebase/firestore";
+import {
+  collection, getDocs, query, where, documentId
+} from "firebase/firestore";
 
 const days = ["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"];
 
@@ -9,17 +12,24 @@ const days = ["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"]
 const planningSnap = await getDocs(collection(db, "planning"));
 const planningMap = new Map(planningSnap.docs.map(d => [d.id, d.data()?.recipeId || ""]));
 
-// Charger les recettes référencées
-const entries: Array<{ day: string; recipe: any | null }> = [];
-for (const day of days) {
-  const recipeId = planningMap.get(day) || "";
-  if (!recipeId) {
-    entries.push({ day, recipe: null });
-    continue;
+// Charger les recettes référencées (lotissement par 10)
+const recipeIds = days.map(d => planningMap.get(d) || "").filter(Boolean);
+const recipesById = new Map();
+if (recipeIds.length) {
+  for (let i = 0; i < recipeIds.length; i += 10) {
+    const chunk = recipeIds.slice(i, i + 10);
+    const q = query(collection(db, "recipes"), where(documentId(), "in", chunk));
+    const snap = await getDocs(q);
+    for (const d of snap.docs) {
+      recipesById.set(d.id, { id: d.id, ...d.data() });
+    }
   }
-  const rSnap = await getDoc(doc(db, "recipes", recipeId));
-  entries.push({ day, recipe: rSnap.exists() ? { id: rSnap.id, ...rSnap.data() } : null });
 }
+
+const entries = days.map(day => {
+  const rid = planningMap.get(day) || "";
+  return { day, recipe: rid ? (recipesById.get(rid) ?? null) : null };
+});
 ---
 
 <Layout title="Planning">
@@ -79,7 +89,7 @@ for (const day of days) {
                         <path stroke-linecap="round" stroke-linejoin="round"
                               d="M2.25 12s3.75-7.5 9.75-7.5S21.75 12 21.75 12s-3.75 7.5-9.75 7.5S2.25 12 2.25 12z"/>
                         <path stroke-linecap="round" stroke-linejoin="round"
-                              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                              d="M15 12a3 3 0 11-6 0 3 3 0 0 1 6 0z"/>
                       </svg>
                     </a>
 
