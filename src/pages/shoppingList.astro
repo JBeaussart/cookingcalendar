@@ -3,51 +3,25 @@ import Layout from "../layouts/Layout.astro";
 ---
 <Layout title="Liste de courses (planning + custom)">
   <div class="mx-auto max-w-3xl px-4 py-6">
-    <!-- En-tête -->
-    <div class="mb-5 flex items-center justify-between gap-3">
+    <div class="mb-6 flex items-center justify-between">
       <h1 class="text-2xl font-bold text-gray-900">🛒 Liste de courses</h1>
+    </div>
 
-      <!-- Bouton Recharger (même id) -->
-      <button
-        id="btnReload"
-        class="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 active:scale-[0.98] transition"
-        title="Recalculer la liste depuis le planning"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4"
-             viewBox="0 0 24 24" fill="none" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M4 4v6h6M20 20v-6h-6M5 19A9 9 0 0119 5l1 1"/>
-        </svg>
-        Recharger
+    <!-- Formulaire d’ajout d’un élément custom -->
+    <form id="addForm" class="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-2">
+      <input id="fItem" type="text" placeholder="Nom"
+        class="border rounded px-3 py-2 sm:col-span-2 focus:ring-2 focus:ring-emerald-400"
+        required />
+      <input id="fQty" type="number" step="any" placeholder="Quantité"
+        class="border rounded px-3 py-2 focus:ring-2 focus:ring-emerald-400" />
+      <button type="submit"
+        class="rounded bg-emerald-600 px-3 py-2 text-white hover:bg-emerald-700 transition">
+        Ajouter
       </button>
-    </div>
+    </form>
 
-    <!-- Carte formulaire -->
-    <div class="mb-6 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-      <h2 class="mb-3 text-sm font-semibold text-gray-700">Ajouter un élément</h2>
-      <!-- Formulaire d’ajout d’un élément custom (mêmes ids) -->
-      <form id="addForm" class="grid grid-cols-1 gap-2 sm:grid-cols-4">
-        <input id="fItem" type="text" placeholder="Nom"
-               class="col-span-2 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
-               required />
-        <input id="fQty" type="number" step="any" placeholder="Quantité"
-               class="col-span-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" />
-        <button type="submit"
-                class="col-span-1 inline-flex items-center justify-center rounded-lg bg-emerald-600 px-3 py-2 text-sm font-medium text-white shadow hover:bg-emerald-700 active:scale-[0.98] transition">
-          ➕ Ajouter
-        </button>
-      </form>
-    </div>
-
-    <!-- Carte liste -->
-    <div class="rounded-2xl border border-gray-200 bg-white shadow-sm">
-      <div class="px-3 sm:px-4 py-3 border-b border-gray-100">
-        <h2 class="text-lg font-semibold text-gray-800">Éléments</h2>
-      </div>
-
-      <ul id="list" class="divide-y divide-gray-100"></ul>
-    </div>
-
+    <ul id="list"
+      class="divide-y divide-gray-100 rounded-2xl border border-gray-200 bg-white shadow-sm"></ul>
     <p id="status" class="mt-3 text-sm text-gray-500"></p>
   </div>
 
@@ -68,7 +42,7 @@ import Layout from "../layouts/Layout.astro";
       `${String(it.item||"").trim().toLowerCase()}|||${String(it.unit||"").trim().toLowerCase()}`;
 
     function sortItems() {
-      // tri : non cochés en haut, cochés en bas
+      // Tri : non cochés en haut, cochés en bas
       items.sort((a, b) => {
         if (a.checked === b.checked) return a.item.localeCompare(b.item, "fr");
         return a.checked ? 1 : -1;
@@ -79,48 +53,72 @@ import Layout from "../layouts/Layout.astro";
       sortItems();
       listEl.innerHTML = "";
       if (!Array.isArray(items) || items.length === 0) {
-        listEl.innerHTML = `<li class="px-4 py-6 text-center text-sm text-gray-600">Aucun élément.</li>`;
+        listEl.innerHTML = `
+          <li class="px-6 py-10 text-center text-sm text-gray-600">
+            Aucune entrée dans la liste.
+          </li>`;
         return;
       }
 
       items.forEach((row, idx) => {
         const isCustom = row.source === "custom";
         const hasQty = typeof row.quantity === "number" && !isNaN(row.quantity);
-        // Affiche l’unité si disponible (ne change pas la logique existante)
         const txt = hasQty
           ? `${row.item} : ${row.quantity}${row.unit ? " " + row.unit : ""}`
           : row.item;
 
         const li = document.createElement("li");
         li.className =
-          "group flex items-center justify-between gap-3 px-4 py-3 hover:bg-emerald-50/60 transition";
+          "group flex items-center justify-between gap-3 px-4 py-3 sm:px-5 " +
+          "hover:bg-emerald-50/60 transition";
 
-        li.innerHTML = `
-          <label class="flex items-center gap-3 cursor-pointer select-none">
-            <input type="checkbox"
-                   class="peer h-5 w-5 shrink-0 rounded-md border-gray-300 text-emerald-600 focus:ring-2 focus:ring-emerald-400"
-                   data-idx="${idx}" ${row.checked ? "checked" : ""}>
-            <span class="text-[15px] ${row.checked ? "line-through text-gray-400" : "text-gray-800"}">
-              ${txt}
-            </span>
-          </label>
-          <div class="flex items-center gap-2">
-            ${isCustom ? `
-              <button class="del-btn rounded-md p-2 text-rose-600 hover:text-rose-700 hover:bg-rose-50 transition"
-                      data-idx="${idx}" title="Supprimer">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
-                     viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m1 0H8m8 0l-1-3H9L8 7" />
-                </svg>
-              </button>
-            ` : ``}
-          </div>
-        `;
+        // Gauche : checkbox + libellé
+        const left = document.createElement("label");
+        left.className = "flex items-center gap-3 cursor-pointer select-none flex-1";
+
+        const cb = document.createElement("input");
+        cb.type = "checkbox";
+        cb.dataset.idx = String(idx);
+        cb.checked = !!row.checked;
+        cb.className =
+          "peer h-5 w-5 shrink-0 rounded-md border-gray-300 " +
+          "text-emerald-600 focus:ring-2 focus:ring-emerald-400";
+
+        const text = document.createElement("span");
+        text.className =
+          "text-[15px] " + (cb.checked ? "line-through text-gray-400" : "text-gray-800");
+        text.textContent = txt;
+
+        left.appendChild(cb);
+        left.appendChild(text);
+
+        // Droite : actions
+        const right = document.createElement("div");
+        right.className = "flex items-center gap-2";
+
+        if (isCustom) {
+          const del = document.createElement("button");
+          del.type = "button";
+          del.className =
+            "del-btn rounded-md p-2 text-rose-600 hover:text-rose-700 " +
+            "hover:bg-rose-50 transition";
+          del.dataset.idx = String(idx);
+          del.title = "Supprimer";
+          del.innerHTML =
+            '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" ' +
+            'viewBox="0 0 24 24" fill="none" stroke="currentColor">' +
+            '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" ' +
+            'd="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m1 0H8m8 0l-1-3H9L8 7" />' +
+            "</svg>";
+          right.appendChild(del);
+        }
+
+        li.appendChild(left);
+        li.appendChild(right);
         listEl.appendChild(li);
       });
 
-      // Checkbox handlers (inchangé côté logique)
+      // Gestion des checkboxes
       listEl.querySelectorAll('input[type="checkbox"]').forEach(cb => {
         cb.addEventListener("change", async () => {
           const i = Number(cb.dataset.idx);
@@ -148,7 +146,7 @@ import Layout from "../layouts/Layout.astro";
                 body: JSON.stringify({ items: payload })
               });
             }
-            render(); // re-trie avec cochés en bas
+            render();
             status("✅ Sauvegardé");
           } catch (e) {
             console.error(e);
@@ -157,7 +155,7 @@ import Layout from "../layouts/Layout.astro";
         });
       });
 
-      // Delete custom (inchangé côté logique)
+      // Suppression des custom
       listEl.querySelectorAll(".del-btn").forEach(btn => {
         btn.addEventListener("click", async () => {
           const i = Number(btn.dataset.idx);
@@ -213,7 +211,7 @@ import Layout from "../layouts/Layout.astro";
       }
     }
 
-    // Ajout custom (inchangé côté logique)
+    // Ajout custom
     addForm.addEventListener("submit", async (e) => {
       e.preventDefault();
       const item = fItem.value.trim();
@@ -240,7 +238,6 @@ import Layout from "../layouts/Layout.astro";
       }
     });
 
-    btnReload.addEventListener("click", load);
     await load();
   </script>
 </Layout>

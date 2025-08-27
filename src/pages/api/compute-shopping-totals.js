@@ -1,98 +1,116 @@
-// src/lib/computeShoppingTotals.js
+// src/pages/api/compute-shopping-totals.js
+import { db } from "../../firebase";
 import { collection, getDocs, doc, getDoc } from "firebase/firestore";
 
-/**
- * Agrège la liste de courses à partir de "planning" (docs: { recipeId })
- * et "recipes/{id}" (champ ingredients).
- * Multiplie les quantités si une même recette est planifiée plusieurs fois.
- * @param {import('firebase/firestore').Firestore} db
- * @param {object} opts  { debug?: boolean }
- * @returns {Promise<{ items: Array<{item:string, quantity?:number, unit?:string, checked:boolean}>, debug?: any }>}
- */
-export async function computeShoppingTotals(db, opts = {}) {
-  const debug = {
-    version: "v2-mult-by-count",
-    planning: [],
-    recipeCounts: {},
-    loaded: [],
-    skipped: [],
-    aggregated: []
-  };
+export async function GET({ request }) {
+  try {
+    const url = new URL(request.url);
+    const debug = url.searchParams.get("debug");
 
-  // 1) Lire planning → compter les occurrences par recipeId (PAS de Set)
-  const plSnap = await getDocs(collection(db, "planning"));
-  const counts = new Map(); // recipeId -> occurrences
-  for (const d of plSnap.docs) {
-    const recipeId = (d.data()?.recipeId ?? "").toString().trim();
-    if (opts.debug) debug.planning.push({ id: d.id, recipeId });
-    if (!recipeId) continue;
-    counts.set(recipeId, (counts.get(recipeId) || 0) + 1);
-  }
-  if (opts.debug) debug.recipeCounts = Object.fromEntries(counts);
+    // 1. Charger le planning
+    const planningSnap = await getDocs(collection(db, "planning"));
+    const planning = planningSnap.docs.map(d => ({
+      id: d.id,
+      ...d.data(),
+    }));
 
-  const recipeIds = Array.from(counts.keys());
+    // 2. Récupérer toutes les recettes (avec duplication si la même recette est utilisée plusieurs fois)
+    const recipeIds = planning
+      .map(p => p.recipeId)
+      .filter(Boolean);
 
-  // 2) Charger chaque recette une seule fois
-  const recipes = [];
-  for (const id of recipeIds) {
-    try {
-      const r = await getDoc(doc(db, "recipes", id));
-      if (r.exists()) {
-        const data = r.data();
-        recipes.push({ id: r.id, ...data });
-        if (opts.debug) debug.loaded.push({ id: r.id, title: data?.title ?? null, times: counts.get(id) });
-      } else {
-        if (opts.debug) debug.skipped.push({ id, reason: "recipe not found" });
+    const loaded = [];
+    const skipped = [];
+
+    // Compter combien de fois chaque recette apparaît
+    const recipeCount = {};
+    for (const p of planning) {
+      if (p.recipeId) {
+        recipeCount[p.recipeId] = (recipeCount[p.recipeId] || 0) + 1;
       }
-    } catch (e) {
-      if (opts.debug) debug.skipped.push({ id, reason: String(e?.message || e) });
     }
-  }
 
-  // 3) Agréger ingrédients (multiplication par occurrences)
-  const map = new Map(); // key=item|unit -> { item, unit, quantity?, checked:false }
-  const norm = (s) => String(s || "").trim();
-  const key = (item, unit) => `${norm(item).toLowerCase()}|||${norm(unit).toLowerCase()}`;
-
-  for (const r of recipes) {
-    const mult = counts.get(r.id) || 1;
-    const ings = Array.isArray(r.ingredients) ? r.ingredients : [];
-    for (const ing of ings) {
-      const item = (typeof ing === "string" ? ing : ing?.item) || "";
-      if (!item) continue;
-      const low = item.toLowerCase();
-      if (low === "sel" || low === "poivre") continue;
-
-      const baseQty = (typeof ing === "object" && ing.quantity !== undefined)
-        ? Number(ing.quantity)
-        : undefined;
-      const unit = typeof ing === "object" ? (ing.unit || "") : "";
-
-      const k = key(item, unit);
-      const prev = map.get(k);
-
-      // Quantité ajustée par le nombre d'occurrences
-      const adjQty = Number.isFinite(baseQty) ? baseQty * mult : undefined;
-
-      if (!prev) {
-        map.set(k, {
-          item: norm(item),
-          unit: norm(unit),
-          checked: false,
-          ...(Number.isFinite(adjQty) ? { quantity: adjQty } : {})
-        });
-      } else {
-        if (Number.isFinite(prev.quantity) && Number.isFinite(adjQty)) {
-          prev.quantity += adjQty;
-        } else if (prev.quantity === undefined && Number.isFinite(adjQty)) {
-          prev.quantity = adjQty;
+    for (const id of [...new Set(recipeIds)]) {
+      try {
+        const snap = await getDoc(doc(db, "recipes", id));
+        if (snap.exists()) {
+          loaded.push({ id: snap.id, ...snap.data() });
+        } else {
+          skipped.push(id);
         }
-        map.set(k, prev);
+      } catch (e) {
+        console.error("Erreur chargement recette", id, e);
+        skipped.push(id);
       }
     }
-  }
 
-  const items = Array.from(map.values()).sort((a, b) => a.item.localeCompare(b.item, "fr"));
-  if (opts.debug) debug.aggregated = items;
-  return opts.debug ? { items, debug } : { items };
+    // 3. Calcul des totaux (agrégation)
+    const totalsMap = new Map();
+
+    const normalize = (s) =>
+      String(s || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .trim();
+
+    for (const recipe of loaded) {
+      const count = recipeCount[recipe.id] || 1;
+      const ings = Array.isArray(recipe.ingredients) ? recipe.ingredients : [];
+
+      for (const ing of ings) {
+        const item = (typeof ing === "string" ? ing : ing?.item) || "";
+        if (!item) continue;
+
+        // Exclure sel/poivre
+        const raw = item.toLowerCase();
+        if (raw === "sel" || raw === "poivre") continue;
+
+        const quantity =
+          typeof ing === "object" && typeof ing.quantity !== "undefined"
+            ? Number(ing.quantity) * count
+            : undefined;
+        const unit = typeof ing === "object" ? (ing.unit || "") : "";
+
+        const key = `${normalize(item)}|${normalize(unit)}`;
+        const prev = totalsMap.get(key);
+
+        if (!prev) {
+          totalsMap.set(key, {
+            item: item.trim(),
+            quantity: Number.isFinite(quantity) ? quantity : undefined,
+            unit: unit.trim(),
+            checked: false,
+          });
+        } else {
+          if (Number.isFinite(prev.quantity) && Number.isFinite(quantity)) {
+            prev.quantity += quantity;
+          } else if (!Number.isFinite(prev.quantity) && Number.isFinite(quantity)) {
+            prev.quantity = quantity;
+          }
+          totalsMap.set(key, prev);
+        }
+      }
+    }
+
+    const aggregated = Array.from(totalsMap.values()).sort((a, b) =>
+      a.item.localeCompare(b.item, "fr")
+    );
+
+    const result = { ok: true, items: aggregated };
+
+    if (debug) {
+      result.debug = { planning, recipeIds, loaded, skipped, aggregated };
+    }
+
+    return new Response(JSON.stringify(result), {
+      headers: { "content-type": "application/json" },
+    });
+  } catch (err) {
+    console.error("❌ Erreur compute-shopping-totals:", err);
+    return new Response(JSON.stringify({ ok: false, error: String(err) }), {
+      status: 500,
+      headers: { "content-type": "application/json" },
+    });
+  }
 }

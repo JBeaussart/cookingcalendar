@@ -1,28 +1,27 @@
-// src/pages/api/planning/remove.js
+// src/pages/api/remove-recipe.js
 import { db } from "../../firebase";
-import { doc, setDoc, deleteDoc, serverTimestamp } from "firebase/firestore";
-import { computeShoppingTotalsFromPlanning } from "../../lib/computeShoppingTotals";
+import { doc, updateDoc } from "firebase/firestore";
 
 export async function POST({ request }) {
   try {
     const url = new URL(request.url);
-    const day = url.searchParams.get("day"); // ex: "lundi"
-    if (!day) return new Response("Paramètre 'day' manquant.", { status: 400 });
+    const day = url.searchParams.get("day");
 
-    // 1) Retirer la recette du jour (on peut supprimer le doc ou vider recipeId)
-    await deleteDoc(doc(db, "planning", day));
+    if (!day) {
+      return new Response("Paramètre 'day' manquant.", { status: 400 });
+    }
 
-    // 2) Recalculer & sauvegarder la liste (remplacement total)
-    const items = await computeShoppingTotalsFromPlanning();
-    await setDoc(doc(db, "shoppingTotals", "current"), {
-      items,
-      savedAt: serverTimestamp(),
-      updatedBy: "remove"
+    // On supprime la recette associée au jour (on met recipeId = "")
+    await updateDoc(doc(db, "planning", day), { recipeId: "" });
+
+    console.log(`✅ Recette supprimée pour le jour ${day}`);
+
+    return new Response(null, {
+      status: 303,
+      headers: { Location: "/" }, // redirige vers la page planning ("/" chez toi)
     });
-
-    return new Response(null, { status: 303, headers: { Location: "/" } });
-  } catch (e) {
-    console.error("remove error:", e);
+  } catch (err) {
+    console.error("❌ Erreur remove-recipe:", err);
     return new Response("Erreur serveur", { status: 500 });
   }
 }
