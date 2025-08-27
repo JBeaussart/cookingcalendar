@@ -1,66 +1,59 @@
 ---
 import Layout from "../layouts/Layout.astro";
-import { db } from "../firebase";
-import { collection, getDocs } from "firebase/firestore";
-
-let recipes = [];
-const snapshot = await getDocs(collection(db, "recipes"));
-recipes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-const planningSnapshot = await getDocs(collection(db, "planning"));
-const selectedRecipes = planningSnapshot.docs
-  .map(d => recipes.find(r => r.id === d.data().recipeId))
-  .filter(Boolean);
 ---
-
 <Layout title="Liste de courses">
-  <div class="container mx-auto px-4 py-8">
-    <h1 class="text-3xl font-bold mb-6 text-center text-green-600">🛒 Liste de courses</h1>
-
-    <div id="shoppingList" class="bg-white rounded-lg shadow p-6 border border-gray-200">
-      {selectedRecipes.length === 0 ? (
-        <p class="text-gray-700 text-center">Choisis d'abord tes recettes dans le planning pour générer la liste.</p>
-      ) : (
-        <ul class="space-y-2">
-          {selectedRecipes.map(recipe => recipe.ingredients.map((i) => (
-            <li class="flex items-center justify-between p-2 border rounded">
-              <label>
-                <input type="checkbox" class="mr-2 h-5 w-5 text-green-600">
-                {i}
-              </label>
-            </li>
-          )))}
-        </ul>
-      )}
+  <div class="mx-auto max-w-3xl px-4 py-6">
+    <div class="mb-4 flex items-center justify-between">
+      <h1 class="text-2xl font-bold">🛒 Liste de courses</h1>
+      <button id="btnReload" class="rounded bg-gray-700 px-3 py-2 text-sm text-white">Recharger</button>
     </div>
 
-    <div class="mt-4 flex justify-center">
-      <button id="clearAllBtn" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition">
-        Supprimer tous les éléments
-      </button>
-    </div>
+    <ul id="list" class="divide-y divide-gray-200 rounded border bg-white"></ul>
+    <p id="status" class="mt-3 text-sm text-gray-500"></p>
   </div>
 
   <script type="module">
-    const shoppingList = document.getElementById("shoppingList");
-    const clearBtn = document.getElementById("clearAllBtn");
-    const checkboxes = shoppingList.querySelectorAll("input[type=checkbox]");
+    const listEl = document.getElementById("list");
+    const statusEl = document.getElementById("status");
+    const btnReload = document.getElementById("btnReload");
 
-    // Charger état des checkboxes depuis localStorage
-    checkboxes.forEach(cb => {
-      const key = cb.nextSibling.textContent.trim();
-      cb.checked = localStorage.getItem(`checkbox-${key}`) === "true";
-      cb.addEventListener("change", () => {
-        localStorage.setItem(`checkbox-${key}`, cb.checked);
+    let items = []; // [{ item, quantity?, unit?, checked? }]
+
+    function render() {
+      listEl.innerHTML = "";
+      if (!Array.isArray(items) || items.length === 0) {
+        listEl.innerHTML = `<li class="px-4 py-3 text-sm text-gray-600">Aucune recette planifiée.</li>`;
+        return;
+      }
+      items.forEach((row) => {
+        const li = document.createElement("li");
+        li.className = "flex items-center gap-3 px-4 py-3";
+        const txt = (typeof row.quantity === "number" && !isNaN(row.quantity))
+          ? `${row.item} : ${row.quantity}${row.unit ? " " + row.unit : ""}`
+          : row.item;
+        li.innerHTML = `
+          <input type="checkbox" class="h-5 w-5 text-green-600" ${row.checked ? "checked" : ""} disabled>
+          <span>${txt}</span>
+        `;
+        listEl.appendChild(li);
       });
-    });
+    }
 
-    // Supprimer tous les éléments (réinitialiser checkboxes et storage)
-    clearBtn.addEventListener("click", () => {
-      checkboxes.forEach(cb => cb.checked = false);
-      Array.from(localStorage.keys())
-        .filter(k => k.startsWith("checkbox-"))
-        .forEach(k => localStorage.removeItem(k));
-    });
+    async function load() {
+      statusEl.textContent = "Chargement…";
+      try {
+        const r = await fetch("/api/save-shopping-totals", { method: "GET" });
+        const j = await r.json();
+        items = Array.isArray(j.items) ? j.items : [];
+        statusEl.textContent = "OK";
+        render();
+      } catch (e) {
+        console.error(e);
+        statusEl.textContent = "Erreur de chargement";
+      }
+    }
+
+    btnReload.addEventListener("click", load);
+    await load();
   </script>
 </Layout>
