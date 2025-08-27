@@ -1,111 +1,140 @@
 ---
-/* src/pages/recipes/[id].astro */
-export const prerender = false;
-
 import Layout from "../../layouts/Layout.astro";
 import { db } from "../../firebase";
 import { doc, getDoc } from "firebase/firestore";
 
-// id de la recette
 const { id } = Astro.params;
 
-// récupère le jour passé en query (ex: /recipes/abc?day=lundi)
-const selectedDay = Astro.url.searchParams.get("day") || "";
+const recipe = await (async () => {
+  try {
+    const ref = doc(db, "recipes", id);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) return null;
+    return { id: snap.id, ...snap.data() };
+  } catch (e) {
+    console.error(e);
+    return null;
+  }
+})();
 
-// charge la recette
-let recipe = null;
-try {
-  const snap = await getDoc(doc(db, "recipes", id));
-  if (snap.exists()) recipe = { id: snap.id, ...snap.data() };
-} catch (e) {
-  console.error(e);
-}
-
-const title = recipe?.title ?? "Recette";
-const imageSrc =
-  recipe?.image && String(recipe.image).trim()
-    ? recipe.image
-    : "/images/default-recipe.jpg";
-
-const ingredients = Array.isArray(recipe?.ingredients) ? recipe.ingredients : [];
-const steps = Array.isArray(recipe?.steps) ? recipe.steps : [];
-
-function formatIngredient(i) {
-  if (typeof i === "string") return i;
-  const item = i?.item ?? "";
-  const quantity = i?.quantity;
-  const unit = i?.unit ?? "";
-  return quantity ? `${item}: ${quantity} ${unit}` : item;
-}
+const DEFAULT_IMG = "/images/default-recipe.jpg";
 ---
 
-<Layout title={title}>
+<Layout title={recipe?.title || "Recette"}>
   <div class="container mx-auto px-4 py-12">
-
-    <!-- Header + bouton + si un jour est fourni -->
-    <div class="flex items-start justify-between gap-4 mb-8">
-      <h1 class="text-3xl md:text-5xl font-extrabold text-gray-900">{title}</h1>
-
-      {selectedDay && recipe && (
-        <form method="post" action={`/api/assign-recipe?day=${encodeURIComponent(selectedDay)}&id=${encodeURIComponent(recipe.id)}`}>
-          <button
-            type="submit"
-            class="inline-flex items-center justify-center rounded-xl p-3 bg-green-600 text-white shadow-md hover:bg-green-700 transition"
-            title={`Ajouter au ${selectedDay}`}
-            aria-label={`Ajouter au ${selectedDay}`}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg"
-                 fill="none" viewBox="0 0 24 24"
-                 stroke-width="2" stroke="currentColor"
-                 class="w-5 h-5">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-            </svg>
-          </button>
-        </form>
-      )}
-    </div>
-
-    <div class="overflow-hidden rounded-xl shadow-lg mb-10">
-      <img
-        src={imageSrc}
-        alt={title}
-        class="w-full h-72 object-cover transform hover:scale-105 transition duration-500"
-      />
-    </div>
-
     {recipe ? (
-      <div class="grid gap-8 md:grid-cols-2">
-        <section class="bg-yellow-50 rounded-xl p-6 shadow-lg hover:shadow-2xl transition">
-          <h2 class="flex items-center text-2xl font-semibold mb-4 text-yellow-800">
-            <span class="mr-2">🛒</span> Ingrédients
-          </h2>
-          <ul class="list-disc list-inside space-y-2 text-gray-700">
-            {ingredients.map((i, idx) => <li key={idx}>{formatIngredient(i)}</li>)}
-          </ul>
-        </section>
+      <>
+        <div class="relative">
+          <div class="overflow-hidden rounded-xl shadow-lg mb-8">
+            <img
+              src={recipe.image || DEFAULT_IMG}
+              alt={recipe.title}
+              class="w-full h-72 object-cover transform hover:scale-105 transition duration-500"
+              onerror={`this.src='${DEFAULT_IMG}'`}
+            />
+          </div>
 
-        <section class="bg-green-50 rounded-xl p-6 shadow-lg hover:shadow-2xl transition">
-          <h2 class="flex items-center text-2xl font-semibold mb-4 text-green-800">
-            <span class="mr-2">👩‍🍳</span> Préparation
-          </h2>
-          <ol class="list-decimal list-inside space-y-2 text-gray-700">
-            {steps.map((s, idx) => <li key={idx}>{s}</li>)}
-          </ol>
-        </section>
-      </div>
+          <!-- Le bouton sera injecté ici si ?day=... -->
+          <div id="addBtnContainer" class="absolute right-4 top-4"></div>
+        </div>
+
+        <h1 class="text-4xl md:text-5xl font-extrabold text-center mb-12 text-gray-900">
+          {recipe.title}
+        </h1>
+
+        <div class="grid gap-8 md:grid-cols-2">
+          <section class="bg-yellow-50 rounded-xl p-6 shadow-lg hover:shadow-2xl transition">
+            <h2 class="flex items-center text-2xl font-semibold mb-4 text-yellow-800">
+              <span class="mr-2">🛒</span> Ingrédients
+            </h2>
+            <ul class="list-disc list-inside space-y-2 text-gray-700">
+              {recipe.ingredients.map((i) => (
+                <li>
+                  {typeof i === "object" && i.quantity
+                    ? `${i.item}: ${i.quantity} ${i.unit || ""}`
+                    : typeof i === "object"
+                    ? i.item
+                    : i}
+                </li>
+              ))}
+            </ul>
+          </section>
+
+          <section class="bg-green-50 rounded-xl p-6 shadow-lg hover:shadow-2xl transition">
+            <h2 class="flex items-center text-2xl font-semibold mb-4 text-green-800">
+              <span class="mr-2">👩‍🍳</span> Préparation
+            </h2>
+            <ol class="list-decimal list-inside space-y-2 text-gray-700">
+              {recipe.steps.map((s) => <li>{s}</li>)}
+            </ol>
+          </section>
+        </div>
+
+        <div class="mt-12 text-center">
+          <a
+            href="/recipes"
+            class="inline-block bg-blue-500 hover:bg-blue-600 text-white font-medium py-3 px-6 rounded-xl shadow-lg transition transform hover:-translate-y-1"
+          >
+            ← Retour à toutes les recettes
+          </a>
+        </div>
+
+        <!-- Passe l'id au client proprement -->
+        <div id="recipe-data" data-id={recipe.id} class="hidden"></div>
+      </>
     ) : (
       <p class="text-center text-gray-500">Recette introuvable.</p>
     )}
-
-    <div class="mt-12 text-center flex items-center justify-center gap-3">
-      <a href="/recipes" class="inline-flex items-center bg-blue-500 hover:bg-blue-600 text-white font-medium py-3 px-6 rounded-xl shadow-lg transition">
-        ← Retour à toutes les recettes
-      </a>
-      {selectedDay && (
-        <a href={`/?highlight=${encodeURIComponent(selectedDay)}`} class="text-sm text-gray-600 hover:text-gray-800 underline">
-          Voir le planning ({selectedDay})
-        </a>
-      )}
-    </div>
   </div>
+
+  <script is:inline>
+    document.addEventListener("DOMContentLoaded", () => {
+      const params = new URLSearchParams(window.location.search);
+      const dayParam = (params.get("day") || "").toLowerCase();
+      const addBtnContainer = document.getElementById("addBtnContainer");
+      const dataEl = document.getElementById("recipe-data");
+      const recipeId = dataEl ? dataEl.getAttribute("data-id") : null;
+
+      // Debug utile
+      console.log("[detail] dayParam =", dayParam);
+      console.log("[detail] recipeId =", recipeId);
+
+      if (!dayParam || !recipeId) return; // pas de bouton si pas de contexte planning
+
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className =
+        "inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/90 " +
+        "text-green-600 ring-1 ring-green-200 shadow hover:bg-white hover:text-green-700 hover:ring-green-300 transition";
+      btn.title = `Ajouter au ${dayParam}`;
+      btn.setAttribute("aria-label", `Ajouter cette recette au ${dayParam}`);
+      btn.innerHTML =
+        '<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">' +
+        '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16M20 12H4" />' +
+        "</svg>";
+
+      btn.addEventListener("click", async () => {
+        try {
+          console.log("[detail] POST /api/assign-recipe", { day: dayParam, id: recipeId });
+          const res = await fetch("/api/assign-recipe", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ day: dayParam, id: recipeId }),
+          });
+          console.log("[detail] response status =", res.status);
+          if (!res.ok) {
+            const txt = await res.text().catch(() => "");
+            console.warn("[detail] response not ok, body =", txt);
+            throw new Error("HTTP " + res.status);
+          }
+          window.location.href = "/"; // ta page planning
+        } catch (err) {
+          console.error("Assignation échouée:", err);
+          alert("Impossible d’ajouter la recette au planning.");
+        }
+      });
+
+      addBtnContainer.appendChild(btn);
+    });
+  </script>
 </Layout>

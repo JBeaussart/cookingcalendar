@@ -1,33 +1,25 @@
-// src/pages/api/planning/assign.js
+// src/pages/api/assign-recipe.js
 import { db } from "../../firebase";
-import { doc, setDoc, serverTimestamp } from "firebase/firestore";
-import { computeShoppingTotalsFromPlanning } from "../../lib/computeShoppingTotals";
+import { doc, setDoc } from "firebase/firestore";
 
 export async function POST({ request }) {
   try {
-    const url = new URL(request.url);
-    const day = url.searchParams.get("day");      // ex: "lundi"
-    const id = url.searchParams.get("id");        // recipeId
+    const body = await request.json();
+    const { day, id } = body;
 
     if (!day || !id) {
-      return new Response("Paramètres manquants (day,id).", { status: 400 });
+      return new Response("Paramètres manquants (day, id).", { status: 400 });
     }
 
-    // 1) Assigner la recette au jour (doc id = nom du jour)
+    // On stocke dans la collection planning : 1 doc = 1 jour
     await setDoc(doc(db, "planning", day), { recipeId: id }, { merge: true });
 
-    // 2) Recalculer & sauvegarder la liste de courses (remplacement total)
-    const items = await computeShoppingTotalsFromPlanning();
-    await setDoc(doc(db, "shoppingTotals", "current"), {
-      items,
-      savedAt: serverTimestamp(),
-      updatedBy: "assign"
+    return new Response(JSON.stringify({ ok: true }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
     });
-
-    // Rediriger où tu veux (planning)
-    return new Response(null, { status: 303, headers: { Location: "/" } });
-  } catch (e) {
-    console.error("assign error:", e);
+  } catch (err) {
+    console.error("Erreur assign-recipe:", err);
     return new Response("Erreur serveur", { status: 500 });
   }
 }

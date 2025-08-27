@@ -1,101 +1,202 @@
 ---
-/* src/pages/recipes/index.astro */
 import Layout from "../../layouts/Layout.astro";
 import { db } from "../../firebase";
 import { collection, getDocs } from "firebase/firestore";
 
-// Récupère le jour éventuellement passé en query (ex: /recipes?day=lundi)
-const selectedDay = Astro.url.searchParams.get("day");
-
-// Charge les recettes depuis Firestore
 const snap = await getDocs(collection(db, "recipes"));
-const recipes = snap.docs.map((d) => ({ id: d.id, ...d.data() })) as Array<{
-  id: string;
-  title: string;
-  image?: string;
-}>;
+const recipes = snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) }));
+
+const DEFAULT_IMG = "/images/default-recipe.jpg";
+const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
 ---
 
 <Layout title="Recettes">
-  <div class="container mx-auto px-4 py-8">
+  <div class="mx-auto max-w-6xl px-4 py-8">
+    <h1 class="text-2xl font-bold tracking-tight text-gray-900 mb-5">
+      📖 Recettes disponibles
+    </h1>
+    <!-- Barre d’actions -->
+    <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 sm:items-center sm:justify-between">
+      <div class="w-full sm:max-w-md">
+        <input
+          id="searchInput"
+          type="text"
+          placeholder="Rechercher une recette…"
+          class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+        />
+      </div>
 
-    <!-- Barre de recherche centrée -->
-    <div class="flex justify-center mb-8">
-      <input
-        id="searchInput"
-        type="text"
-        placeholder="Rechercher une recette..."
-        class="w-full max-w-md px-4 py-2 border rounded-xl shadow-sm focus:ring-2 focus:ring-blue-400 focus:outline-none"
-        value=""
-      />
+      <div class="flex w-full sm:w-auto items-center gap-4">
+        <div class="flex items-center gap-2">
+          <label for="saltFilter" class="text-sm text-gray-700">Type</label>
+          <select
+            id="saltFilter"
+            class="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+          >
+            <option value="all">Tous</option>
+            <option value="salty">Salé</option>
+            <option value="sweet">Sucré</option>
+          </select>
+        </div>
+
+        <label class="inline-flex items-center gap-2 select-none">
+          <input id="mamanFilter" type="checkbox" class="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-400" />
+          <span class="text-sm text-gray-800">Seulement recettes de maman</span>
+        </label>
+      </div>
     </div>
 
-    <!-- Rappel du jour ciblé (si on vient du planning) -->
-    {selectedDay && (
-      <p class="text-center text-sm text-gray-600 mb-4">
-        Jour sélectionné : <span class="font-semibold capitalize">{selectedDay}</span>
-      </p>
-    )}
+    <!-- Grille -->
+    <div id="grid" class="mt-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"></div>
 
-    <!-- Grille des recettes -->
-    <div id="recipeGrid" class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-      {recipes.map((r) => {
-        const img = r.image && String(r.image).trim() ? r.image : "/images/default-recipe.jpg";
-        const detailHref = `/recipes/${r.id}${selectedDay ? `?day=${encodeURIComponent(selectedDay)}` : ""}`;
-        return (
-          <div class="recipe-card bg-white rounded-lg shadow overflow-hidden hover:shadow-lg transition">
-            <a href={detailHref} class="block">
-              <img src={img} alt={r.title} class="w-full h-48 object-cover" />
-            </a>
-            <div class="p-4 flex items-start justify-between gap-3">
-              <a href={detailHref} class="flex-1">
-                <h2 class="font-semibold text-lg">{r.title}</h2>
-              </a>
-
-              {selectedDay && (
-                <form method="post" action={`/api/assign-recipe?day=${encodeURIComponent(selectedDay)}&id=${encodeURIComponent(r.id)}`}>
-                  <button
-                    type="submit"
-                    class="bg-green-600 hover:bg-green-700 text-white p-2 rounded-md shadow-md transition flex items-center justify-center"
-                    title={`Ajouter au ${selectedDay}`}
-                    aria-label={`Ajouter au ${selectedDay}`}
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg"
-                         fill="none" viewBox="0 0 24 24"
-                         stroke-width="2" stroke="currentColor"
-                         class="w-5 h-5">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                    </svg>
-                  </button>
-                </form>
-              )}
-            </div>
-          </div>
-        );
-      })}
-    </div>
+    <!-- Données encodées -->
+    <div id="recipes-data" data-recipes={RECIPES_ENC} class="hidden"></div>
   </div>
 
-  <script type="module">
-    // Recherche insensible aux accents et à la casse
-    const searchInput = document.getElementById("searchInput");
-    const recipeGrid = document.getElementById("recipeGrid");
-    const cards = Array.from(recipeGrid.children);
+  <script is:inline>
+    document.addEventListener("DOMContentLoaded", () => {
+      const DEFAULT_IMG = "/images/default-recipe.jpg";
 
-    function normalize(str) {
-      return (str || "")
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .toLowerCase();
-    }
+      // Données
+      const dataEl = document.getElementById("recipes-data");
+      const enc = dataEl?.getAttribute("data-recipes") || "";
+      /** @type {{id:string,title:string,image?:string,maman?:boolean,salt?:boolean}[]} */
+      let ALL = [];
+      try { ALL = JSON.parse(decodeURIComponent(enc)) || []; }
+      catch (e) { console.error("Erreur de décodage des recettes:", e); ALL = []; }
 
-    searchInput.addEventListener("input", () => {
-      const q = normalize(searchInput.value);
-      cards.forEach((card) => {
-        const titleEl = card.querySelector("h2");
-        const title = normalize(titleEl?.textContent || "");
-        card.style.display = title.includes(q) ? "" : "none";
-      });
+      // UI
+      const grid = document.getElementById("grid");
+      const searchInput = document.getElementById("searchInput");
+      const mamanFilter = document.getElementById("mamanFilter");
+      const saltFilter = document.getElementById("saltFilter");
+
+      // Paramètre de jour depuis le planning : /recipes?day=lundi
+      const params = new URLSearchParams(window.location.search);
+      const dayParam = (params.get("day") || "").toLowerCase();
+
+      const normalize = (s) =>
+        String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+
+      function makeBadge(text, cls) {
+        const span = document.createElement("span");
+        span.className = `inline-flex items-center gap-1 rounded-full px-2 py-0.5 border ${cls}`;
+        span.textContent = text;
+        return span;
+      }
+
+      function makeCard(r) {
+        // Carte cliquable
+        const card = document.createElement("div");
+        const params = new URLSearchParams(window.location.search);
+        const dayParam = (params.get("day") || "").toLowerCase();
+        card.className = "group relative flex flex-col rounded-xl border border-gray-200 bg-white shadow-sm hover:shadow-md transition overflow-hidden cursor-pointer";
+
+        card.addEventListener("click", () => {
+          const q = dayParam ? `?day=${encodeURIComponent(dayParam)}` : "";
+          window.location.href = `/recipes/${r.id}${q}`;
+        });
+
+        // Bouton ➕ en haut à droite (uniquement si dayParam)
+        if (dayParam) {
+          const addBtn = document.createElement("button");
+          addBtn.type = "button";
+          addBtn.className =
+            "absolute right-2 top-2 z-10 inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/90 " +
+            "text-green-600 ring-1 ring-green-200 shadow hover:bg-white hover:text-green-700 hover:ring-green-300 transition";
+          addBtn.title = `Ajouter au ${dayParam}`;
+          addBtn.setAttribute("aria-label", `Ajouter "${r.title}" au ${dayParam}`);
+          addBtn.innerHTML =
+            '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">' +
+            '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16M20 12H4" />' +
+            '</svg>';
+          // Très important : bloquer la navigation carte
+          addBtn.addEventListener("click", async (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            try {
+              const res = await fetch("/api/assign-recipe", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ day: dayParam, id: r.id }),
+              });
+              if (!res.ok) throw new Error("assign failed");
+              window.location.href = "/"; // ta page planning
+            } catch (err) {
+              console.error("Assignation échouée:", err);
+              alert("Impossible d’ajouter la recette au planning.");
+            }
+          });
+          card.appendChild(addBtn);
+        }
+
+        // Image
+        const imgWrap = document.createElement("div");
+        imgWrap.className = "aspect-[4/3] w-full overflow-hidden bg-gray-100";
+        const img = document.createElement("img");
+        img.loading = "lazy";
+        img.className = "h-full w-full object-cover group-hover:scale-[1.03] transition-transform duration-300";
+        img.src = r.image || DEFAULT_IMG;
+        img.alt = r.title || "";
+        img.onerror = () => { img.src = DEFAULT_IMG; };
+        imgWrap.appendChild(img);
+        card.appendChild(imgWrap);
+
+        // Corps
+        const body = document.createElement("div");
+        body.className = "flex-1 flex flex-col p-3";
+
+        // Titre (span, pas de <a> pour éviter les ancres imbriquées)
+        const title = document.createElement("span");
+        title.className = "text-sm font-semibold text-gray-900 line-clamp-2 group-hover:underline";
+        title.textContent = r.title || "";
+        body.appendChild(title);
+
+        const meta = document.createElement("div");
+        meta.className = "mt-2 text-xs text-gray-500 flex items-center gap-2";
+        if (r.maman === true) {
+          meta.appendChild(makeBadge("Recette de maman", "border-pink-300 text-pink-700 bg-pink-50"));
+        }
+        if (typeof r.salt === "boolean") {
+          meta.appendChild(makeBadge(r.salt ? "Salé" : "Sucré", "border-gray-200 text-gray-600"));
+        }
+        body.appendChild(meta);
+
+        card.appendChild(body);
+        return card;
+      }
+
+      function render(list) {
+        grid.innerHTML = "";
+        if (!Array.isArray(list) || list.length === 0) {
+          const empty = document.createElement("div");
+          empty.className = "col-span-full text-center text-gray-500";
+          empty.textContent = "Aucune recette ne correspond à votre recherche.";
+          grid.appendChild(empty);
+          return;
+        }
+        list.forEach((r) => grid.appendChild(makeCard(r)));
+      }
+
+      function apply() {
+        const q = normalize(searchInput.value);
+        const mamanOnly = mamanFilter.checked;
+        const mode = saltFilter.value; // all | salty | sweet
+
+        let list = ALL.filter((r) => normalize(r.title).includes(q));
+        if (mamanOnly) list = list.filter((r) => r.maman === true);
+        if (mode === "salty") list = list.filter((r) => r.salt === true);
+        else if (mode === "sweet") list = list.filter((r) => r.salt === false);
+
+        list.sort((a, b) => a.title.localeCompare(b.title, "fr"));
+        render(list);
+      }
+
+      searchInput.addEventListener("input", apply);
+      mamanFilter.addEventListener("change", apply);
+      saltFilter.addEventListener("change", apply);
+
+      apply();
     });
   </script>
 </Layout>
