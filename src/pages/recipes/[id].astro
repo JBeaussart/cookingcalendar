@@ -11,8 +11,7 @@ const recipe = await (async () => {
     const snap = await getDoc(ref);
     if (!snap.exists()) return null;
     return { id: snap.id, ...snap.data() };
-  } catch (e) {
-    console.error(e);
+  } catch {
     return null;
   }
 })();
@@ -33,14 +32,26 @@ const DEFAULT_IMG = "/images/default-recipe.jpg";
               onerror={`this.src='${DEFAULT_IMG}'`}
             />
           </div>
-
-          <!-- Le bouton sera injecté ici si ?day=... -->
           <div id="addBtnContainer" class="absolute right-4 top-4"></div>
         </div>
 
-        <h1 class="text-4xl md:text-5xl font-extrabold text-center mb-12 text-gray-900">
-          {recipe.title}
-        </h1>
+        <div class="flex items-start justify-between gap-4 mb-6">
+          <h1 class="text-3xl md:text-4xl font-extrabold text-gray-900">
+            {recipe.title}
+          </h1>
+          <div class="flex items-center gap-2">
+            <button id="openEdit"
+              class="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-800 shadow-sm hover:bg-gray-50 transition"
+              title="Modifier la recette">
+                Modifier
+            </button>
+            <button id="deleteRecipe"
+              class="inline-flex items-center gap-2 rounded-lg bg-rose-600 px-3 py-2 text-sm font-medium text-white shadow hover:bg-rose-700 transition"
+              title="Supprimer la recette">
+                Supprimer
+            </button>
+          </div>
+        </div>
 
         <div class="grid gap-8 md:grid-cols-2">
           <section class="bg-yellow-50 rounded-xl p-6 shadow-lg hover:shadow-2xl transition">
@@ -79,8 +90,95 @@ const DEFAULT_IMG = "/images/default-recipe.jpg";
           </a>
         </div>
 
-        <!-- Passe l'id au client proprement -->
-        <div id="recipe-data" data-id={recipe.id} class="hidden"></div>
+        {/* Données pour le JS */}
+        <div id="recipe-data"
+             data-id={recipe.id}
+             data-title={recipe.title}
+             data-image={recipe.image || ""}
+             data-ingredients={encodeURIComponent(JSON.stringify(recipe.ingredients || []))}
+             data-steps={encodeURIComponent(JSON.stringify(recipe.steps || []))}
+             data-maman={String(!!recipe.maman)}
+             data-salt={String(!!recipe.salt)}
+             class="hidden"></div>
+
+        {/* MODAL d’édition */}
+        <div id="editModal" class="fixed inset-0 z-50 hidden">
+          <div class="absolute inset-0 bg-black/40"></div>
+          <div class="relative mx-auto my-8 max-w-2xl rounded-2xl bg-white p-5 shadow-xl">
+            <div class="flex items-center justify-between mb-3">
+              <h2 class="text-lg font-semibold text-gray-900">Modifier la recette</h2>
+              <button id="closeEdit" class="rounded-md p-2 hover:bg-gray-100" aria-label="Fermer">✕</button>
+            </div>
+
+            <form id="editRecipeForm" class="space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Titre *</label>
+                <input id="eTitle" type="text"
+                  class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                  required />
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Image (URL)</label>
+                <input id="eImage" type="url" placeholder="https://…"
+                  class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <label class="inline-flex items-center gap-2">
+                  <input id="eMaman" type="checkbox"
+                    class="h-5 w-5 rounded border-gray-300 text-emerald-600 focus:ring-2 focus:ring-emerald-400" />
+                  <span class="text-sm text-gray-800">Recette de maman</span>
+                </label>
+
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Type *</label>
+                  <select id="eSalt"
+                    class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                    <option value="salty">Salé</option>
+                    <option value="sweet">Sucré</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <div class="flex items-center justify-between mb-2">
+                  <label class="block text-sm font-medium text-gray-700">Ingrédients *</label>
+                  <button type="button" id="addIngRow" class="text-emerald-600 hover:text-emerald-700 text-sm">
+                    ➕ Ajouter un ingrédient
+                  </button>
+                </div>
+                <div id="ingList" class="space-y-2"></div>
+              </div>
+
+              <div>
+                <div class="flex items-center justify-between mb-2">
+                  <label class="block text-sm font-medium text-gray-700">Étapes *</label>
+                  <button type="button" id="addStepRow" class="text-emerald-600 hover:text-emerald-700 text-sm">
+                    ➕ Ajouter une étape
+                  </button>
+                </div>
+                <div id="stepsList" class="space-y-2"></div>
+              </div>
+
+              <div class="flex items-center justify-between gap-3 pt-2">
+                <button type="button" id="cancelEdit"
+                  class="rounded-lg border border-gray-300 px-4 py-2 text-sm hover:bg-gray-50">Annuler</button>
+                <div class="flex items-center gap-3">
+                  <button type="button" id="dangerDelete"
+                    class="inline-flex items-center gap-2 rounded-lg bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700 transition">
+                    Supprimer la recette
+                  </button>
+                  <button type="submit"
+                    class="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 active:scale-[0.98] transition">
+                    Enregistrer
+                  </button>
+                </div>
+              </div>
+              <p id="editStatus" class="text-sm text-gray-500 mt-1"></p>
+            </form>
+          </div>
+        </div>
       </>
     ) : (
       <p class="text-center text-gray-500">Recette introuvable.</p>
@@ -89,52 +187,208 @@ const DEFAULT_IMG = "/images/default-recipe.jpg";
 
   <script is:inline>
     document.addEventListener("DOMContentLoaded", () => {
+      // ----- Bouton + si ?day=... -----
       const params = new URLSearchParams(window.location.search);
       const dayParam = (params.get("day") || "").toLowerCase();
       const addBtnContainer = document.getElementById("addBtnContainer");
       const dataEl = document.getElementById("recipe-data");
       const recipeId = dataEl ? dataEl.getAttribute("data-id") : null;
 
-      // Debug utile
-      console.log("[detail] dayParam =", dayParam);
-      console.log("[detail] recipeId =", recipeId);
+      if (dayParam && recipeId) {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className =
+          "inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/90 " +
+          "text-green-600 ring-1 ring-green-200 shadow hover:bg-white hover:text-green-700 hover:ring-green-300 transition";
+        btn.title = `Ajouter au ${dayParam}`;
+        btn.setAttribute("aria-label", `Ajouter cette recette au ${dayParam}`);
+        btn.innerHTML =
+          '<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">' +
+          '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16M20 12H4" />' +
+          "</svg>";
+        btn.addEventListener("click", async () => {
+          try {
+            const res = await fetch("/api/assign-recipe", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ day: dayParam, id: recipeId }),
+            });
+            if (!res.ok) throw new Error("assign failed");
+            window.location.href = "/";
+          } catch (err) {
+            console.error("Assignation échouée:", err);
+            alert("Impossible d’ajouter la recette au planning.");
+          }
+        });
+        addBtnContainer.appendChild(btn);
+      }
 
-      if (!dayParam || !recipeId) return; // pas de bouton si pas de contexte planning
+      // ----- Édition & suppression -----
+      const openEdit = document.getElementById("openEdit");
+      const editModal = document.getElementById("editModal");
+      const closeEdit = document.getElementById("closeEdit");
+      const cancelEdit = document.getElementById("cancelEdit");
+      const editForm = document.getElementById("editRecipeForm");
+      const editStatus = document.getElementById("editStatus");
 
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className =
-        "inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/90 " +
-        "text-green-600 ring-1 ring-green-200 shadow hover:bg-white hover:text-green-700 hover:ring-green-300 transition";
-      btn.title = `Ajouter au ${dayParam}`;
-      btn.setAttribute("aria-label", `Ajouter cette recette au ${dayParam}`);
-      btn.innerHTML =
-        '<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">' +
-        '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16M20 12H4" />' +
-        "</svg>";
+      const eTitle = document.getElementById("eTitle");
+      const eImage = document.getElementById("eImage");
+      const eMaman = document.getElementById("eMaman");
+      const eSalt = document.getElementById("eSalt");
+      const ingList = document.getElementById("ingList");
+      const addIngRow = document.getElementById("addIngRow");
+      const stepsList = document.getElementById("stepsList");
+      const addStepRow = document.getElementById("addStepRow");
 
-      btn.addEventListener("click", async () => {
+      function openModal() { editModal.classList.remove("hidden"); }
+      function closeModal() { editModal.classList.add("hidden"); editStatus.textContent = ""; }
+
+      function addIngredientRow(values = { item: "", quantity: "", unit: "" }) {
+        const row = document.createElement("div");
+        row.className = "ingredient-row grid grid-cols-7 gap-2";
+        row.innerHTML = `
+          <input type="text" placeholder="Ingrédient" class="col-span-3 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" value="${values.item || ""}" required>
+          <input type="number" step="any" placeholder="Qté" class="col-span-2 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" value="${values.quantity ?? ""}">
+          <input type="text" placeholder="Unité" class="col-span-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" value="${values.unit || ""}">
+          <button type="button" class="col-span-1 rounded-md border border-gray-200 hover:bg-gray-50 text-gray-600 text-sm" title="Supprimer">✕</button>
+        `;
+        const delBtn = row.querySelector("button");
+        delBtn.addEventListener("click", () => row.remove());
+        ingList.appendChild(row);
+      }
+
+      function addStepRowEl(value = "") {
+        const row = document.createElement("div");
+        row.className = "step-row grid grid-cols-6 gap-2";
+        row.innerHTML = `
+          <input type="text" placeholder="Décrire l’étape…" class="col-span-5 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" value="${value}">
+          <button type="button" class="col-span-1 rounded-md border border-gray-200 hover:bg-gray-50 text-gray-600 text-sm" title="Supprimer">✕</button>
+        `;
+        const delBtn = row.querySelector("button");
+        delBtn.addEventListener("click", () => row.remove());
+        stepsList.appendChild(row);
+      }
+
+      function fillFormFromDataset() {
+        const d = document.getElementById("recipe-data");
+        if (!d) return;
+        eTitle.value = d.getAttribute("data-title") || "";
+        eImage.value = d.getAttribute("data-image") || "";
+        eMaman.checked = d.getAttribute("data-maman") === "true";
+        eSalt.value = (d.getAttribute("data-salt") === "true") ? "salty" : "sweet";
+
+        ingList.innerHTML = "";
+        let ing = [];
+        try { ing = JSON.parse(decodeURIComponent(d.getAttribute("data-ingredients") || "")) || []; }
+        catch { ing = []; }
+        if (ing.length === 0) ing.push({ item: "", quantity: "", unit: "" });
+        for (const row of ing) addIngredientRow({
+          item: row.item || "",
+          quantity: typeof row.quantity === "number" ? row.quantity : "",
+          unit: row.unit || ""
+        });
+
+        stepsList.innerHTML = "";
+        let st = [];
+        try { st = JSON.parse(decodeURIComponent(d.getAttribute("data-steps") || "")) || []; }
+        catch { st = []; }
+        if (st.length === 0) st.push("");
+        for (const s of st) addStepRowEl(s);
+      }
+
+      addIngRow.addEventListener("click", () => addIngredientRow());
+      addStepRow.addEventListener("click", () => addStepRowEl());
+
+      const openEditBtn = document.getElementById("openEdit");
+      const closeEditBtn = document.getElementById("closeEdit");
+      const cancelEditBtn = document.getElementById("cancelEdit");
+      openEditBtn.addEventListener("click", () => { fillFormFromDataset(); openModal(); });
+      closeEditBtn.addEventListener("click", () => closeModal());
+      cancelEditBtn.addEventListener("click", (e) => { e.preventDefault(); closeModal(); });
+      editModal.addEventListener("click", (e) => {
+        if (e.target === editModal.firstElementChild) closeModal();
+      });
+
+      editForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        editStatus.textContent = "Enregistrement…";
+
+        const ingRows = Array.from(ingList.querySelectorAll(".ingredient-row"));
+        const ingredients = ingRows.map((row) => {
+          const inputs = row.querySelectorAll("input");
+          const item = inputs[0].value.trim();
+          const qRaw = inputs[1].value.trim();
+          const unit = inputs[2].value.trim();
+          if (!item) return null;
+          const obj = { item };
+          if (qRaw !== "" && !isNaN(Number(qRaw))) obj.quantity = Number(qRaw);
+          if (unit) obj.unit = unit;
+          return obj;
+        }).filter(Boolean);
+
+        const stepInputs = Array.from(stepsList.querySelectorAll(".step-row input"));
+        const steps = stepInputs.map(el => el.value.trim()).filter(Boolean);
+
+        const payload = {
+          id: recipeId,
+          title: eTitle.value.trim(),
+          image: eImage.value.trim(),
+          maman: !!eMaman.checked,
+          salt: (eSalt.value === "salty"),
+          ingredients,
+          steps,
+        };
+
         try {
-          console.log("[detail] POST /api/assign-recipe", { day: dayParam, id: recipeId });
-          const res = await fetch("/api/assign-recipe", {
-            method: "POST",
+          const res = await fetch("/api/update-recipe", {
+            method: "PATCH",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ day: dayParam, id: recipeId }),
+            body: JSON.stringify(payload),
           });
-          console.log("[detail] response status =", res.status);
           if (!res.ok) {
             const txt = await res.text().catch(() => "");
-            console.warn("[detail] response not ok, body =", txt);
-            throw new Error("HTTP " + res.status);
+            throw new Error("HTTP " + res.status + " " + txt);
           }
-          window.location.href = "/"; // ta page planning
+          editStatus.textContent = "✅ Modifications enregistrées";
+          setTimeout(() => window.location.reload(), 400);
         } catch (err) {
-          console.error("Assignation échouée:", err);
-          alert("Impossible d’ajouter la recette au planning.");
+          console.error(err);
+          editStatus.textContent = "❌ Erreur lors de l'enregistrement";
         }
       });
 
-      addBtnContainer.appendChild(btn);
+      // ----- Suppression -----
+      const deleteTopBtn = document.getElementById("deleteRecipe");
+      const deleteModalBtn = document.getElementById("dangerDelete");
+
+      async function doDelete() {
+        if (!recipeId) return;
+        const ok = confirm("Supprimer définitivement cette recette ?\nElle sera retirée aussi du planning si elle y est utilisée.");
+        if (!ok) return;
+        try {
+          const res = await fetch(`/api/delete-recipe?id=${encodeURIComponent(recipeId)}`, {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+          });
+          if (!res.ok) {
+            const txt = await res.text().catch(() => "");
+            throw new Error("HTTP " + res.status + " " + txt);
+          }
+          const data = await res.json().catch(() => ({}));
+          const target = data?.redirect || "/recipes";
+          try {
+            window.location.replace(target);
+          } catch {
+            window.location.replace("/recettes");
+          }
+        } catch (err) {
+          console.error("delete error:", err);
+          alert("Impossible de supprimer la recette.");
+        }
+      }
+
+      deleteTopBtn.addEventListener("click", doDelete);
+      deleteModalBtn.addEventListener("click", doDelete);
     });
   </script>
 </Layout>
