@@ -1,0 +1,243 @@
+---
+import Layout from "../layouts/Layout.astro";
+---
+<Layout title="Liste de courses (planning + custom)">
+  <div class="mx-auto max-w-3xl px-4 py-6">
+    <div class="mb-6 flex items-center justify-between">
+      <h1 class="text-2xl font-bold text-gray-900">🛒 Liste de courses</h1>
+    </div>
+
+    <!-- Formulaire d’ajout d’un élément custom -->
+    <form id="addForm" class="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-2">
+      <input id="fItem" type="text" placeholder="Nom"
+        class="border rounded px-3 py-2 sm:col-span-2 focus:ring-2 focus:ring-emerald-400"
+        required />
+      <input id="fQty" type="number" step="any" placeholder="Quantité"
+        class="border rounded px-3 py-2 focus:ring-2 focus:ring-emerald-400" />
+      <button type="submit"
+        class="rounded bg-emerald-600 px-3 py-2 text-white hover:bg-emerald-700 transition">
+        Ajouter
+      </button>
+    </form>
+
+    <ul id="list"
+      class="divide-y divide-gray-100 rounded-2xl border border-gray-200 bg-white shadow-sm"></ul>
+    <p id="status" class="mt-3 text-sm text-gray-500"></p>
+  </div>
+
+  <script type="module">
+    const listEl = document.getElementById("list");
+    const statusEl = document.getElementById("status");
+    const btnReload = document.getElementById("btnReload");
+    const addForm = document.getElementById("addForm");
+    const fItem = document.getElementById("fItem");
+    const fQty = document.getElementById("fQty");
+
+    let computed = [];
+    let saved = [];
+    let customs = [];
+    let items = [];
+
+    const makeKey = (it) =>
+      `${String(it.item||"").trim().toLowerCase()}|||${String(it.unit||"").trim().toLowerCase()}`;
+
+    function sortItems() {
+      // Tri : non cochés en haut, cochés en bas
+      items.sort((a, b) => {
+        if (a.checked === b.checked) return a.item.localeCompare(b.item, "fr");
+        return a.checked ? 1 : -1;
+      });
+    }
+
+    function render() {
+      sortItems();
+      listEl.innerHTML = "";
+      if (!Array.isArray(items) || items.length === 0) {
+        listEl.innerHTML = `
+          <li class="px-6 py-10 text-center text-sm text-gray-600">
+            Liste vide
+          </li>`;
+        return;
+      }
+
+      items.forEach((row, idx) => {
+        const isCustom = row.source === "custom";
+        const hasQty = typeof row.quantity === "number" && !isNaN(row.quantity);
+        const txt = hasQty
+          ? `${row.item} : ${row.quantity}${row.unit ? " " + row.unit : ""}`
+          : row.item;
+
+        const li = document.createElement("li");
+        li.className =
+          "group flex items-center justify-between gap-3 px-4 py-3 sm:px-5 " +
+          "hover:bg-emerald-50/60 transition";
+
+        // Gauche : checkbox + libellé
+        const left = document.createElement("label");
+        left.className = "flex items-center gap-3 cursor-pointer select-none flex-1";
+
+        const cb = document.createElement("input");
+        cb.type = "checkbox";
+        cb.dataset.idx = String(idx);
+        cb.checked = !!row.checked;
+        cb.className =
+          "peer h-5 w-5 shrink-0 rounded-md border-gray-300 " +
+          "text-emerald-600 focus:ring-2 focus:ring-emerald-400";
+
+        const text = document.createElement("span");
+        text.className =
+          "text-[15px] " + (cb.checked ? "line-through text-gray-400" : "text-gray-800");
+        text.textContent = txt;
+
+        left.appendChild(cb);
+        left.appendChild(text);
+
+        // Droite : actions
+        const right = document.createElement("div");
+        right.className = "flex items-center gap-2";
+
+        if (isCustom) {
+          const del = document.createElement("button");
+          del.type = "button";
+          del.className =
+            "del-btn rounded-md p-2 text-rose-600 hover:text-rose-700 " +
+            "hover:bg-rose-50 transition";
+          del.dataset.idx = String(idx);
+          del.title = "Supprimer";
+          del.innerHTML =
+            '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" ' +
+            'viewBox="0 0 24 24" fill="none" stroke="currentColor">' +
+            '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" ' +
+            'd="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m1 0H8m8 0l-1-3H9L8 7" />' +
+            "</svg>";
+          right.appendChild(del);
+        }
+
+        li.appendChild(left);
+        li.appendChild(right);
+        listEl.appendChild(li);
+      });
+
+      // Gestion des checkboxes
+      listEl.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+        cb.addEventListener("change", async () => {
+          const i = Number(cb.dataset.idx);
+          items[i].checked = cb.checked;
+          status("Enregistrement…");
+
+          try {
+            if (items[i].source === "custom") {
+              await fetch("/api/custom-items", {
+                method: "PATCH",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({
+                  item: items[i].item,
+                  checked: items[i].checked
+                })
+              });
+            } else {
+              const payload = items
+                .filter(it => it.source === "computed")
+                .map(({source, ...rest}) => rest);
+
+              await fetch("/api/save-shopping-totals", {
+                method: "POST",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({ items: payload })
+              });
+            }
+            render();
+            status("✅ Sauvegardé");
+          } catch (e) {
+            console.error(e);
+            status("❌ Erreur d'enregistrement");
+          }
+        });
+      });
+
+      // Suppression des custom
+      listEl.querySelectorAll(".del-btn").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          const i = Number(btn.dataset.idx);
+          const it = items[i];
+          if (!it || it.source !== "custom") return;
+          status("Suppression…");
+          try {
+            const params = new URLSearchParams({ item: it.item });
+            const r = await fetch(`/api/custom-items?${params.toString()}`, { method: "DELETE" });
+            await r.json();
+            await load();
+            status("✅ Supprimé");
+          } catch (e) {
+            console.error(e);
+            status("❌ Erreur de suppression");
+          }
+        });
+      });
+    }
+
+    function status(t) {
+      statusEl.textContent = t || "";
+    }
+
+    async function load() {
+      status("Chargement…");
+      try {
+        const [r1, r2, r3] = await Promise.all([
+          fetch("/api/compute-shopping-totals"),
+          fetch("/api/save-shopping-totals"),
+          fetch("/api/custom-items"),
+        ]);
+        const [j1, j2, j3] = await Promise.all([r1.json(), r2.json(), r3.json()]);
+
+        computed = (Array.isArray(j1.items) ? j1.items : []).map(it => ({ ...it, source: "computed" }));
+        saved = Array.isArray(j2.items) ? j2.items : [];
+        customs = (Array.isArray(j3.items) ? j3.items : []).map(it => ({ ...it, source: "custom" }));
+
+        const idxByKey = new Map(computed.map((it, i) => [makeKey(it), i]));
+        computed = computed.map(it => ({ ...it, checked: false }));
+        for (const s of saved) {
+          const idx = idxByKey.get(makeKey(s));
+          if (idx != null) computed[idx].checked = !!s.checked;
+        }
+
+        items = [...computed, ...customs];
+
+        status("OK");
+        render();
+      } catch (e) {
+        console.error(e);
+        status("❌ Erreur de chargement");
+      }
+    }
+
+    // Ajout custom
+    addForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const item = fItem.value.trim();
+      const qtyRaw = fQty.value.trim();
+      if (!item) return;
+
+      status("Ajout…");
+      try {
+        const payload = { item };
+        if (qtyRaw !== "") payload.quantity = Number(qtyRaw);
+
+        await fetch("/api/custom-items", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        fItem.value = ""; fQty.value = "";
+        await load();
+        status("✅ Ajouté");
+      } catch (e) {
+        console.error(e);
+        status("❌ Erreur d'ajout");
+      }
+    });
+
+    await load();
+  </script>
+</Layout>
