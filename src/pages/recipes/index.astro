@@ -12,11 +12,22 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
 
 <Layout title="Recettes">
   <div class="mx-auto max-w-6xl px-4 py-8">
-    <h1 class="text-2xl font-bold tracking-tight text-gray-900 mb-5">
-      📖 Recettes disponibles
-    </h1>
-    <!-- Barre d’actions -->
-    <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 sm:items-center sm:justify-between">
+    <!-- Barre titre + actions -->
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <h1 class="text-2xl font-bold text-gray-900 text-center sm:text-left">📖 Recettes disponibles</h1>
+
+      <div class="flex items-center gap-2 justify-center">
+        <button
+          id="openAddModal"
+          class="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-white text-sm font-medium shadow hover:bg-emerald-700 active:scale-[0.98] transition"
+        >
+          ➕ Ajouter une recette
+        </button>
+      </div>
+    </div>
+
+    <!-- Barre de filtres -->
+    <div class="mt-5 flex flex-col sm:flex-row gap-3 sm:gap-4 sm:items-center sm:justify-between">
       <div class="w-full sm:max-w-md">
         <input
           id="searchInput"
@@ -53,6 +64,78 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
     <div id="recipes-data" data-recipes={RECIPES_ENC} class="hidden"></div>
   </div>
 
+  <!-- MODAL d’ajout -->
+  <div id="addModal" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-black/40"></div>
+    <div class="relative mx-auto my-8 max-w-2xl rounded-2xl bg-white p-5 shadow-xl">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-lg font-semibold text-gray-900">Ajouter une recette</h2>
+        <button id="closeAddModal" class="rounded-md p-2 hover:bg-gray-100" aria-label="Fermer">✕</button>
+      </div>
+
+      <form id="addRecipeForm" class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Titre *</label>
+          <input id="rTitle" type="text" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-400" required />
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Image (URL)</label>
+          <input id="rImage" type="url" placeholder="https://…" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+        </div>
+
+        <!-- Booleans -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <label class="inline-flex items-center gap-2">
+            <input id="rMaman" type="checkbox" class="h-5 w-5 rounded border-gray-300 text-emerald-600 focus:ring-2 focus:ring-emerald-400" />
+            <span class="text-sm text-gray-800">Recette de maman</span>
+          </label>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Type *</label>
+            <select id="rSalt" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-400">
+              <option value="salty">Salé</option>
+              <option value="sweet">Sucré</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Ingrédients -->
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <label class="block text-sm font-medium text-gray-700">Ingrédients *</label>
+            <button type="button" id="addIngRow" class="text-emerald-600 hover:text-emerald-700 text-sm">➕ Ajouter un ingrédient</button>
+          </div>
+
+          <div id="ingList" class="space-y-2">
+            <!-- lignes ajoutées en JS -->
+          </div>
+        </div>
+
+        <!-- Étapes -->
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <label class="block text-sm font-medium text-gray-700">Étapes *</label>
+            <button type="button" id="addStepRow" class="text-emerald-600 hover:text-emerald-700 text-sm">➕ Ajouter une étape</button>
+          </div>
+
+          <div id="stepsList" class="space-y-2">
+            <!-- lignes ajoutées en JS -->
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-3 pt-2">
+          <button type="button" id="cancelAdd" class="rounded-lg border border-gray-300 px-4 py-2 text-sm hover:bg-gray-50">Annuler</button>
+          <button type="submit" class="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 active:scale-[0.98] transition">
+            Enregistrer
+          </button>
+        </div>
+
+        <p id="addStatus" class="text-sm text-gray-500 mt-1"></p>
+      </form>
+    </div>
+  </div>
+
   <script is:inline>
     document.addEventListener("DOMContentLoaded", () => {
       const DEFAULT_IMG = "/images/default-recipe.jpg";
@@ -71,7 +154,7 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
       const mamanFilter = document.getElementById("mamanFilter");
       const saltFilter = document.getElementById("saltFilter");
 
-      // Paramètre de jour depuis le planning : /recipes?day=lundi
+      // Param depuis planning : /recipes?day=lundi
       const params = new URLSearchParams(window.location.search);
       const dayParam = (params.get("day") || "").toLowerCase();
 
@@ -88,16 +171,13 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
       function makeCard(r) {
         // Carte cliquable
         const card = document.createElement("div");
-        const params = new URLSearchParams(window.location.search);
-        const dayParam = (params.get("day") || "").toLowerCase();
         card.className = "group relative flex flex-col rounded-xl border border-gray-200 bg-white shadow-sm hover:shadow-md transition overflow-hidden cursor-pointer";
-
         card.addEventListener("click", () => {
           const q = dayParam ? `?day=${encodeURIComponent(dayParam)}` : "";
           window.location.href = `/recipes/${r.id}${q}`;
         });
 
-        // Bouton ➕ en haut à droite (uniquement si dayParam)
+        // ➕ en haut-droite si dayParam
         if (dayParam) {
           const addBtn = document.createElement("button");
           addBtn.type = "button";
@@ -110,7 +190,6 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
             '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">' +
             '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16M20 12H4" />' +
             '</svg>';
-          // Très important : bloquer la navigation carte
           addBtn.addEventListener("click", async (e) => {
             e.stopPropagation();
             e.preventDefault();
@@ -146,7 +225,6 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
         const body = document.createElement("div");
         body.className = "flex-1 flex flex-col p-3";
 
-        // Titre (span, pas de <a> pour éviter les ancres imbriquées)
         const title = document.createElement("span");
         title.className = "text-sm font-semibold text-gray-900 line-clamp-2 group-hover:underline";
         title.textContent = r.title || "";
@@ -197,6 +275,122 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
       saltFilter.addEventListener("change", apply);
 
       apply();
+
+      // ---------- Modal d’ajout ----------
+      const addModal = document.getElementById("addModal");
+      const openAddModal = document.getElementById("openAddModal");
+      const closeAddModal = document.getElementById("closeAddModal");
+      const cancelAdd = document.getElementById("cancelAdd");
+      const addRecipeForm = document.getElementById("addRecipeForm");
+      const addStatus = document.getElementById("addStatus");
+
+      const rTitle = document.getElementById("rTitle");
+      const rImage = document.getElementById("rImage");
+      const rMaman = document.getElementById("rMaman");
+      const rSalt = document.getElementById("rSalt");
+      const ingList = document.getElementById("ingList");
+      const addIngRow = document.getElementById("addIngRow");
+      const stepsList = document.getElementById("stepsList");
+      const addStepRow = document.getElementById("addStepRow");
+
+      function openModal() { addModal.classList.remove("hidden"); }
+      function closeModal() { addModal.classList.add("hidden"); addStatus.textContent = ""; }
+
+      openAddModal.addEventListener("click", () => {
+        // reset formulaire
+        addRecipeForm.reset();
+        ingList.innerHTML = "";
+        stepsList.innerHTML = "";
+        addIngredientRow();
+        addStep();
+        openModal();
+      });
+
+      closeAddModal.addEventListener("click", closeModal);
+      cancelAdd.addEventListener("click", (e) => { e.preventDefault(); closeModal(); });
+      addModal.addEventListener("click", (e) => {
+        if (e.target === addModal.firstElementChild) closeModal(); // clic sur overlay
+      });
+
+      function addIngredientRow(values = { item: "", quantity: "", unit: "" }) {
+        const row = document.createElement("div");
+        row.className = "ingredient-row grid grid-cols-6 gap-2";
+        row.innerHTML = `
+          <input type="text" placeholder="Ingrédient" class="col-span-3 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" value="${values.item || ""}" required>
+          <input type="number" step="any" placeholder="Qté" class="col-span-2 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" value="${values.quantity ?? ""}">
+          <input type="text" placeholder="Unité" class="col-span-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" value="${values.unit || ""}">
+        `;
+        ingList.appendChild(row);
+      }
+
+      function addStep(value = "") {
+        const row = document.createElement("div");
+        row.className = "step-row";
+        row.innerHTML = `
+          <input type="text" placeholder="Décrire l’étape…" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" value="${value}">
+        `;
+        stepsList.appendChild(row);
+      }
+
+      addIngRow.addEventListener("click", () => addIngredientRow());
+      addStepRow.addEventListener("click", () => addStep());
+
+      addRecipeForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        addStatus.textContent = "Enregistrement…";
+
+        // Récup ingrédients
+        const ingRows = Array.from(ingList.querySelectorAll(".ingredient-row"));
+        const ingredients = ingRows.map((row) => {
+          const [itemEl, qtyEl, unitEl] = row.querySelectorAll("input");
+          const item = itemEl.value.trim();
+          const qRaw = qtyEl.value.trim();
+          const quantity = qRaw === "" ? undefined : Number(qRaw);
+          const unit = unitEl.value.trim();
+          if (!item) return null;
+          const obj = { item };
+          if (Number.isFinite(quantity)) obj.quantity = quantity;
+          if (unit) obj.unit = unit;
+          return obj;
+        }).filter(Boolean);
+
+        // Récup étapes
+        const stepRows = Array.from(stepsList.querySelectorAll(".step-row input"));
+        const steps = stepRows.map(el => el.value.trim()).filter(Boolean);
+
+        // salt: "salty" => true ; "sweet" => false
+        const salt = (rSalt.value === "salty");
+
+        const payload = {
+          title: rTitle.value.trim(),
+          image: rImage.value.trim(),
+          maman: !!rMaman.checked,
+          salt,
+          ingredients,
+          steps,
+        };
+
+        try {
+          const res = await fetch("/api/add-recipe", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          if (!res.ok) {
+            const txt = await res.text().catch(() => "");
+            throw new Error("HTTP " + res.status + " " + txt);
+          }
+          const data = await res.json().catch(() => ({}));
+          addStatus.textContent = "✅ Recette ajoutée";
+          // rechargement pour voir la nouvelle recette
+          setTimeout(() => {
+            window.location.reload();
+          }, 400);
+        } catch (err) {
+          console.error(err);
+          addStatus.textContent = "❌ Erreur lors de l'ajout";
+        }
+      });
     });
   </script>
 </Layout>
