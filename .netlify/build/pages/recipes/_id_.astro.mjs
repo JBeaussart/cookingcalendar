@@ -1,6 +1,6 @@
 import { c as createComponent, d as createAstro, i as renderComponent, r as renderTemplate, j as Fragment, f as addAttribute, m as maybeRenderHead } from '../../chunks/astro/server_B-OLKkAn.mjs';
 import 'kleur/colors';
-import { $ as $$Layout } from '../../chunks/Layout_DTQF2n2m.mjs';
+import { $ as $$Layout } from '../../chunks/Layout_CurJWU1x.mjs';
 import { d as db } from '../../chunks/firebase_De7FOwIs.mjs';
 import { doc, getDoc } from 'firebase/firestore';
 export { renderers } from '../../renderers.mjs';
