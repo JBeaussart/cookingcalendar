@@ -9,25 +9,34 @@ const firebaseConfig = {
   projectId: "cookingcalendar-38722",
   storageBucket: "cookingcalendar-38722.firebasestorage.app",
   messagingSenderId: "780270414824",
-  appId: "1:780270414824:web:bf4009dbb0ba6883a8d25d"
+  appId: "1:780270414824:web:bf4009dbb0ba6883a8d25d",
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 async function init() {
-  await setDoc(doc(db, "shoppingCustom", "current"), {
-    items: [
-      { item: "Eau pétillante", quantity: 6, unit: "bouteilles", checked: false },
-      { item: "Sac poubelle", quantity: 1, unit: "rouleau", checked: true }
-    ],
-    savedAt: new Date()
-  }, { merge: true });
+  await setDoc(
+    doc(db, "shoppingCustom", "current"),
+    {
+      items: [
+        {
+          item: "Eau pétillante",
+          quantity: 6,
+          unit: "bouteilles",
+          checked: false,
+        },
+        { item: "Sac poubelle", quantity: 1, unit: "rouleau", checked: true },
+      ],
+      savedAt: new Date(),
+    },
+    { merge: true },
+  );
 
   console.log("✅ shoppingCustom/current créé ou mis à jour.");
 }
 
-init().catch(e => {
+init().catch((e) => {
   console.error("❌", e);
   process.exit(1);
 });

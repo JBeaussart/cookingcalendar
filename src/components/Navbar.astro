@@ -6,24 +6,30 @@ const currentPath = Astro.url.pathname;
 const links = [
   { href: "/", label: "Planning" },
   { href: "/recipes", label: "Recettes" },
-  { href: "/shoppingList", label: "Liste de courses" }
+  { href: "/shoppingList", label: "Liste de courses" },
 ];
 ---
 
 <nav class="bg-white border-b border-gray-200 shadow-md">
   <div class="max-w-screen-xl mx-auto px-4 py-3">
     <ul class="flex flex-wrap justify-center gap-2 md:gap-6">
-      {links.map(link => (
-        <li>
-          <a href={link.href}
-             class={`block py-1 px-2 text-sm md:text-base md:px-4 rounded-md font-medium
-                     ${currentPath === link.href
-                        ? "bg-blue-600 text-white"
-                        : "text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700"}`}>
-            {link.label}
-          </a>
-        </li>
-      ))}
+      {
+        links.map((link) => (
+          <li>
+            <a
+              href={link.href}
+              class={`block py-1 px-2 text-sm md:text-base md:px-4 rounded-md font-medium
+                     ${
+                       currentPath === link.href
+                         ? "bg-blue-600 text-white"
+                         : "text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700"
+                     }`}
+            >
+              {link.label}
+            </a>
+          </li>
+        ))
+      }
     </ul>
   </div>
 </nav>

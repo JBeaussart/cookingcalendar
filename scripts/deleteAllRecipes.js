@@ -3,7 +3,13 @@
 // Lance avec: node scripts/deleteAllRecipes.js
 
 import { initializeApp } from "firebase/app";
-import { getFirestore, collection, getDocs, deleteDoc, doc } from "firebase/firestore";
+import {
+  getFirestore,
+  collection,
+  getDocs,
+  deleteDoc,
+  doc,
+} from "firebase/firestore";
 
 // ⚠️ Mets ta config Firebase (copie de src/firebase.js)
 const firebaseConfig = {
@@ -12,7 +18,7 @@ const firebaseConfig = {
   projectId: "cookingcalendar-38722",
   storageBucket: "cookingcalendar-38722.firebasestorage.app",
   messagingSenderId: "780270414824",
-  appId: "1:780270414824:web:bf4009dbb0ba6883a8d25d"
+  appId: "1:780270414824:web:bf4009dbb0ba6883a8d25d",
 };
 
 const app = initializeApp(firebaseConfig);

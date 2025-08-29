@@ -2,7 +2,15 @@
 import { db } from "../../firebase";
 import { doc, setDoc } from "firebase/firestore";
 
-const days = ["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"];
+const days = [
+  "lundi",
+  "mardi",
+  "mercredi",
+  "jeudi",
+  "vendredi",
+  "samedi",
+  "dimanche",
+];
 
 export async function POST() {
   try {

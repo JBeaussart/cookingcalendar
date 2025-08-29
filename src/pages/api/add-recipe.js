@@ -18,8 +18,17 @@ export async function POST({ request }) {
       salt = true,
     } = body;
 
-    if (!title || !Array.isArray(ingredients) || ingredients.length === 0 || !Array.isArray(steps) || steps.length === 0) {
-      return new Response("Champs requis manquants (title, ingredients[], steps[])", { status: 400 });
+    if (
+      !title ||
+      !Array.isArray(ingredients) ||
+      ingredients.length === 0 ||
+      !Array.isArray(steps) ||
+      steps.length === 0
+    ) {
+      return new Response(
+        "Champs requis manquants (title, ingredients[], steps[])",
+        { status: 400 },
+      );
     }
 
     // Normalisation douce des ingrédients : garder item obligatoire, qty number ou undefined, unit optionnelle
@@ -28,9 +37,12 @@ export async function POST({ request }) {
         if (!i || typeof i !== "object") return null;
         const item = String(i.item || "").trim();
         if (!item) return null;
-        const qty = (i.quantity === "" || i.quantity === null || typeof i.quantity === "undefined")
-          ? undefined
-          : Number(i.quantity);
+        const qty =
+          i.quantity === "" ||
+          i.quantity === null ||
+          typeof i.quantity === "undefined"
+            ? undefined
+            : Number(i.quantity);
         const unit = String(i.unit || "").trim();
         return {
           item,

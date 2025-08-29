@@ -13,9 +13,12 @@ export async function GET({ request }) {
     });
   } catch (e) {
     console.error("compute-shopping-totals GET:", e);
-    return new Response(JSON.stringify({ ok: false, error: String(e?.message || e) }), {
-      status: 500,
-      headers: { "content-type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ ok: false, error: String(e?.message || e) }),
+      {
+        status: 500,
+        headers: { "content-type": "application/json" },
+      },
+    );
   }
 }

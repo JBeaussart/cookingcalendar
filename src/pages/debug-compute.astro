@@ -1,19 +1,27 @@
 ---
 import Layout from "../layouts/Layout.astro";
 ---
+
 <Layout title="Debug compute-shopping-totals">
   <div class="mx-auto max-w-2xl p-6 space-y-4">
     <h1 class="text-xl font-bold">Debug /api/compute-shopping-totals</h1>
-    <button id="btn" class="rounded bg-gray-800 px-3 py-2 text-white">Tester le calcul</button>
-    <pre id="out" class="rounded border bg-gray-50 p-3 text-xs overflow-auto"></pre>
+    <button id="btn" class="rounded bg-gray-800 px-3 py-2 text-white"
+      >Tester le calcul</button
+    >
+    <pre id="out" class="rounded border bg-gray-50 p-3 text-xs overflow-auto">
+    </pre>
   </div>
 
   <script type="module">
     const out = document.getElementById("out");
     document.getElementById("btn").addEventListener("click", async () => {
       const r = await fetch("/api/compute-shopping-totals");
-      const j = await r.json().catch(()=> ({}));
-      out.textContent = JSON.stringify({ ok:r.ok, status:r.status, body:j }, null, 2);
+      const j = await r.json().catch(() => ({}));
+      out.textContent = JSON.stringify(
+        { ok: r.ok, status: r.status, body: j },
+        null,
+        2,
+      );
     });
   </script>
 </Layout>

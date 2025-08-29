@@ -9,15 +9,13 @@ export async function GET({ request }) {
 
     // 1. Charger le planning
     const planningSnap = await getDocs(collection(db, "planning"));
-    const planning = planningSnap.docs.map(d => ({
+    const planning = planningSnap.docs.map((d) => ({
       id: d.id,
       ...d.data(),
     }));
 
     // 2. Récupérer toutes les recettes (avec duplication si la même recette est utilisée plusieurs fois)
-    const recipeIds = planning
-      .map(p => p.recipeId)
-      .filter(Boolean);
+    const recipeIds = planning.map((p) => p.recipeId).filter(Boolean);
 
     const loaded = [];
     const skipped = [];
@@ -70,7 +68,7 @@ export async function GET({ request }) {
           typeof ing === "object" && typeof ing.quantity !== "undefined"
             ? Number(ing.quantity) * count
             : undefined;
-        const unit = typeof ing === "object" ? (ing.unit || "") : "";
+        const unit = typeof ing === "object" ? ing.unit || "" : "";
 
         const key = `${normalize(item)}|${normalize(unit)}`;
         const prev = totalsMap.get(key);
@@ -85,7 +83,10 @@ export async function GET({ request }) {
         } else {
           if (Number.isFinite(prev.quantity) && Number.isFinite(quantity)) {
             prev.quantity += quantity;
-          } else if (!Number.isFinite(prev.quantity) && Number.isFinite(quantity)) {
+          } else if (
+            !Number.isFinite(prev.quantity) &&
+            Number.isFinite(quantity)
+          ) {
             prev.quantity = quantity;
           }
           totalsMap.set(key, prev);
@@ -94,7 +95,7 @@ export async function GET({ request }) {
     }
 
     const aggregated = Array.from(totalsMap.values()).sort((a, b) =>
-      a.item.localeCompare(b.item, "fr")
+      a.item.localeCompare(b.item, "fr"),
     );
 
     const result = { ok: true, items: aggregated };

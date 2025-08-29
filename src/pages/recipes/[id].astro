@@ -21,168 +21,228 @@ const DEFAULT_IMG = "/images/default-recipe.jpg";
 
 <Layout title={recipe?.title || "Recette"}>
   <div class="container mx-auto px-4 py-12">
-    {recipe ? (
-      <>
-        <div class="relative">
-          <div class="overflow-hidden rounded-xl shadow-lg mb-8">
-            <img
-              src={recipe.image || DEFAULT_IMG}
-              alt={recipe.title}
-              class="w-full h-72 object-cover transform hover:scale-105 transition duration-500"
-              onerror={`this.src='${DEFAULT_IMG}'`}
-            />
-          </div>
-          <div id="addBtnContainer" class="absolute right-4 top-4"></div>
-        </div>
-
-        <div class="flex items-start justify-between gap-4 mb-6">
-          <h1 class="text-3xl md:text-4xl font-extrabold text-gray-900">
-            {recipe.title}
-          </h1>
-          <div class="flex items-center gap-2">
-            <button id="openEdit"
-              class="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-800 shadow-sm hover:bg-gray-50 transition"
-              title="Modifier la recette">
-                Modifier
-            </button>
-            <button id="deleteRecipe"
-              class="inline-flex items-center gap-2 rounded-lg bg-rose-600 px-3 py-2 text-sm font-medium text-white shadow hover:bg-rose-700 transition"
-              title="Supprimer la recette">
-                Supprimer
-            </button>
-          </div>
-        </div>
-
-        <div class="grid gap-8 md:grid-cols-2">
-          <section class="bg-yellow-50 rounded-xl p-6 shadow-lg hover:shadow-2xl transition">
-            <h2 class="flex items-center text-2xl font-semibold mb-4 text-yellow-800">
-              <span class="mr-2">🛒</span> Ingrédients
-            </h2>
-            <ul class="list-disc list-inside space-y-2 text-gray-700">
-              {recipe.ingredients.map((i) => (
-                <li>
-                  {typeof i === "object" && i.quantity
-                    ? `${i.item}: ${i.quantity} ${i.unit || ""}`
-                    : typeof i === "object"
-                    ? i.item
-                    : i}
-                </li>
-              ))}
-            </ul>
-          </section>
-
-          <section class="bg-green-50 rounded-xl p-6 shadow-lg hover:shadow-2xl transition">
-            <h2 class="flex items-center text-2xl font-semibold mb-4 text-green-800">
-              <span class="mr-2">👩‍🍳</span> Préparation
-            </h2>
-            <ol class="list-decimal list-inside space-y-2 text-gray-700">
-              {recipe.steps.map((s) => <li>{s}</li>)}
-            </ol>
-          </section>
-        </div>
-
-        <div class="mt-12 text-center">
-          <a
-            href="/recipes"
-            class="inline-block bg-blue-500 hover:bg-blue-600 text-white font-medium py-3 px-6 rounded-xl shadow-lg transition transform hover:-translate-y-1"
-          >
-            ← Retour à toutes les recettes
-          </a>
-        </div>
-
-        {/* Données pour le JS */}
-        <div id="recipe-data"
-             data-id={recipe.id}
-             data-title={recipe.title}
-             data-image={recipe.image || ""}
-             data-ingredients={encodeURIComponent(JSON.stringify(recipe.ingredients || []))}
-             data-steps={encodeURIComponent(JSON.stringify(recipe.steps || []))}
-             data-maman={String(!!recipe.maman)}
-             data-salt={String(!!recipe.salt)}
-             class="hidden"></div>
-
-        {/* MODAL d’édition */}
-        <div id="editModal" class="fixed inset-0 z-50 hidden">
-          <div class="absolute inset-0 bg-black/40"></div>
-          <div class="relative mx-auto my-8 max-w-2xl rounded-2xl bg-white p-5 shadow-xl">
-            <div class="flex items-center justify-between mb-3">
-              <h2 class="text-lg font-semibold text-gray-900">Modifier la recette</h2>
-              <button id="closeEdit" class="rounded-md p-2 hover:bg-gray-100" aria-label="Fermer">✕</button>
+    {
+      recipe ? (
+        <>
+          <div class="relative">
+            <div class="overflow-hidden rounded-xl shadow-lg mb-8">
+              <img
+                src={recipe.image || DEFAULT_IMG}
+                alt={recipe.title}
+                class="w-full h-72 object-cover transform hover:scale-105 transition duration-500"
+                onerror={`this.src='${DEFAULT_IMG}'`}
+              />
             </div>
+            <div id="addBtnContainer" class="absolute right-4 top-4" />
+          </div>
 
-            <form id="editRecipeForm" class="space-y-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Titre *</label>
-                <input id="eTitle" type="text"
-                  class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-400"
-                  required />
+          <div class="flex items-start justify-between gap-4 mb-6">
+            <h1 class="text-3xl md:text-4xl font-extrabold text-gray-900">
+              {recipe.title}
+            </h1>
+            <div class="flex items-center gap-2">
+              <button
+                id="openEdit"
+                class="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-800 shadow-sm hover:bg-gray-50 transition"
+                title="Modifier la recette"
+              >
+                Modifier
+              </button>
+              <button
+                id="deleteRecipe"
+                class="inline-flex items-center gap-2 rounded-lg bg-rose-600 px-3 py-2 text-sm font-medium text-white shadow hover:bg-rose-700 transition"
+                title="Supprimer la recette"
+              >
+                Supprimer
+              </button>
+            </div>
+          </div>
+
+          <div class="grid gap-8 md:grid-cols-2">
+            <section class="bg-yellow-50 rounded-xl p-6 shadow-lg hover:shadow-2xl transition">
+              <h2 class="flex items-center text-2xl font-semibold mb-4 text-yellow-800">
+                <span class="mr-2">🛒</span> Ingrédients
+              </h2>
+              <ul class="list-disc list-inside space-y-2 text-gray-700">
+                {recipe.ingredients.map((i) => (
+                  <li>
+                    {typeof i === "object" && i.quantity
+                      ? `${i.item}: ${i.quantity} ${i.unit || ""}`
+                      : typeof i === "object"
+                        ? i.item
+                        : i}
+                  </li>
+                ))}
+              </ul>
+            </section>
+
+            <section class="bg-green-50 rounded-xl p-6 shadow-lg hover:shadow-2xl transition">
+              <h2 class="flex items-center text-2xl font-semibold mb-4 text-green-800">
+                <span class="mr-2">👩‍🍳</span> Préparation
+              </h2>
+              <ol class="list-decimal list-inside space-y-2 text-gray-700">
+                {recipe.steps.map((s) => (
+                  <li>{s}</li>
+                ))}
+              </ol>
+            </section>
+          </div>
+
+          <div class="mt-12 text-center">
+            <a
+              href="/recipes"
+              class="inline-block bg-blue-500 hover:bg-blue-600 text-white font-medium py-3 px-6 rounded-xl shadow-lg transition transform hover:-translate-y-1"
+            >
+              ← Retour à toutes les recettes
+            </a>
+          </div>
+
+          {/* Données pour le JS */}
+          <div
+            id="recipe-data"
+            data-id={recipe.id}
+            data-title={recipe.title}
+            data-image={recipe.image || ""}
+            data-ingredients={encodeURIComponent(
+              JSON.stringify(recipe.ingredients || []),
+            )}
+            data-steps={encodeURIComponent(JSON.stringify(recipe.steps || []))}
+            data-maman={String(!!recipe.maman)}
+            data-salt={String(!!recipe.salt)}
+            class="hidden"
+          />
+
+          {/* MODAL d’édition */}
+          <div id="editModal" class="fixed inset-0 z-50 hidden">
+            <div class="absolute inset-0 bg-black/40" />
+            <div class="relative mx-auto my-8 max-w-2xl rounded-2xl bg-white p-5 shadow-xl">
+              <div class="flex items-center justify-between mb-3">
+                <h2 class="text-lg font-semibold text-gray-900">
+                  Modifier la recette
+                </h2>
+                <button
+                  id="closeEdit"
+                  class="rounded-md p-2 hover:bg-gray-100"
+                  aria-label="Fermer"
+                >
+                  ✕
+                </button>
               </div>
 
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Image (URL)</label>
-                <input id="eImage" type="url" placeholder="https://…"
-                  class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-400" />
-              </div>
-
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <label class="inline-flex items-center gap-2">
-                  <input id="eMaman" type="checkbox"
-                    class="h-5 w-5 rounded border-gray-300 text-emerald-600 focus:ring-2 focus:ring-emerald-400" />
-                  <span class="text-sm text-gray-800">Recette de maman</span>
-                </label>
+              <form id="editRecipeForm" class="space-y-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">
+                    Titre *
+                  </label>
+                  <input
+                    id="eTitle"
+                    type="text"
+                    class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                    required
+                  />
+                </div>
 
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Type *</label>
-                  <select id="eSalt"
-                    class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-400">
-                    <option value="salty">Salé</option>
-                    <option value="sweet">Sucré</option>
-                  </select>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">
+                    Image (URL)
+                  </label>
+                  <input
+                    id="eImage"
+                    type="url"
+                    placeholder="https://…"
+                    class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                  />
                 </div>
-              </div>
 
-              <div>
-                <div class="flex items-center justify-between mb-2">
-                  <label class="block text-sm font-medium text-gray-700">Ingrédients *</label>
-                  <button type="button" id="addIngRow" class="text-emerald-600 hover:text-emerald-700 text-sm">
-                    ➕ Ajouter un ingrédient
-                  </button>
-                </div>
-                <div id="ingList" class="space-y-2"></div>
-              </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <label class="inline-flex items-center gap-2">
+                    <input
+                      id="eMaman"
+                      type="checkbox"
+                      class="h-5 w-5 rounded border-gray-300 text-emerald-600 focus:ring-2 focus:ring-emerald-400"
+                    />
+                    <span class="text-sm text-gray-800">Recette de maman</span>
+                  </label>
 
-              <div>
-                <div class="flex items-center justify-between mb-2">
-                  <label class="block text-sm font-medium text-gray-700">Étapes *</label>
-                  <button type="button" id="addStepRow" class="text-emerald-600 hover:text-emerald-700 text-sm">
-                    ➕ Ajouter une étape
-                  </button>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                      Type *
+                    </label>
+                    <select
+                      id="eSalt"
+                      class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                    >
+                      <option value="salty">Salé</option>
+                      <option value="sweet">Sucré</option>
+                    </select>
+                  </div>
                 </div>
-                <div id="stepsList" class="space-y-2"></div>
-              </div>
 
-              <div class="flex items-center justify-between gap-3 pt-2">
-                <button type="button" id="cancelEdit"
-                  class="rounded-lg border border-gray-300 px-4 py-2 text-sm hover:bg-gray-50">Annuler</button>
-                <div class="flex items-center gap-3">
-                  <button type="button" id="dangerDelete"
-                    class="inline-flex items-center gap-2 rounded-lg bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700 transition">
-                    Supprimer la recette
-                  </button>
-                  <button type="submit"
-                    class="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 active:scale-[0.98] transition">
-                    Enregistrer
-                  </button>
+                <div>
+                  <div class="flex items-center justify-between mb-2">
+                    <label class="block text-sm font-medium text-gray-700">
+                      Ingrédients *
+                    </label>
+                    <button
+                      type="button"
+                      id="addIngRow"
+                      class="text-emerald-600 hover:text-emerald-700 text-sm"
+                    >
+                      ➕ Ajouter un ingrédient
+                    </button>
+                  </div>
+                  <div id="ingList" class="space-y-2" />
                 </div>
-              </div>
-              <p id="editStatus" class="text-sm text-gray-500 mt-1"></p>
-            </form>
+
+                <div>
+                  <div class="flex items-center justify-between mb-2">
+                    <label class="block text-sm font-medium text-gray-700">
+                      Étapes *
+                    </label>
+                    <button
+                      type="button"
+                      id="addStepRow"
+                      class="text-emerald-600 hover:text-emerald-700 text-sm"
+                    >
+                      ➕ Ajouter une étape
+                    </button>
+                  </div>
+                  <div id="stepsList" class="space-y-2" />
+                </div>
+
+                <div class="flex items-center justify-between gap-3 pt-2">
+                  <button
+                    type="button"
+                    id="cancelEdit"
+                    class="rounded-lg border border-gray-300 px-4 py-2 text-sm hover:bg-gray-50"
+                  >
+                    Annuler
+                  </button>
+                  <div class="flex items-center gap-3">
+                    <button
+                      type="button"
+                      id="dangerDelete"
+                      class="inline-flex items-center gap-2 rounded-lg bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700 transition"
+                    >
+                      Supprimer la recette
+                    </button>
+                    <button
+                      type="submit"
+                      class="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 active:scale-[0.98] transition"
+                    >
+                      Enregistrer
+                    </button>
+                  </div>
+                </div>
+                <p id="editStatus" class="text-sm text-gray-500 mt-1" />
+              </form>
+            </div>
           </div>
-        </div>
-      </>
-    ) : (
-      <p class="text-center text-gray-500">Recette introuvable.</p>
-    )}
+        </>
+      ) : (
+        <p class="text-center text-gray-500">Recette introuvable.</p>
+      )
+    }
   </div>
 
   <script is:inline>
@@ -240,8 +300,13 @@ const DEFAULT_IMG = "/images/default-recipe.jpg";
       const stepsList = document.getElementById("stepsList");
       const addStepRow = document.getElementById("addStepRow");
 
-      function openModal() { editModal.classList.remove("hidden"); }
-      function closeModal() { editModal.classList.add("hidden"); editStatus.textContent = ""; }
+      function openModal() {
+        editModal.classList.remove("hidden");
+      }
+      function closeModal() {
+        editModal.classList.add("hidden");
+        editStatus.textContent = "";
+      }
 
       function addIngredientRow(values = { item: "", quantity: "", unit: "" }) {
         const row = document.createElement("div");
@@ -275,23 +340,37 @@ const DEFAULT_IMG = "/images/default-recipe.jpg";
         eTitle.value = d.getAttribute("data-title") || "";
         eImage.value = d.getAttribute("data-image") || "";
         eMaman.checked = d.getAttribute("data-maman") === "true";
-        eSalt.value = (d.getAttribute("data-salt") === "true") ? "salty" : "sweet";
+        eSalt.value =
+          d.getAttribute("data-salt") === "true" ? "salty" : "sweet";
 
         ingList.innerHTML = "";
         let ing = [];
-        try { ing = JSON.parse(decodeURIComponent(d.getAttribute("data-ingredients") || "")) || []; }
-        catch { ing = []; }
+        try {
+          ing =
+            JSON.parse(
+              decodeURIComponent(d.getAttribute("data-ingredients") || ""),
+            ) || [];
+        } catch {
+          ing = [];
+        }
         if (ing.length === 0) ing.push({ item: "", quantity: "", unit: "" });
-        for (const row of ing) addIngredientRow({
-          item: row.item || "",
-          quantity: typeof row.quantity === "number" ? row.quantity : "",
-          unit: row.unit || ""
-        });
+        for (const row of ing)
+          addIngredientRow({
+            item: row.item || "",
+            quantity: typeof row.quantity === "number" ? row.quantity : "",
+            unit: row.unit || "",
+          });
 
         stepsList.innerHTML = "";
         let st = [];
-        try { st = JSON.parse(decodeURIComponent(d.getAttribute("data-steps") || "")) || []; }
-        catch { st = []; }
+        try {
+          st =
+            JSON.parse(
+              decodeURIComponent(d.getAttribute("data-steps") || ""),
+            ) || [];
+        } catch {
+          st = [];
+        }
         if (st.length === 0) st.push("");
         for (const s of st) addStepRowEl(s);
       }
@@ -302,9 +381,15 @@ const DEFAULT_IMG = "/images/default-recipe.jpg";
       const openEditBtn = document.getElementById("openEdit");
       const closeEditBtn = document.getElementById("closeEdit");
       const cancelEditBtn = document.getElementById("cancelEdit");
-      openEditBtn.addEventListener("click", () => { fillFormFromDataset(); openModal(); });
+      openEditBtn.addEventListener("click", () => {
+        fillFormFromDataset();
+        openModal();
+      });
       closeEditBtn.addEventListener("click", () => closeModal());
-      cancelEditBtn.addEventListener("click", (e) => { e.preventDefault(); closeModal(); });
+      cancelEditBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        closeModal();
+      });
       editModal.addEventListener("click", (e) => {
         if (e.target === editModal.firstElementChild) closeModal();
       });
@@ -314,27 +399,32 @@ const DEFAULT_IMG = "/images/default-recipe.jpg";
         editStatus.textContent = "Enregistrement…";
 
         const ingRows = Array.from(ingList.querySelectorAll(".ingredient-row"));
-        const ingredients = ingRows.map((row) => {
-          const inputs = row.querySelectorAll("input");
-          const item = inputs[0].value.trim();
-          const qRaw = inputs[1].value.trim();
-          const unit = inputs[2].value.trim();
-          if (!item) return null;
-          const obj = { item };
-          if (qRaw !== "" && !isNaN(Number(qRaw))) obj.quantity = Number(qRaw);
-          if (unit) obj.unit = unit;
-          return obj;
-        }).filter(Boolean);
+        const ingredients = ingRows
+          .map((row) => {
+            const inputs = row.querySelectorAll("input");
+            const item = inputs[0].value.trim();
+            const qRaw = inputs[1].value.trim();
+            const unit = inputs[2].value.trim();
+            if (!item) return null;
+            const obj = { item };
+            if (qRaw !== "" && !isNaN(Number(qRaw)))
+              obj.quantity = Number(qRaw);
+            if (unit) obj.unit = unit;
+            return obj;
+          })
+          .filter(Boolean);
 
-        const stepInputs = Array.from(stepsList.querySelectorAll(".step-row input"));
-        const steps = stepInputs.map(el => el.value.trim()).filter(Boolean);
+        const stepInputs = Array.from(
+          stepsList.querySelectorAll(".step-row input"),
+        );
+        const steps = stepInputs.map((el) => el.value.trim()).filter(Boolean);
 
         const payload = {
           id: recipeId,
           title: eTitle.value.trim(),
           image: eImage.value.trim(),
           maman: !!eMaman.checked,
-          salt: (eSalt.value === "salty"),
+          salt: eSalt.value === "salty",
           ingredients,
           steps,
         };
@@ -363,13 +453,18 @@ const DEFAULT_IMG = "/images/default-recipe.jpg";
 
       async function doDelete() {
         if (!recipeId) return;
-        const ok = confirm("Supprimer définitivement cette recette ?\nElle sera retirée aussi du planning si elle y est utilisée.");
+        const ok = confirm(
+          "Supprimer définitivement cette recette ?\nElle sera retirée aussi du planning si elle y est utilisée.",
+        );
         if (!ok) return;
         try {
-          const res = await fetch(`/api/delete-recipe?id=${encodeURIComponent(recipeId)}`, {
-            method: "DELETE",
-            headers: { "Content-Type": "application/json" },
-          });
+          const res = await fetch(
+            `/api/delete-recipe?id=${encodeURIComponent(recipeId)}`,
+            {
+              method: "DELETE",
+              headers: { "Content-Type": "application/json" },
+            },
+          );
           if (!res.ok) {
             const txt = await res.text().catch(() => "");
             throw new Error("HTTP " + res.status + " " + txt);

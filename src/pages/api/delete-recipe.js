@@ -26,12 +26,15 @@ export async function DELETE({ request }) {
     await deleteDoc(doc(db, "recipes", id));
 
     // Nettoyer le planning (retire la recette si utilisée)
-    const qPlanning = query(collection(db, "planning"), where("recipeId", "==", id));
+    const qPlanning = query(
+      collection(db, "planning"),
+      where("recipeId", "==", id),
+    );
     const snap = await getDocs(qPlanning);
     await Promise.all(
       snap.docs.map(async (d) => {
         await updateDoc(doc(db, "planning", d.id), { recipeId: "" });
-      })
+      }),
     );
 
     // Renvoie une URL de redirection (change-la si tu utilises /recettes)
