@@ -113,11 +113,16 @@ const DEFAULT_IMG = "/images/default-recipe.jpg";
           />
 
           {/* MODAL d’édition */}
-          <div id="editModal" class="fixed inset-0 z-50 hidden">
+          {/* MODIF: overflow-y-auto + overscroll-contain pour stopper le scroll de fond */}
+          <div id="editModal" class="fixed inset-0 z-50 hidden overflow-y-auto overscroll-contain">
             <div class="absolute inset-0 bg-black/40" />
-            <div class="relative mx-auto my-8 max-w-2xl rounded-2xl bg-white p-5 shadow-xl">
+            {/* MODIF: max-h + overflow-y-auto pour scroller DANS la carte */}
+            <div
+              class="relative mx-auto my-8 max-w-2xl rounded-2xl bg-white p-5 shadow-xl max-h-[calc(100dvh-4rem)] overflow-y-auto"
+              role="dialog" aria-modal="true" aria-labelledby="editTitle"
+            >
               <div class="flex items-center justify-between mb-3">
-                <h2 class="text-lg font-semibold text-gray-900">
+                <h2 id="editTitle" class="text-lg font-semibold text-gray-900">
                   Modifier la recette
                 </h2>
                 <button
@@ -300,12 +305,22 @@ const DEFAULT_IMG = "/images/default-recipe.jpg";
       const stepsList = document.getElementById("stepsList");
       const addStepRow = document.getElementById("addStepRow");
 
+      // MODIF: lock/unlock du scroll body
+      function lockBody() {
+        document.body.classList.add("overflow-hidden", "overscroll-none", "body-locked");
+      }
+      function unlockBody() {
+        document.body.classList.remove("overflow-hidden", "overscroll-none", "body-locked");
+      }
+
       function openModal() {
         editModal.classList.remove("hidden");
+        lockBody(); // MODIF
       }
       function closeModal() {
         editModal.classList.add("hidden");
         editStatus.textContent = "";
+        unlockBody(); // MODIF
       }
 
       function addIngredientRow(values = { item: "", quantity: "", unit: "" }) {
@@ -390,6 +405,8 @@ const DEFAULT_IMG = "/images/default-recipe.jpg";
         e.preventDefault();
         closeModal();
       });
+
+      // clic sur l’overlay (premier enfant = backdrop noir)
       editModal.addEventListener("click", (e) => {
         if (e.target === editModal.firstElementChild) closeModal();
       });
@@ -486,4 +503,9 @@ const DEFAULT_IMG = "/images/default-recipe.jpg";
       deleteModalBtn.addEventListener("click", doDelete);
     });
   </script>
+
+  {/* MODIF (optionnel) : évite le "saut" horizontal quand on lock le body */}
+  <style is:global>
+    body.body-locked { padding-right: calc(100vw - 100%); }
+  </style>
 </Layout>
