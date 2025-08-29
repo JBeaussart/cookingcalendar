@@ -65,11 +65,16 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
   </div>
 
   <!-- MODAL d’ajout -->
-  <div id="addModal" class="fixed inset-0 z-50 hidden">
+  <!-- MODIF: overflow-y-auto + overscroll-contain pour couper le scroll chaining -->
+  <div id="addModal" class="fixed inset-0 z-50 hidden overflow-y-auto overscroll-contain">
     <div class="absolute inset-0 bg-black/40"></div>
-    <div class="relative mx-auto my-8 max-w-2xl rounded-2xl bg-white p-5 shadow-xl">
+    <!-- MODIF: max-h + overflow-y-auto pour scroller DANS la carte -->
+    <div
+      class="relative mx-auto my-8 max-w-2xl rounded-2xl bg-white p-5 shadow-xl max-h-[calc(100dvh-4rem)] overflow-y-auto"
+      role="dialog" aria-modal="true" aria-labelledby="addRecipeTitle"
+    >
       <div class="flex items-center justify-between mb-3">
-        <h2 class="text-lg font-semibold text-gray-900">Ajouter une recette</h2>
+        <h2 id="addRecipeTitle" class="text-lg font-semibold text-gray-900">Ajouter une recette</h2>
         <button id="closeAddModal" class="rounded-md p-2 hover:bg-gray-100" aria-label="Fermer">✕</button>
       </div>
 
@@ -236,7 +241,7 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
           meta.appendChild(makeBadge("Recette de maman", "border-pink-300 text-pink-700 bg-pink-50"));
         }
         if (typeof r.salt === "boolean") {
-          meta.appendChild(makeBadge(r.salt ? "Salé" : "Sucré", "border-gray-200 text-gray-600"));
+            meta.appendChild(makeBadge(r.salt ? "Salé" : "Sucré", "border-gray-200 text-gray-600"));
         }
         body.appendChild(meta);
 
@@ -293,8 +298,23 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
       const stepsList = document.getElementById("stepsList");
       const addStepRow = document.getElementById("addStepRow");
 
-      function openModal() { addModal.classList.remove("hidden"); }
-      function closeModal() { addModal.classList.add("hidden"); addStatus.textContent = ""; }
+      // MODIF: lock/unlock body pour empêcher le scroll de fond
+      function lockBody() {
+        document.body.classList.add("overflow-hidden", "overscroll-none", "body-locked");
+      }
+      function unlockBody() {
+        document.body.classList.remove("overflow-hidden", "overscroll-none", "body-locked");
+      }
+
+      function openModal() {
+        addModal.classList.remove("hidden");
+        lockBody(); // MODIF
+      }
+      function closeModal() {
+        addModal.classList.add("hidden");
+        addStatus.textContent = "";
+        unlockBody(); // MODIF
+      }
 
       openAddModal.addEventListener("click", () => {
         // reset formulaire
@@ -308,8 +328,10 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
 
       closeAddModal.addEventListener("click", closeModal);
       cancelAdd.addEventListener("click", (e) => { e.preventDefault(); closeModal(); });
+
+      // clic sur l'overlay (le premier enfant est le backdrop noir)
       addModal.addEventListener("click", (e) => {
-        if (e.target === addModal.firstElementChild) closeModal(); // clic sur overlay
+        if (e.target === addModal.firstElementChild) closeModal();
       });
 
       function addIngredientRow(values = { item: "", quantity: "", unit: "" }) {
@@ -393,4 +415,9 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
       });
     });
   </script>
+
+  <!-- MODIF (optionnel): évite le "saut" horizontal quand on lock le body -->
+  <style is:global>
+    body.body-locked { padding-right: calc(100vw - 100%); }
+  </style>
 </Layout>
