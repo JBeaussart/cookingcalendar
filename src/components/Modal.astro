@@ -1,0 +1,28 @@
+---
+// src/components/Modal.astro
+export interface Props {
+  id: string;            // ex: "addModal" | "editModal"
+  title: string;         // Titre affiché dans la barre haute
+  maxHeightClass?: string; // optionnel: override de hauteur
+}
+const { id, title, maxHeightClass = "max-h-[calc(100dvh-4rem)]" } = Astro.props;
+---
+
+<div id={id} class="fixed inset-0 z-50 hidden overflow-y-auto overscroll-contain">
+  <div class="absolute inset-0 bg-black/40" aria-hidden="true"></div>
+
+  <div
+    class={`relative mx-auto my-8 max-w-2xl rounded-2xl bg-white p-5 shadow-xl ${maxHeightClass} overflow-y-auto`}
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby={`${id}-title`}
+  >
+    <div class="flex items-center justify-between mb-3">
+      <h2 id={`${id}-title`} class="text-lg font-semibold text-gray-900">{title}</h2>
+      <button id={`${id}-close`} class="rounded-md p-2 hover:bg-gray-100" aria-label="Fermer">✕</button>
+    </div>
+
+    <slot />
+  </div>
+</div>
+s
