@@ -46,7 +46,7 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
     </div>
 
     <!-- Grille -->
-    <div id="grid" class="mt-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"></div>
+    <div id="grid" class="mt-6 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"></div>
 
     <!-- Données -->
     <div id="recipes-data" data-recipes={RECIPES_ENC} class="hidden"></div>
@@ -137,6 +137,15 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
         return span;
       }
 
+      function makeChefBadge() {
+        const span = document.createElement("span");
+        span.className = "inline-flex items-center gap-1 rounded-full px-2 py-0.5 border border-pink-300 text-pink-700 bg-pink-50";
+        span.title = "Recette de maman";
+        span.setAttribute("aria-label", "Recette de maman");
+        span.innerHTML = `<i class="fa-solid fa-kitchen-set text-[14px]" aria-hidden="true"></i>`;
+        return span;
+      }
+
       function makeCard(r) {
         const card = document.createElement("div");
         card.className = "group relative flex flex-col rounded-xl border border-gray-200 bg-white shadow-sm hover:shadow-md transition overflow-hidden cursor-pointer";
@@ -174,7 +183,7 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
         imgWrap.appendChild(img); card.appendChild(imgWrap);
 
         const body = document.createElement("div");
-        body.className = "flex-1 flex flex-col p-3";
+        body.className = "relative flex-1 flex flex-col p-3 pb-10";
 
         const title = document.createElement("span");
         title.className = "text-sm font-semibold text-gray-900 line-clamp-2 group-hover:underline";
@@ -182,9 +191,9 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
         body.appendChild(title);
 
         const meta = document.createElement("div");
-        meta.className = "mt-2 text-xs text-gray-500 flex items-center gap-2";
-        if (r.maman === true) meta.appendChild(makeBadge("Recette de maman", "border-pink-300 text-pink-700 bg-pink-50"));
+        meta.className = "absolute left-3 bottom-3 text-xs text-gray-500 flex items-center gap-2";
         if (typeof r.salt === "boolean") meta.appendChild(makeBadge(r.salt ? "Salé" : "Sucré", "border-gray-200 text-gray-600"));
+        if (r.maman === true) meta.appendChild(makeChefBadge());
         body.appendChild(meta);
 
         card.appendChild(body);
@@ -360,5 +369,9 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
 
   <style is:global>
     body.body-locked { padding-right: calc(100vw - 100%); }
+    /* Force 2 columns on small screens */
+    @media (max-width: 767px) {
+      #grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
   </style>
 </Layout>
