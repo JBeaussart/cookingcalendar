@@ -35,6 +35,16 @@ const DEFAULT_IMG = "/images/default-recipe.jpg";
                 onerror={`this.src='${DEFAULT_IMG}'`}
               />
             </div>
+            {recipe.maman ? (
+              <div
+                class="absolute right-4 top-4 inline-flex h-11 w-11 items-center justify-center rounded-full border border-pink-300 bg-pink-50 text-pink-700 shadow"
+                title="Recette de maman"
+                aria-label="Recette de maman"
+              >
+                <i class="fa-solid fa-kitchen-set text-xl" aria-hidden="true"></i>
+                <span class="sr-only">Recette de maman</span>
+              </div>
+            ) : null}
             <div id="addBtnContainer" class="absolute right-4 top-4" />
           </div>
 
