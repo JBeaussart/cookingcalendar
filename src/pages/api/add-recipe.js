@@ -18,17 +18,10 @@ export async function POST({ request }) {
       salt = true,
     } = body;
 
-    if (
-      !title ||
-      !Array.isArray(ingredients) ||
-      ingredients.length === 0 ||
-      !Array.isArray(steps) ||
-      steps.length === 0
-    ) {
-      return new Response(
-        "Champs requis manquants (title, ingredients[], steps[])",
-        { status: 400 },
-      );
+    if (!title || !Array.isArray(ingredients) || ingredients.length === 0) {
+      return new Response("Champs requis manquants (title, ingredients[])", {
+        status: 400,
+      });
     }
 
     // Normalisation douce des ingrédients : garder item obligatoire, qty number ou undefined, unit optionnelle
