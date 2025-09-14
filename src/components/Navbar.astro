@@ -15,7 +15,16 @@ const links = [
   <div id="siteNav" class="max-w-screen-xl mx-auto px-4 py-3">
     <!-- Mobile header with hamburger -->
     <div class="flex items-center justify-between sm:hidden">
-      <span class="text-base font-semibold text-gray-900">Menu</span>
+      <a
+        href="/"
+        class="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white p-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        aria-label="Aller au planning"
+        title="Planning"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-6 w-6">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3M3 9h18M5 21h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2z" />
+        </svg>
+      </a>
       <button
         id="navToggle"
         type="button"
