@@ -14,8 +14,18 @@ export async function GET({ request }) {
       ...d.data(),
     }));
 
+    // 1.b Charger la sélection Réception (aperitif/entree/plat/dessert)
+    const receptionDoc = await getDoc(doc(db, "reception", "current"));
+    const reception = receptionDoc.exists() ? receptionDoc.data() || {} : {};
+
     // 2. Récupérer toutes les recettes (avec duplication si la même recette est utilisée plusieurs fois)
-    const recipeIds = planning.map((p) => p.recipeId).filter(Boolean);
+    const recipeIds = [
+      ...planning.map((p) => p.recipeId).filter(Boolean),
+      reception.aperitifId || null,
+      reception.entreeId || null,
+      reception.platId || null,
+      reception.dessertId || null,
+    ].filter(Boolean);
 
     const loaded = [];
     const skipped = [];
@@ -26,6 +36,12 @@ export async function GET({ request }) {
       if (p.recipeId) {
         recipeCount[p.recipeId] = (recipeCount[p.recipeId] || 0) + 1;
       }
+    }
+    // Ajouter les 4 slots de la réception
+    const slots = ["aperitifId", "entreeId", "platId", "dessertId"]; 
+    for (const s of slots) {
+      const id = reception[s];
+      if (id) recipeCount[id] = (recipeCount[id] || 0) + 1;
     }
 
     for (const id of [...new Set(recipeIds)]) {
@@ -101,7 +117,7 @@ export async function GET({ request }) {
     const result = { ok: true, items: aggregated };
 
     if (debug) {
-      result.debug = { planning, recipeIds, loaded, skipped, aggregated };
+      result.debug = { planning, reception, recipeIds, loaded, skipped, aggregated };
     }
 
     return new Response(JSON.stringify(result), {

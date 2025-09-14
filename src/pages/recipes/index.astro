@@ -205,6 +205,7 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
 
       const params = new URLSearchParams(window.location.search);
       const dayParam = (params.get("day") || "").toLowerCase();
+      const slotParam = (params.get("slot") || "").toLowerCase();
 
       const normalize = (s) =>
         String(s || "")
@@ -279,6 +280,36 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
             } catch (err) {
               console.error("Assignation échouée:", err);
               alert("Impossible d’ajouter la recette au planning.");
+            }
+          });
+          card.appendChild(addBtn);
+        }
+        if (slotParam) {
+          const addBtn = document.createElement("button");
+          addBtn.type = "button";
+          addBtn.className =
+            "absolute right-2 top-2 z-10 inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-green-600 ring-1 ring-green-200 shadow hover:bg-white hover:text-green-700 hover:ring-green-300 transition";
+          addBtn.title = `Choisir pour ${slotParam}`;
+          addBtn.setAttribute(
+            "aria-label",
+            `Choisir "${r.title}" pour ${slotParam}`
+          );
+          addBtn.innerHTML =
+            '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16M20 12H4" /></svg>';
+          addBtn.addEventListener("click", async (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            try {
+              const res = await fetch("/api/assign-reception", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ slot: slotParam, id: r.id }),
+              });
+              if (!res.ok) throw new Error("assign failed");
+              window.location.href = "/reception";
+            } catch (err) {
+              console.error("Assignation réception échouée:", err);
+              alert("Impossible de sélectionner la recette pour la réception.");
             }
           });
           card.appendChild(addBtn);

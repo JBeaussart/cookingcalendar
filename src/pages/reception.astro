@@ -1,0 +1,157 @@
+---
+import Layout from "../layouts/Layout.astro";
+import { db } from "../firebase";
+import { doc, getDoc } from "firebase/firestore";
+
+type SlotKey = "aperitif" | "entree" | "plat" | "dessert";
+
+const SLOT_LABELS: Record<SlotKey, string> = {
+  aperitif: "Apéritif",
+  entree: "Entrée",
+  plat: "Plat",
+  dessert: "Dessert",
+};
+
+const REF = doc(db, "reception", "current");
+const snap = await getDoc(REF);
+const data = snap.exists() ? (snap.data() as any) : {};
+
+async function loadRecipe(id?: string | null) {
+  if (!id) return null;
+  try {
+    const s = await getDoc(doc(db, "recipes", id));
+    return s.exists() ? { id: s.id, ...(s.data() as any) } : null;
+  } catch {
+    return null;
+  }
+}
+
+const current = {
+  aperitif: await loadRecipe(data.aperitifId ?? null),
+  entree: await loadRecipe(data.entreeId ?? null),
+  plat: await loadRecipe(data.platId ?? null),
+  dessert: await loadRecipe(data.dessertId ?? null),
+};
+---
+
+<Layout title="Reception">
+  <div class="mx-auto max-w-3xl px-4 py-6">
+    <div class="mb-6 flex items-center justify-between">
+      <h1 class="text-2xl font-bold text-gray-900">🍽️ Réception</h1>
+    </div>
+    <div class="grid grid-cols-1 gap-4">
+      {
+        (Object.keys(SLOT_LABELS) as SlotKey[]).map((slot) => {
+          const label = SLOT_LABELS[slot];
+          const r = current[slot];
+          const img = r?.image?.trim?.()
+            ? r.image
+            : "/images/default-recipe.jpg";
+          return (
+            <section class="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+              <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+                <h2 class="text-base font-semibold text-gray-900">{label}</h2>
+                {r ? (
+                  <span class="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
+                    Sélectionné
+                  </span>
+                ) : (
+                  <span class="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700">
+                    À choisir
+                  </span>
+                )}
+              </div>
+
+              {r ? (
+                <div class="p-4 flex items-start gap-3">
+                  <img
+                    src={img}
+                    alt={r.title}
+                    class="h-16 w-16 flex-none rounded-lg object-cover ring-1 ring-gray-200"
+                  />
+                  <div class="min-w-0 flex-1">
+                    <a
+                      href={`/recipes/${r.id}`}
+                      class="block text-sm font-medium text-gray-900 hover:underline leading-snug"
+                    >
+                      {r.title}
+                    </a>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <a
+                      href={`/recipes?slot=${slot}`}
+                      class="inline-flex h-9 items-center justify-center rounded-lg border border-gray-200 px-3 text-blue-600 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 transition"
+                      title="Changer la recette"
+                    >
+                      Changer
+                    </a>
+                    <button
+                      type="button"
+                      class="inline-flex h-9 items-center justify-center rounded-lg border border-gray-200 px-3 text-rose-600 hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700 transition"
+                      data-clear={slot}
+                      title="Retirer la recette"
+                    >
+                      Retirer
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div class="p-6 flex items-center justify-center">
+                  <a
+                    href={`/recipes?slot=${slot}`}
+                    title="Choisir une recette"
+                    class="inline-flex h-12 w-12 items-center justify-center rounded-full bg-blue-600 text-white shadow-sm transition hover:bg-blue-700"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      class="h-6 w-6"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M12 4.5v15m7.5-7.5h-15"
+                      />
+                    </svg>
+                  </a>
+                </div>
+              )}
+            </section>
+          );
+        })
+      }
+    </div>
+    <p id="status" class="mt-4 text-sm text-gray-500"></p>
+  </div>
+  <script is:inline>
+    document.addEventListener("DOMContentLoaded", () => {
+      const status = (t) => {
+        const el = document.getElementById("status");
+        if (el) el.textContent = t || "";
+      };
+      document.querySelectorAll("button[data-clear]").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const slot = btn.getAttribute("data-clear");
+          if (!slot) return;
+          status("Suppression…");
+          try {
+            const r = await fetch("/api/assign-reception", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ slot, id: null }),
+            });
+            if (!r.ok) throw new Error("HTTP " + r.status);
+            status("✅ Mis à jour");
+            window.location.reload();
+          } catch (e) {
+            console.error(e);
+            status("❌ Erreur");
+          }
+        });
+      });
+    });
+  </script>
+</Layout>
