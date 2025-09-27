@@ -4,8 +4,26 @@ import Layout from "../layouts/Layout.astro";
 
 <Layout title="Liste de courses (planning + custom)">
   <div class="mx-auto max-w-3xl px-4 py-6">
-    <div class="mb-6 flex items-center justify-between">
+    <div
+      class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+    >
       <h1 class="text-2xl font-bold text-gray-900">🛒 Liste de courses</h1>
+      <div class="flex flex-wrap gap-2">
+        <button
+          id="btnCheckAll"
+          type="button"
+          class="rounded-md bg-emerald-100 px-3 py-2 text-sm font-medium text-emerald-700 transition hover:bg-emerald-200"
+        >
+          Tout cocher
+        </button>
+        <button
+          id="btnUncheckAll"
+          type="button"
+          class="rounded-md bg-white px-3 py-2 text-sm font-medium text-emerald-600 ring-1 ring-inset ring-emerald-200 transition hover:bg-emerald-50"
+        >
+          Tout décocher
+        </button>
+      </div>
     </div>
 
     <!-- Formulaire d’ajout d’un élément custom -->
@@ -43,7 +61,8 @@ import Layout from "../layouts/Layout.astro";
   <script type="module">
     const listEl = document.getElementById("list");
     const statusEl = document.getElementById("status");
-    const btnReload = document.getElementById("btnReload");
+    const btnCheckAll = document.getElementById("btnCheckAll");
+    const btnUncheckAll = document.getElementById("btnUncheckAll");
     const addForm = document.getElementById("addForm");
     const fItem = document.getElementById("fItem");
     const fQty = document.getElementById("fQty");
@@ -60,6 +79,86 @@ import Layout from "../layouts/Layout.astro";
         .trim()
         .toLowerCase()}`;
 
+    const JSON_HEADERS = { "content-type": "application/json" };
+
+    function serializeComputedItems() {
+      return items
+        .filter((it) => it.source === "computed")
+        .map(({ source, ...rest }) => rest);
+    }
+
+    function serializeCustomItems() {
+      return items
+        .filter((it) => it.source === "custom")
+        .map((it) => ({
+          item: it.item,
+          checked: !!it.checked,
+          ...(it.unit ? { unit: it.unit } : {}),
+        }));
+    }
+
+    function updateBulkButtons() {
+      const hasItems = Array.isArray(items) && items.length > 0;
+      const noneChecked = !hasItems || items.every((it) => !it.checked);
+
+      const toggleState = (btn, disable) => {
+        if (!btn) return;
+        btn.disabled = disable;
+        btn.classList.toggle("opacity-50", disable);
+        btn.classList.toggle("cursor-not-allowed", disable);
+      };
+
+      toggleState(btnCheckAll, !hasItems || !items.some((it) => !it.checked));
+      toggleState(btnUncheckAll, !hasItems || noneChecked);
+    }
+
+    async function applyBulkCheck(nextChecked) {
+      if (!items.length) return;
+
+      const prev = items.map((it) => ({ ...it }));
+      items = items.map((it) => ({ ...it, checked: nextChecked }));
+      render();
+
+      status(nextChecked ? "Cochement…" : "Décochage…");
+
+      try {
+        const computedPayload = serializeComputedItems();
+        const customPayload = serializeCustomItems();
+
+        const requests = [];
+        if (computedPayload.length) {
+          requests.push(
+            fetch("/api/save-shopping-totals", {
+              method: "POST",
+              headers: JSON_HEADERS,
+              body: JSON.stringify({ items: computedPayload }),
+            }),
+          );
+        }
+
+        for (const payload of customPayload) {
+          requests.push(
+            fetch("/api/custom-items", {
+              method: "PATCH",
+              headers: JSON_HEADERS,
+              body: JSON.stringify(payload),
+            }),
+          );
+        }
+
+        const responses = await Promise.all(requests);
+        const failed = responses.find((res) => res && !res.ok);
+        if (failed) throw new Error("Erreur bulk toggle");
+
+        status("✅ Sauvegardé");
+      } catch (e) {
+        console.error(e);
+        items = prev;
+        render();
+        status("❌ Erreur d'enregistrement");
+      }
+    }
+
     function sortItems() {
       // Tri : non cochés en haut, cochés en bas
       items.sort((a, b) => {
@@ -71,6 +170,7 @@ import Layout from "../layouts/Layout.astro";
     function render() {
       sortItems();
       listEl.innerHTML = "";
+      updateBulkButtons();
       if (!Array.isArray(items) || items.length === 0) {
         listEl.innerHTML = `
           <li class="px-6 py-10 text-center text-sm text-gray-600">
@@ -270,6 +370,16 @@ import Layout from "../layouts/Layout.astro";
         console.error(e);
         status("❌ Erreur d'ajout");
       }
+    });
+
+    btnCheckAll?.addEventListener("click", () => {
+      if (!items.length || items.every((it) => it.checked)) return;
+      applyBulkCheck(true);
+    });
+
+    btnUncheckAll?.addEventListener("click", () => {
+      if (!items.length || items.every((it) => !it.checked)) return;
+      applyBulkCheck(false);
     });
 
     await load();
