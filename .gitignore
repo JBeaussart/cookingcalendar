@@ -17,6 +17,9 @@ pnpm-debug.log*
 .env
 .env.production
 
+# firebase admin credentials
+serviceAccountKey.json
+
 # macOS-specific files
 .DS_Store
 
@@ -25,3 +28,6 @@ pnpm-debug.log*
 
 # Local Netlify folder
 .netlify
+
+# firebase
+serviceAccountKey.json
