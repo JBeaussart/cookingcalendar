@@ -271,7 +271,55 @@ import Layout from "../layouts/Layout.astro";
           header.className =
             "bg-emerald-50/70 px-4 py-2 text-xs font-semibold uppercase " +
             "tracking-wide text-emerald-700 sm:text-sm";
-          header.textContent = sectionLabel;
+
+          if (sectionKey === "2:custom") {
+            const wrap = document.createElement("div");
+            wrap.className = "flex items-center justify-between gap-3";
+
+            const title = document.createElement("span");
+            title.textContent = sectionLabel;
+            wrap.appendChild(title);
+
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className =
+              "rounded-full border border-rose-200 bg-white px-3 py-1 text-[11px] " +
+              "font-semibold uppercase tracking-wide text-rose-600 shadow-sm " +
+              "transition hover:bg-rose-50 hover:text-rose-700";
+            btn.textContent = "Tout supprimer";
+
+            btn.addEventListener("click", async () => {
+              if (!items.some((it) => it.source === "custom")) return;
+              const confirmDelete = window.confirm(
+                "Supprimer tous les éléments ajoutés manuellement ?",
+              );
+              if (!confirmDelete) return;
+
+              status("Suppression…");
+              btn.disabled = true;
+              btn.classList.add("opacity-60", "cursor-not-allowed");
+              try {
+                const res = await fetch("/api/custom-items?all=1", {
+                  method: "DELETE",
+                });
+                if (!res.ok) throw new Error("Suppression échouée");
+                await load();
+                status("✅ Supprimé");
+              } catch (e) {
+                console.error(e);
+                status("❌ Erreur de suppression");
+              } finally {
+                btn.disabled = false;
+                btn.classList.remove("opacity-60", "cursor-not-allowed");
+              }
+            });
+
+            wrap.appendChild(btn);
+            header.appendChild(wrap);
+          } else {
+            header.textContent = sectionLabel;
+          }
+
           listEl.appendChild(header);
         }
 

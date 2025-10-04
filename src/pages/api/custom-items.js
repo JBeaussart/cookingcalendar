@@ -147,6 +147,16 @@ export async function PATCH({ request }) {
 export async function DELETE({ request }) {
   try {
     const url = new URL(request.url);
+    const deleteAll = url.searchParams.get("all");
+
+    if (deleteAll) {
+      await writeItems([]);
+      return new Response(JSON.stringify({ ok: true, items: [] }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    }
+
     const item = String(url.searchParams.get("item") || "").trim();
     const unit = String(url.searchParams.get("unit") || "").trim();
 
