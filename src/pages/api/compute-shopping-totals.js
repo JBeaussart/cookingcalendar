@@ -72,6 +72,8 @@ export async function GET({ request }) {
       const count = recipeCount[recipe.id] || 1;
       const ings = Array.isArray(recipe.ingredients) ? recipe.ingredients : [];
 
+      const recipeTitle = String(recipe.title || "").trim() || "Recette";
+
       for (const ing of ings) {
         const item = (typeof ing === "string" ? ing : ing?.item) || "";
         if (!item) continue;
@@ -89,12 +91,22 @@ export async function GET({ request }) {
         const key = `${normalize(item)}|${normalize(unit)}`;
         const prev = totalsMap.get(key);
 
+        const quantityValue = Number.isFinite(quantity) ? quantity : undefined;
+
         if (!prev) {
+          const recipeRefs = new Map();
+          recipeRefs.set(recipe.id, {
+            id: recipe.id,
+            title: recipeTitle,
+            occurrences: count,
+            quantity: quantityValue,
+          });
           totalsMap.set(key, {
             item: item.trim(),
-            quantity: Number.isFinite(quantity) ? quantity : undefined,
+            quantity: quantityValue,
             unit: unit.trim(),
             checked: false,
+            recipeRefs,
           });
         } else {
           if (Number.isFinite(prev.quantity) && Number.isFinite(quantity)) {
@@ -105,14 +117,62 @@ export async function GET({ request }) {
           ) {
             prev.quantity = quantity;
           }
+
+          if (!prev.recipeRefs) {
+            prev.recipeRefs = new Map();
+          }
+
+          const ref = prev.recipeRefs.get(recipe.id);
+          if (ref) {
+            ref.occurrences += count;
+            if (Number.isFinite(ref.quantity) && Number.isFinite(quantityValue)) {
+              ref.quantity += quantityValue;
+            } else if (
+              !Number.isFinite(ref.quantity) &&
+              Number.isFinite(quantityValue)
+            ) {
+              ref.quantity = quantityValue;
+            }
+            prev.recipeRefs.set(recipe.id, ref);
+          } else {
+            prev.recipeRefs.set(recipe.id, {
+              id: recipe.id,
+              title: recipeTitle,
+              occurrences: count,
+              quantity: quantityValue,
+            });
+          }
+
           totalsMap.set(key, prev);
         }
       }
     }
 
-    const aggregated = Array.from(totalsMap.values()).sort((a, b) =>
-      a.item.localeCompare(b.item, "fr"),
-    );
+    const aggregated = Array.from(totalsMap.values()).map((entry) => {
+      const recipeRefs = entry.recipeRefs || new Map();
+      const recipes = Array.from(recipeRefs.values())
+        .map((ref) => ({
+          id: ref.id,
+          title: ref.title,
+          occurrences: ref.occurrences,
+          ...(Number.isFinite(ref.quantity) ? { quantity: ref.quantity } : {}),
+        }))
+        .sort((a, b) => a.title.localeCompare(b.title, "fr"));
+      const primaryRecipe = recipes.length ? recipes[0].title : "Autres";
+
+      const { recipeRefs: _ignored, ...rest } = entry;
+      return {
+        ...rest,
+        recipes,
+        primaryRecipe,
+      };
+    });
+
+    aggregated.sort((a, b) => {
+      const recipeCmp = a.primaryRecipe.localeCompare(b.primaryRecipe, "fr");
+      if (recipeCmp !== 0) return recipeCmp;
+      return a.item.localeCompare(b.item, "fr");
+    });
 
     const result = { ok: true, items: aggregated };
 

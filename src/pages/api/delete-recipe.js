@@ -5,9 +5,11 @@ import {
   deleteDoc,
   collection,
   getDocs,
+  getDoc,
   query,
   where,
   updateDoc,
+  setDoc,
 } from "firebase/firestore";
 
 export async function DELETE({ request }) {
@@ -36,6 +38,20 @@ export async function DELETE({ request }) {
         await updateDoc(doc(db, "planning", d.id), { recipeId: "" });
       }),
     );
+
+    const receptionRef = doc(db, "reception", "current");
+    const receptionSnap = await getDoc(receptionRef);
+    if (receptionSnap.exists()) {
+      const data = receptionSnap.data() || {};
+      const slots = ["aperitifId", "entreeId", "platId", "dessertId"];
+      const updates = {};
+      for (const field of slots) {
+        if (data[field] === id) updates[field] = null;
+      }
+      if (Object.keys(updates).length > 0) {
+        await setDoc(receptionRef, updates, { merge: true });
+      }
+    }
 
     // Renvoie une URL de redirection (change-la si tu utilises /recettes)
     const redirect = "/recipes";

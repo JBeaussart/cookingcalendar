@@ -72,6 +72,63 @@ import Layout from "../layouts/Layout.astro";
     let customs = [];
     let items = [];
 
+    const SECTION_FALLBACK = "Autres recettes";
+    const SECTION_CUSTOM = "Divers";
+
+    function normalizeTitle(input) {
+      const t = String(input || "").trim();
+      return t || SECTION_FALLBACK;
+    }
+
+    function decorateCustomItem(it) {
+      return {
+        ...it,
+        sectionKey: "2:custom",
+        sectionLabel: SECTION_CUSTOM,
+      };
+    }
+
+    function makeSectionKey(title) {
+      return `1:${normalizeTitle(title).toLowerCase()}`;
+    }
+
+    function expandComputedEntry(entry, checked) {
+      const baseKey = makeKey(entry);
+      const totalQuantity = Number.isFinite(entry.quantity)
+        ? entry.quantity
+        : undefined;
+
+      const rawRefs = Array.isArray(entry.recipes) ? entry.recipes : [];
+      const refs = rawRefs.length
+        ? rawRefs
+        : [
+            {
+              title: entry.primaryRecipe || SECTION_FALLBACK,
+              quantity: totalQuantity,
+            },
+          ];
+
+      return refs
+        .map((ref) => ({
+          title: normalizeTitle(ref?.title),
+          quantity: Number.isFinite(ref?.quantity)
+            ? ref.quantity
+            : totalQuantity,
+        }))
+        .sort((a, b) => a.title.localeCompare(b.title, "fr"))
+        .map((ref) => ({
+          source: "computed",
+          item: entry.item,
+          unit: entry.unit,
+          quantity: Number.isFinite(ref.quantity) ? ref.quantity : undefined,
+          checked,
+          sectionKey: makeSectionKey(ref.title),
+          sectionLabel: ref.title,
+          baseKey,
+          baseQuantity: totalQuantity,
+        }));
+    }
+
     const makeKey = (it) =>
       `${String(it.item || "")
         .trim()
@@ -82,9 +139,29 @@ import Layout from "../layouts/Layout.astro";
     const JSON_HEADERS = { "content-type": "application/json" };
 
     function serializeComputedItems() {
-      return items
+      const byKey = new Map();
+      items
         .filter((it) => it.source === "computed")
-        .map(({ source, ...rest }) => rest);
+        .forEach((it) => {
+          const key = it.baseKey || makeKey(it);
+          if (!byKey.has(key)) {
+            const unitValue = typeof it.unit === "string" ? it.unit : "";
+            const payload = {
+              item: it.item,
+              unit: unitValue,
+              checked: !!it.checked,
+            };
+            if (Number.isFinite(it.baseQuantity)) {
+              payload.quantity = it.baseQuantity;
+            }
+            byKey.set(key, payload);
+          } else if (it.checked) {
+            const payload = byKey.get(key);
+            payload.checked = true;
+            byKey.set(key, payload);
+          }
+        });
+      return Array.from(byKey.values());
     }
 
     function serializeCustomItems() {
@@ -160,10 +237,12 @@ import Layout from "../layouts/Layout.astro";
     }
 
     function sortItems() {
-      // Tri : non cochés en haut, cochés en bas
       items.sort((a, b) => {
-        if (a.checked === b.checked) return a.item.localeCompare(b.item, "fr");
-        return a.checked ? 1 : -1;
+        const keyA = a.sectionKey || "";
+        const keyB = b.sectionKey || "";
+        if (keyA !== keyB) return keyA.localeCompare(keyB, "fr");
+        if (a.checked !== b.checked) return a.checked ? 1 : -1;
+        return String(a.item || "").localeCompare(String(b.item || ""), "fr");
       });
     }
 
@@ -179,8 +258,23 @@ import Layout from "../layouts/Layout.astro";
         return;
       }
 
+      let currentSectionKey = null;
+
       items.forEach((row, idx) => {
         const isCustom = row.source === "custom";
+        const sectionKey = row.sectionKey || (isCustom ? "2:custom" : "1:autres");
+        const sectionLabel = row.sectionLabel || (isCustom ? SECTION_CUSTOM : SECTION_FALLBACK);
+
+        if (sectionKey !== currentSectionKey) {
+          currentSectionKey = sectionKey;
+          const header = document.createElement("li");
+          header.className =
+            "bg-emerald-50/70 px-4 py-2 text-xs font-semibold uppercase " +
+            "tracking-wide text-emerald-700 sm:text-sm";
+          header.textContent = sectionLabel;
+          listEl.appendChild(header);
+        }
+
         const hasQty = typeof row.quantity === "number" && !isNaN(row.quantity);
         const txt = hasQty
           ? `${row.item} : ${row.quantity}${row.unit ? " " + row.unit : ""}`
@@ -204,14 +298,18 @@ import Layout from "../layouts/Layout.astro";
           "peer h-5 w-5 shrink-0 rounded-md border-gray-300 " +
           "text-emerald-600 focus:ring-2 focus:ring-emerald-400";
 
-        const text = document.createElement("span");
-        text.className =
+        const labelWrapper = document.createElement("div");
+        labelWrapper.className = "flex flex-col";
+
+        const mainText = document.createElement("span");
+        mainText.className =
           "text-[15px] " +
           (cb.checked ? "line-through text-gray-400" : "text-gray-800");
-        text.textContent = txt;
+        mainText.textContent = txt;
+        labelWrapper.appendChild(mainText);
 
         left.appendChild(cb);
-        left.appendChild(text);
+        left.appendChild(labelWrapper);
 
         // Droite : actions
         const right = document.createElement("div");
@@ -243,23 +341,34 @@ import Layout from "../layouts/Layout.astro";
       listEl.querySelectorAll('input[type="checkbox"]').forEach((cb) => {
         cb.addEventListener("change", async () => {
           const i = Number(cb.dataset.idx);
-          items[i].checked = cb.checked;
+          const target = items[i];
+          if (!target) return;
+
+          if (target.source === "computed") {
+            const key = target.baseKey || makeKey(target);
+            items = items.map((it) =>
+              it.source === "computed" && (it.baseKey || makeKey(it)) === key
+                ? { ...it, checked: cb.checked }
+                : it,
+            );
+          } else {
+            items[i] = { ...target, checked: cb.checked };
+          }
+
           status("Enregistrement…");
 
           try {
-            if (items[i].source === "custom") {
+            if (target.source === "custom") {
               await fetch("/api/custom-items", {
                 method: "PATCH",
                 headers: { "content-type": "application/json" },
                 body: JSON.stringify({
-                  item: items[i].item,
-                  checked: items[i].checked,
+                  item: target.item,
+                  checked: cb.checked,
                 }),
               });
             } else {
-              const payload = items
-                .filter((it) => it.source === "computed")
-                .map(({ source, ...rest }) => rest);
+              const payload = serializeComputedItems();
 
               await fetch("/api/save-shopping-totals", {
                 method: "POST",
@@ -317,22 +426,22 @@ import Layout from "../layouts/Layout.astro";
           r3.json(),
         ]);
 
-        computed = (Array.isArray(j1.items) ? j1.items : []).map((it) => ({
-          ...it,
-          source: "computed",
-        }));
-        saved = Array.isArray(j2.items) ? j2.items : [];
-        customs = (Array.isArray(j3.items) ? j3.items : []).map((it) => ({
-          ...it,
-          source: "custom",
-        }));
+        const rawComputed = Array.isArray(j1.items) ? j1.items : [];
+        const rawCustoms = Array.isArray(j3.items) ? j3.items : [];
 
-        const idxByKey = new Map(computed.map((it, i) => [makeKey(it), i]));
-        computed = computed.map((it) => ({ ...it, checked: false }));
+        saved = Array.isArray(j2.items) ? j2.items : [];
+
+        const savedChecked = new Map();
         for (const s of saved) {
-          const idx = idxByKey.get(makeKey(s));
-          if (idx != null) computed[idx].checked = !!s.checked;
+          savedChecked.set(makeKey(s), !!s.checked);
         }
+
+        computed = rawComputed.flatMap((entry) => {
+          const isChecked = savedChecked.get(makeKey(entry)) || false;
+          return expandComputedEntry(entry, isChecked);
+        });
+
+        customs = rawCustoms.map((it) => decorateCustomItem({ ...it, source: "custom" }));
 
         items = [...computed, ...customs];
 

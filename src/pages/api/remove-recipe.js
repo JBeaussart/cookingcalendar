@@ -1,6 +1,6 @@
 // src/pages/api/remove-recipe.js
 import { db } from "../../firebase";
-import { doc, updateDoc } from "firebase/firestore";
+import { doc, setDoc } from "firebase/firestore";
 
 export async function POST({ request }) {
   try {
@@ -12,7 +12,11 @@ export async function POST({ request }) {
     }
 
     // On supprime la recette associée au jour (on met recipeId = "")
-    await updateDoc(doc(db, "planning", day), { recipeId: "" });
+    await setDoc(
+      doc(db, "planning", day),
+      { recipeId: "" },
+      { merge: true },
+    );
 
     console.log(`✅ Recette supprimée pour le jour ${day}`);
 

@@ -1,46 +1,49 @@
-# Astro Starter Kit: Basics
+# Cooking Calendar
 
-```sh
-npm create astro@latest -- --template basics
+Planificateur de repas construit avec [Astro](https://astro.build/) et Firebase. Gère un planning hebdomadaire, une sélection spéciale "Réception" et la liste de courses calculée automatiquement.
+
+## 🚀 Démarrer
+
+```bash
+npm install
+npm run dev
 ```
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+Build de production :
 
-## 🚀 Project Structure
-
-Inside of your Astro project, you'll see the following folders and files:
-
-```text
-/
-├── public/
-│   └── favicon.svg
-├── src
-│   ├── assets
-│   │   └── astro.svg
-│   ├── components
-│   │   └── Welcome.astro
-│   ├── layouts
-│   │   └── Layout.astro
-│   └── pages
-│       └── index.astro
-└── package.json
+```bash
+npm run build
+npm run preview
 ```
 
-To learn more about the folder structure of an Astro project, refer to [our guide on project structure](https://docs.astro.build/en/basics/project-structure/).
+## 🗂️ Structure principale
 
-## 🧞 Commands
+- `src/pages/index.astro` : planning des repas.
+- `src/pages/recipes/` : catalogue, ajout/édition/suppression de recettes.
+- `src/pages/reception.astro` : slots dédiés (Apéritif, Entrée, Plat, Dessert).
+- `src/pages/shoppingList.astro` : liste de courses synchronisée (totaux + items custom).
+- `src/pages/api/*` : endpoints Astro SSR pour manipuler Firestore.
+- `src/components/` : composants partagés (`Navbar`, `Modal`).
+- `scripts/` : scripts Node (seed, initialisation, CLI admin).
 
-All commands are run from the root of the project, from a terminal:
+## 🔧 Configuration Firebase
 
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
+Copiez votre configuration dans `src/firebase.js` et les scripts (`scripts/*.js`). Collections utilisées :
 
-## 👀 Want to learn more?
+- `recipes`
+- `planning`
+- `reception/current`
+- `shoppingTotals/current`
+- `shoppingCustom/current`
 
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+## 🧪 Tests manuels suggérés
+
+1. Ajouter une recette et l’assigner au planning.
+2. Supprimer une recette utilisée par la réception et vérifier le nettoyage.
+3. Générer la liste de courses, cocher/décocher les items et ajouter un item personnalisé.
+
+## 🛠️ Outils supplémentaires
+
+- `scripts/adminClient.js` : CLI CRUD pour Firestore via Firebase Admin.
+- Pages de debug (`/debug-compute`, `/debug-shopping`) à utiliser uniquement en environnement de test.
+
