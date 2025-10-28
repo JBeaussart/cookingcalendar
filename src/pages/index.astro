@@ -1,41 +1,64 @@
 ---
 /* src/pages/index.astro (planning) */
-import Layout from '../layouts/Layout.astro'
-import { db } from '../firebase'
-import { collection, getDocs, query, where, documentId } from 'firebase/firestore'
+import Layout from "../layouts/Layout.astro";
+import { db } from "../firebase";
+import {
+  collection,
+  getDocs,
+  query,
+  where,
+  documentId,
+} from "firebase/firestore";
 
-const days = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche']
+const days = [
+  "lundi",
+  "mardi",
+  "mercredi",
+  "jeudi",
+  "vendredi",
+  "samedi",
+  "dimanche",
+];
 
 // Lire planning (doc id = nom du jour, champ: recipeId)
-const planningSnap = await getDocs(collection(db, 'planning'))
-const planningMap = new Map(planningSnap.docs.map((d) => [d.id, d.data()?.recipeId || '']))
+const planningSnap = await getDocs(collection(db, "planning"));
+const planningMap = new Map(
+  planningSnap.docs.map((d) => [d.id, d.data()?.recipeId || ""]),
+);
 
 // Charger les recettes référencées (lotissement par 10)
-const recipeIds = days.map((d) => planningMap.get(d) || '').filter(Boolean)
-const recipesById = new Map()
+const recipeIds = days.map((d) => planningMap.get(d) || "").filter(Boolean);
+const recipesById = new Map();
 if (recipeIds.length) {
   for (let i = 0; i < recipeIds.length; i += 10) {
-    const chunk = recipeIds.slice(i, i + 10)
-    const q = query(collection(db, 'recipes'), where(documentId(), 'in', chunk))
-    const snap = await getDocs(q)
+    const chunk = recipeIds.slice(i, i + 10);
+    const q = query(
+      collection(db, "recipes"),
+      where(documentId(), "in", chunk),
+    );
+    const snap = await getDocs(q);
     for (const d of snap.docs) {
-      recipesById.set(d.id, { id: d.id, ...d.data() })
+      recipesById.set(d.id, { id: d.id, ...d.data() });
     }
   }
 }
 
 const entries = days.map((day) => {
-  const rid = planningMap.get(day) || ''
-  return { day, recipe: rid ? (recipesById.get(rid) ?? null) : null }
-})
+  const rid = planningMap.get(day) || "";
+  return { day, recipe: rid ? (recipesById.get(rid) ?? null) : null };
+});
 ---
 
 <Layout title="Planning">
   <div class="mx-auto max-w-5xl px-4 py-6 sm:py-8">
     <header class="mb-6 sm:mb-8 flex items-center justify-between gap-3">
       <div>
-        <h1 class="text-2xl font-bold tracking-tight text-gray-900">🗓️ Planning de la semaine</h1>
-        <p class="mt-1 text-sm text-gray-600">Sélectionne une recette pour chaque jour.</p>
+        <h1 class="text-2xl font-bold tracking-tight text-gray-900">
+          🗓️ Planning de la semaine
+        </h1>
+        <p class="mt-1 text-sm text-gray-600">
+          Sélectionne une recette pour chaque jour.
+        </p>
       </div>
       <form method="post" action="/api/clear-planning" class="shrink-0">
         <button
@@ -51,7 +74,10 @@ const entries = days.map((day) => {
             stroke-width="1.5"
             class="h-5 w-5"
           >
-            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M6 18L18 6M6 6l12 12"></path>
           </svg>
           Réinitialiser le planning
         </button>
@@ -64,11 +90,17 @@ const entries = days.map((day) => {
           const img =
             recipe?.image && String(recipe.image).trim()
               ? recipe.image
-              : '/images/default-recipe.jpg'
+              : "/images/default-recipe.jpg";
           return (
-            <section class="group rounded-xl border border-gray-200 bg-white shadow-sm transition hover:shadow-md">
+            <section
+              class="group rounded-xl border border-gray-200 bg-white shadow-sm transition hover:shadow-md js-planning-dropzone"
+              data-day={day}
+              data-current-recipe-id={recipe ? recipe.id : ""}
+            >
               <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-                <h2 class="text-base font-semibold capitalize text-gray-900">{day}</h2>
+                <h2 class="text-base font-semibold capitalize text-gray-900">
+                  {day}
+                </h2>
                 {recipe ? (
                   <span class="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
                     Planifié
@@ -82,7 +114,12 @@ const entries = days.map((day) => {
 
               {recipe ? (
                 <div class="p-4">
-                  <div class="flex items-start gap-3">
+                  <div
+                    class="flex items-start gap-3 rounded-lg border border-transparent transition-colors cursor-grab active:cursor-grabbing hover:border-emerald-200 hover:bg-emerald-50/40 js-planning-draggable"
+                    draggable="true"
+                    data-day={day}
+                    data-recipe-id={recipe.id}
+                  >
                     <img
                       src={img}
                       alt={recipe.title}
@@ -91,6 +128,7 @@ const entries = days.map((day) => {
                     <div class="min-w-0 flex-1">
                       <a
                         href={`/recipes/${recipe.id}`}
+                        draggable="false"
                         class="block text-sm font-medium text-gray-900 hover:underline leading-snug"
                       >
                         {recipe.title}
@@ -101,6 +139,7 @@ const entries = days.map((day) => {
                       <a
                         href={`/recipes/${recipe.id}`}
                         title="Voir la recette"
+                        draggable="false"
                         class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 text-blue-600 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 transition"
                       >
                         <svg
@@ -132,6 +171,7 @@ const entries = days.map((day) => {
                         <button
                           type="submit"
                           title="Retirer la recette"
+                          draggable="false"
                           class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 text-red-600 hover:border-red-300 hover:bg-red-50 hover:text-red-700 transition"
                         >
                           <svg
@@ -178,9 +218,147 @@ const entries = days.map((day) => {
                 </div>
               )}
             </section>
-          )
+          );
         })
       }
     </div>
   </div>
+
+  <script type="module">
+    // Enable drag & drop reassignment between planning days.
+    const initPlanningDnD = () => {
+      const dropzones = Array.from(
+        document.querySelectorAll(".js-planning-dropzone"),
+      );
+      const draggables = Array.from(
+        document.querySelectorAll(".js-planning-draggable"),
+      );
+      let dragPayload = null;
+
+      const clearDropHighlights = () => {
+        dropzones.forEach((zone) => {
+          zone.classList.remove(
+            "ring-2",
+            "ring-emerald-400",
+            "ring-offset-2",
+            "ring-offset-white",
+          );
+        });
+      };
+
+      draggables.forEach((el) => {
+        el.addEventListener("dragstart", (event) => {
+          const day = el.dataset.day;
+          const recipeId = el.dataset.recipeId;
+          if (!day || !recipeId) {
+            event.preventDefault();
+            return;
+          }
+          dragPayload = { day, recipeId };
+          el.classList.add("opacity-60");
+          if (event.dataTransfer) {
+            event.dataTransfer.effectAllowed = "move";
+            try {
+              event.dataTransfer.setData(
+                "application/json",
+                JSON.stringify(dragPayload),
+              );
+            } catch (_) {
+              event.dataTransfer.setData("text/plain", recipeId);
+            }
+          }
+        });
+
+        el.addEventListener("dragend", () => {
+          el.classList.remove("opacity-60");
+          dragPayload = null;
+          clearDropHighlights();
+        });
+      });
+
+      dropzones.forEach((zone) => {
+        zone.addEventListener("dragenter", (event) => {
+          if (!dragPayload) return;
+          event.preventDefault();
+          zone.classList.add(
+            "ring-2",
+            "ring-emerald-400",
+            "ring-offset-2",
+            "ring-offset-white",
+          );
+        });
+
+        zone.addEventListener("dragover", (event) => {
+          if (!dragPayload) return;
+          event.preventDefault();
+        });
+
+        zone.addEventListener("dragleave", (event) => {
+          if (!dragPayload) return;
+          const related = event.relatedTarget;
+          if (related && zone.contains(related)) return;
+          zone.classList.remove(
+            "ring-2",
+            "ring-emerald-400",
+            "ring-offset-2",
+            "ring-offset-white",
+          );
+        });
+
+        zone.addEventListener("drop", async (event) => {
+          if (!dragPayload) return;
+          event.preventDefault();
+          zone.classList.remove(
+            "ring-2",
+            "ring-emerald-400",
+            "ring-offset-2",
+            "ring-offset-white",
+          );
+
+          const toDay = (zone.dataset.day || "").trim();
+          const currentId = (zone.dataset.currentRecipeId || "").trim();
+          const { day: fromDay, recipeId } = dragPayload;
+          const sourceDay = (fromDay || "").trim();
+
+          if (!toDay || !recipeId || !sourceDay) return;
+          if (toDay === sourceDay) return;
+          if (currentId === recipeId) return;
+
+          zone.classList.add("opacity-60");
+
+          try {
+            const res = await fetch("/api/move-recipe", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                fromDay: sourceDay,
+                toDay,
+                recipeId,
+                replaceWith: currentId || null,
+              }),
+            });
+
+            if (!res.ok) throw new Error("move failed");
+            window.location.reload();
+          } catch (err) {
+            console.error("Déplacement impossible", err);
+            alert("Impossible de déplacer la recette. Merci de réessayer.");
+            zone.classList.remove("opacity-60");
+          } finally {
+            zone.classList.remove("opacity-60");
+            dragPayload = null;
+            clearDropHighlights();
+          }
+        });
+      });
+    };
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", initPlanningDnD, {
+        once: true,
+      });
+    } else {
+      initPlanningDnD();
+    }
+  </script>
 </Layout>
