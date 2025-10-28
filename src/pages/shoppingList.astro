@@ -92,7 +92,27 @@ import Layout from "../layouts/Layout.astro";
       return `1:${normalizeTitle(title).toLowerCase()}`;
     }
 
-    function expandComputedEntry(entry, checked) {
+    const makeKey = (it) =>
+      `${String(it.item || "")
+        .trim()
+        .toLowerCase()}|||${String(it.unit || "")
+        .trim()
+        .toLowerCase()}`;
+
+    function makeEntryKey(entry, ref) {
+      const base = makeKey(entry);
+      const refId =
+        typeof ref?.id === "string" && ref.id.trim() ? ref.id.trim() : "";
+      if (refId) {
+        return `${base}||recipe:${refId}`;
+      }
+      const label = normalizeTitle(
+        ref?.title || entry.primaryRecipe || SECTION_FALLBACK,
+      );
+      return `${base}||title:${label.toLowerCase()}`;
+    }
+
+    function expandComputedEntry(entry, savedChecked) {
       const baseKey = makeKey(entry);
       const totalQuantity = Number.isFinite(entry.quantity)
         ? entry.quantity
@@ -103,65 +123,75 @@ import Layout from "../layouts/Layout.astro";
         ? rawRefs
         : [
             {
+              id: null,
               title: entry.primaryRecipe || SECTION_FALLBACK,
               quantity: totalQuantity,
             },
           ];
 
       return refs
-        .map((ref) => ({
-          title: normalizeTitle(ref?.title),
-          quantity: Number.isFinite(ref?.quantity)
-            ? ref.quantity
-            : totalQuantity,
-        }))
-        .sort((a, b) => a.title.localeCompare(b.title, "fr"))
-        .map((ref) => ({
-          source: "computed",
-          item: entry.item,
-          unit: entry.unit,
-          quantity: Number.isFinite(ref.quantity) ? ref.quantity : undefined,
-          checked,
-          sectionKey: makeSectionKey(ref.title),
-          sectionLabel: ref.title,
-          baseKey,
-          baseQuantity: totalQuantity,
-        }));
+        .map((ref) => {
+          const label = normalizeTitle(ref?.title);
+          const entryKey = makeEntryKey(entry, {
+            id: ref?.id,
+            title: label,
+          });
+          const isChecked =
+            (savedChecked && savedChecked.get(entryKey)) ??
+            (savedChecked && savedChecked.get(baseKey)) ??
+            false;
+          return {
+            source: "computed",
+            item: entry.item,
+            unit: entry.unit,
+            quantity: Number.isFinite(ref?.quantity)
+              ? ref.quantity
+              : totalQuantity,
+            checked: isChecked,
+            sectionKey: makeSectionKey(label),
+            sectionLabel: label,
+            baseKey,
+            baseQuantity: totalQuantity,
+            entryKey,
+            recipeId:
+              typeof ref?.id === "string" && ref.id.trim()
+                ? ref.id.trim()
+                : null,
+          };
+        })
+        .sort((a, b) => a.sectionLabel.localeCompare(b.sectionLabel, "fr"));
     }
-
-    const makeKey = (it) =>
-      `${String(it.item || "")
-        .trim()
-        .toLowerCase()}|||${String(it.unit || "")
-        .trim()
-        .toLowerCase()}`;
 
     const JSON_HEADERS = { "content-type": "application/json" };
 
     function serializeComputedItems() {
-      const byKey = new Map();
+      const seen = new Map();
+      const result = [];
       items
         .filter((it) => it.source === "computed")
         .forEach((it) => {
-          const key = it.baseKey || makeKey(it);
-          if (!byKey.has(key)) {
-            const unitValue = typeof it.unit === "string" ? it.unit : "";
-            const payload = {
-              item: it.item,
-              unit: unitValue,
-              checked: !!it.checked,
-            };
-            if (Number.isFinite(it.baseQuantity)) {
-              payload.quantity = it.baseQuantity;
-            }
-            byKey.set(key, payload);
-          } else if (it.checked) {
-            const payload = byKey.get(key);
-            payload.checked = true;
-            byKey.set(key, payload);
+          const unitValue = typeof it.unit === "string" ? it.unit : "";
+          const payload = {
+            item: it.item,
+            unit: unitValue,
+            checked: !!it.checked,
+          };
+          if (Number.isFinite(it.baseQuantity)) {
+            payload.quantity = it.baseQuantity;
+          }
+          if (typeof it.entryKey === "string" && it.entryKey) {
+            payload.entryKey = it.entryKey;
+          }
+          const key = payload.entryKey || makeKey(it);
+          if (!seen.has(key)) {
+            seen.set(key, payload);
+            result.push(payload);
+          } else if (payload.checked) {
+            const ref = seen.get(key);
+            ref.checked = true;
           }
         });
-      return Array.from(byKey.values());
+      return result;
     }
 
     function serializeCustomItems() {
@@ -262,8 +292,10 @@ import Layout from "../layouts/Layout.astro";
 
       items.forEach((row, idx) => {
         const isCustom = row.source === "custom";
-        const sectionKey = row.sectionKey || (isCustom ? "2:custom" : "1:autres");
-        const sectionLabel = row.sectionLabel || (isCustom ? SECTION_CUSTOM : SECTION_FALLBACK);
+        const sectionKey =
+          row.sectionKey || (isCustom ? "2:custom" : "1:autres");
+        const sectionLabel =
+          row.sectionLabel || (isCustom ? SECTION_CUSTOM : SECTION_FALLBACK);
 
         if (sectionKey !== currentSectionKey) {
           currentSectionKey = sectionKey;
@@ -393,12 +425,19 @@ import Layout from "../layouts/Layout.astro";
           if (!target) return;
 
           if (target.source === "computed") {
-            const key = target.baseKey || makeKey(target);
-            items = items.map((it) =>
-              it.source === "computed" && (it.baseKey || makeKey(it)) === key
-                ? { ...it, checked: cb.checked }
-                : it,
-            );
+            const entryKey =
+              typeof target.entryKey === "string" && target.entryKey
+                ? target.entryKey
+                : null;
+            if (entryKey) {
+              items = items.map((it) =>
+                it.source === "computed" && it.entryKey === entryKey
+                  ? { ...it, checked: cb.checked }
+                  : it,
+              );
+            } else {
+              items[i] = { ...target, checked: cb.checked };
+            }
           } else {
             items[i] = { ...target, checked: cb.checked };
           }
@@ -481,15 +520,27 @@ import Layout from "../layouts/Layout.astro";
 
         const savedChecked = new Map();
         for (const s of saved) {
-          savedChecked.set(makeKey(s), !!s.checked);
+          const state = !!s.checked;
+          const entryKey =
+            typeof s.entryKey === "string" && s.entryKey.trim()
+              ? s.entryKey.trim()
+              : "";
+          if (entryKey) {
+            savedChecked.set(entryKey, state);
+          }
+          const base = makeKey(s);
+          if (!savedChecked.has(base) || state) {
+            savedChecked.set(base, state);
+          }
         }
 
-        computed = rawComputed.flatMap((entry) => {
-          const isChecked = savedChecked.get(makeKey(entry)) || false;
-          return expandComputedEntry(entry, isChecked);
-        });
+        computed = rawComputed.flatMap((entry) =>
+          expandComputedEntry(entry, savedChecked),
+        );
 
-        customs = rawCustoms.map((it) => decorateCustomItem({ ...it, source: "custom" }));
+        customs = rawCustoms.map((it) =>
+          decorateCustomItem({ ...it, source: "custom" }),
+        );
 
         items = [...computed, ...customs];
 

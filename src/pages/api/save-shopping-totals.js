@@ -49,6 +49,10 @@ export async function POST({ request }) {
     const items = body.items.map((it) => {
       const item = String(it?.item || "").trim();
       const unit = String(it?.unit || "").trim();
+      const entryKey =
+        typeof it?.entryKey === "string" && it.entryKey.trim()
+          ? it.entryKey.trim()
+          : "";
       const q =
         it?.quantity === null || typeof it?.quantity === "undefined"
           ? undefined
@@ -58,6 +62,7 @@ export async function POST({ request }) {
         unit,
         checked: !!it?.checked,
         ...(Number.isFinite(q) ? { quantity: q } : {}),
+        ...(entryKey ? { entryKey } : {}),
       };
     });
 
