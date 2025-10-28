@@ -235,16 +235,91 @@ const entries = days.map((day) => {
       );
       let dragPayload = null;
 
-      const clearDropHighlights = () => {
-        dropzones.forEach((zone) => {
-          zone.classList.remove(
-            "ring-2",
-            "ring-emerald-400",
-            "ring-offset-2",
-            "ring-offset-white",
-          );
-        });
+      const DROP_HIGHLIGHT_CLASSES = [
+        "ring-2",
+        "ring-emerald-400",
+        "ring-offset-2",
+        "ring-offset-white",
+      ];
+
+      const highlightDropzone = (zone) => {
+        zone.classList.add(...DROP_HIGHLIGHT_CLASSES);
       };
+
+      const removeDropHighlight = (zone) => {
+        zone.classList.remove(...DROP_HIGHLIGHT_CLASSES);
+      };
+
+      const clearDropHighlights = () => {
+        dropzones.forEach(removeDropHighlight);
+      };
+
+      const resetDragState = () => {
+        dragPayload = null;
+        clearDropHighlights();
+      };
+
+      const performAssignment = async (zone, payload) => {
+        if (!payload) {
+          resetDragState();
+          return;
+        }
+
+        const toDay = (zone.dataset.day || "").trim();
+        const currentId = (zone.dataset.currentRecipeId || "").trim();
+        const { day: fromDay, recipeId } = payload;
+        const sourceDay = (fromDay || "").trim();
+
+        if (!toDay || !recipeId || !sourceDay) {
+          resetDragState();
+          return;
+        }
+        if (toDay === sourceDay || currentId === recipeId) {
+          resetDragState();
+          return;
+        }
+
+        zone.classList.add("opacity-60");
+
+        try {
+          const res = await fetch("/api/move-recipe", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              fromDay: sourceDay,
+              toDay,
+              recipeId,
+              replaceWith: currentId || null,
+            }),
+          });
+
+          if (!res.ok) throw new Error("move failed");
+          window.location.reload();
+        } catch (err) {
+          console.error("Déplacement impossible", err);
+          alert("Impossible de déplacer la recette. Merci de réessayer.");
+        } finally {
+          zone.classList.remove("opacity-60");
+          resetDragState();
+        }
+      };
+
+      const findDropzoneAt = (clientX, clientY) => {
+        const el = document.elementFromPoint(clientX, clientY);
+        if (!el) return null;
+        return (
+          dropzones.find((zone) => zone === el || zone.contains(el)) || null
+        );
+      };
+
+      const maxTouchPoints =
+        typeof navigator !== "undefined" ? navigator.maxTouchPoints || 0 : 0;
+      const isTouchCapable =
+        typeof window !== "undefined" &&
+        ("ontouchstart" in window ||
+          maxTouchPoints > 0 ||
+          (window.matchMedia &&
+            window.matchMedia("(pointer: coarse)").matches));
 
       draggables.forEach((el) => {
         el.addEventListener("dragstart", (event) => {
@@ -271,8 +346,103 @@ const entries = days.map((day) => {
 
         el.addEventListener("dragend", () => {
           el.classList.remove("opacity-60");
-          dragPayload = null;
-          clearDropHighlights();
+          resetDragState();
+        });
+
+        if (!isTouchCapable) {
+          return;
+        }
+
+        el.style.touchAction = "none";
+
+        el.addEventListener("pointerdown", (event) => {
+          if (event.pointerType !== "touch") return;
+          if (event.target && event.target.closest("a, button")) return;
+
+          const day = el.dataset.day;
+          const recipeId = el.dataset.recipeId;
+          if (!day || !recipeId) return;
+
+          event.preventDefault();
+
+          dragPayload = { day, recipeId };
+          el.classList.add("opacity-60");
+
+          const rect = el.getBoundingClientRect();
+          const offsetX = event.clientX - rect.left;
+          const offsetY = event.clientY - rect.top;
+
+          const ghost = el.cloneNode(true);
+          ghost.style.position = "fixed";
+          ghost.style.top = `${rect.top}px`;
+          ghost.style.left = `${rect.left}px`;
+          ghost.style.width = `${rect.width}px`;
+          ghost.style.pointerEvents = "none";
+          ghost.style.zIndex = "9999";
+          ghost.style.transform = "translate3d(0, 0, 0)";
+          ghost.classList.add(
+            "shadow-lg",
+            "ring-1",
+            "ring-emerald-200",
+            "bg-white",
+          );
+          document.body.appendChild(ghost);
+
+          let activeZone = null;
+
+          const updateGhostPosition = (clientX, clientY) => {
+            ghost.style.transform = `translate3d(${clientX - offsetX}px, ${
+              clientY - offsetY
+            }px, 0)`;
+          };
+
+          updateGhostPosition(event.clientX, event.clientY);
+
+          const pointerId = event.pointerId;
+
+          const handleMove = (moveEvent) => {
+            if (moveEvent.pointerId !== pointerId) return;
+            moveEvent.preventDefault();
+            updateGhostPosition(moveEvent.clientX, moveEvent.clientY);
+            const zone = findDropzoneAt(moveEvent.clientX, moveEvent.clientY);
+            if (zone !== activeZone) {
+              if (activeZone) removeDropHighlight(activeZone);
+              activeZone = zone;
+              if (activeZone) highlightDropzone(activeZone);
+            }
+          };
+
+          const finishDrag = (finalEvent, shouldDrop) => {
+            if (finalEvent.pointerId !== pointerId) return;
+            finalEvent.preventDefault();
+            document.removeEventListener("pointermove", handleMove);
+            document.removeEventListener("pointerup", onPointerUp);
+            document.removeEventListener("pointercancel", onPointerCancel);
+            ghost.remove();
+            el.classList.remove("opacity-60");
+            if (activeZone && shouldDrop) {
+              const target = activeZone;
+              activeZone = null;
+              void performAssignment(target, dragPayload);
+            } else {
+              if (activeZone) removeDropHighlight(activeZone);
+              resetDragState();
+            }
+          };
+
+          const onPointerUp = (upEvent) => finishDrag(upEvent, true);
+          const onPointerCancel = (cancelEvent) =>
+            finishDrag(cancelEvent, false);
+
+          document.addEventListener("pointermove", handleMove, {
+            passive: false,
+          });
+          document.addEventListener("pointerup", onPointerUp, {
+            passive: false,
+          });
+          document.addEventListener("pointercancel", onPointerCancel, {
+            passive: false,
+          });
         });
       });
 
@@ -280,12 +450,7 @@ const entries = days.map((day) => {
         zone.addEventListener("dragenter", (event) => {
           if (!dragPayload) return;
           event.preventDefault();
-          zone.classList.add(
-            "ring-2",
-            "ring-emerald-400",
-            "ring-offset-2",
-            "ring-offset-white",
-          );
+          highlightDropzone(zone);
         });
 
         zone.addEventListener("dragover", (event) => {
@@ -297,58 +462,14 @@ const entries = days.map((day) => {
           if (!dragPayload) return;
           const related = event.relatedTarget;
           if (related && zone.contains(related)) return;
-          zone.classList.remove(
-            "ring-2",
-            "ring-emerald-400",
-            "ring-offset-2",
-            "ring-offset-white",
-          );
+          removeDropHighlight(zone);
         });
 
-        zone.addEventListener("drop", async (event) => {
+        zone.addEventListener("drop", (event) => {
           if (!dragPayload) return;
           event.preventDefault();
-          zone.classList.remove(
-            "ring-2",
-            "ring-emerald-400",
-            "ring-offset-2",
-            "ring-offset-white",
-          );
-
-          const toDay = (zone.dataset.day || "").trim();
-          const currentId = (zone.dataset.currentRecipeId || "").trim();
-          const { day: fromDay, recipeId } = dragPayload;
-          const sourceDay = (fromDay || "").trim();
-
-          if (!toDay || !recipeId || !sourceDay) return;
-          if (toDay === sourceDay) return;
-          if (currentId === recipeId) return;
-
-          zone.classList.add("opacity-60");
-
-          try {
-            const res = await fetch("/api/move-recipe", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                fromDay: sourceDay,
-                toDay,
-                recipeId,
-                replaceWith: currentId || null,
-              }),
-            });
-
-            if (!res.ok) throw new Error("move failed");
-            window.location.reload();
-          } catch (err) {
-            console.error("Déplacement impossible", err);
-            alert("Impossible de déplacer la recette. Merci de réessayer.");
-            zone.classList.remove("opacity-60");
-          } finally {
-            zone.classList.remove("opacity-60");
-            dragPayload = null;
-            clearDropHighlights();
-          }
+          removeDropHighlight(zone);
+          void performAssignment(zone, dragPayload);
         });
       });
     };
