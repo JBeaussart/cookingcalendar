@@ -374,8 +374,8 @@ const entries = days.map((day) => {
 
           const ghost = el.cloneNode(true);
           ghost.style.position = "fixed";
-          ghost.style.top = `${rect.top}px`;
-          ghost.style.left = `${rect.left}px`;
+          ghost.style.top = "0px";
+          ghost.style.left = "0px";
           ghost.style.width = `${rect.width}px`;
           ghost.style.pointerEvents = "none";
           ghost.style.zIndex = "9999";
