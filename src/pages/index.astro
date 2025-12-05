@@ -75,7 +75,7 @@ const entries = days.map((day) => {
                 {recipe ? (
                   <>
                     {/* Recipe Image Background */}
-                    <div class="relative h-40 overflow-hidden rounded-t-3xl">
+                    <div class="relative h-28 overflow-hidden rounded-t-3xl">
                       <img
                         src={img}
                         alt={recipe.title}
@@ -84,19 +84,19 @@ const entries = days.map((day) => {
                       <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
 
                       {/* Day Badge */}
-                      <div class="absolute top-4 left-4">
-                        <div class="rounded-full bg-white/95 backdrop-blur-sm px-4 py-2 shadow-lg">
-                          <span class="text-sm font-bold capitalize text-slate-900">
+                      <div class="absolute top-2 left-2">
+                        <div class="rounded-full bg-white/95 backdrop-blur-sm px-3 py-1 shadow-lg">
+                          <span class="text-xs font-bold capitalize text-slate-900">
                             {day}
                           </span>
                         </div>
                       </div>
 
                       {/* Recipe Title Overlay */}
-                      <div class="absolute bottom-0 left-0 right-0 p-5">
+                      <div class="absolute bottom-0 left-0 right-0 p-3">
                         <a
                           href={`/recipes/${recipe.id}`}
-                          class="block text-xl font-bold text-white drop-shadow-lg hover:text-blue-200 transition line-clamp-2"
+                          class="block text-base font-bold text-white drop-shadow-lg hover:text-blue-200 transition line-clamp-2"
                         >
                           {recipe.title}
                         </a>
@@ -104,7 +104,7 @@ const entries = days.map((day) => {
                     </div>
 
                     {/* Actions Bar */}
-                    <div class="flex items-center justify-between border-t border-slate-100 bg-slate-50/50 px-5 py-3">
+                    <div class="flex items-center justify-between border-t border-slate-100 bg-slate-50/50 px-3 py-2">
                       <a
                         href={`/recipes/${recipe.id}`}
                         class="flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-blue-600 transition"
@@ -183,40 +183,40 @@ const entries = days.map((day) => {
                     </div>
                   </>
                 ) : (
-                  <a
-                    href={`/recipes?day=${day}`}
-                    class="flex flex-col items-center justify-center p-12 min-h-[280px] transition hover:bg-slate-50 rounded-3xl"
-                  >
-                    {/* Day Badge */}
-                    <div class="mb-6">
-                      <div class="rounded-full bg-slate-100 px-5 py-2.5">
-                        <span class="text-sm font-bold capitalize text-slate-700">
-                          {day}
-                        </span>
+                  <>
+                    {/* Empty state - just the image area */}
+                    <a href={`/recipes?day=${day}`} class="block">
+                      <div class="relative h-28 overflow-hidden rounded-3xl bg-gradient-to-br from-slate-100 to-slate-200 transition hover:from-slate-200 hover:to-slate-300">
+                        {/* Day Badge */}
+                        <div class="absolute top-2 left-2">
+                          <div class="rounded-full bg-white/95 backdrop-blur-sm px-3 py-1 shadow-lg">
+                            <span class="text-xs font-bold capitalize text-slate-900">
+                              {day}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Centered Add Icon */}
+                        <div class="absolute inset-0 flex items-center justify-center">
+                          <div class="flex h-12 w-12 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg shadow-blue-600/30 transition-all hover:bg-blue-700 hover:scale-110">
+                            <svg
+                              class="h-6 w-6"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2.5"
+                                d="M12 4v16m8-8H4"
+                              />
+                            </svg>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-
-                    {/* Add Button */}
-                    <div class="flex h-16 w-16 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg shadow-blue-600/30 transition-all hover:bg-blue-700 hover:shadow-xl hover:shadow-blue-600/40 hover:scale-110">
-                      <svg
-                        class="h-8 w-8"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          stroke-width="2.5"
-                          d="M12 4v16m8-8H4"
-                        />
-                      </svg>
-                    </div>
-
-                    <p class="mt-4 text-sm font-medium text-slate-400">
-                      Ajouter une recette
-                    </p>
-                  </a>
+                    </a>
+                  </>
                 )}
               </div>
             );
