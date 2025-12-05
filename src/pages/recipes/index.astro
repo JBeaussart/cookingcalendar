@@ -13,69 +13,80 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
 ---
 
 <Layout title="Recettes">
-  <div class="mx-auto max-w-6xl px-4 py-8">
-    <!-- Titre + action -->
-    <div
-      class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
-    >
-      <h1 class="text-2xl font-bold text-gray-900 text-center sm:text-left">
-        📖 Recettes disponibles
-      </h1>
-      <div class="flex items-center gap-2 justify-center">
-        <button
-          id="openAddModal"
-          class="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-white text-sm font-medium shadow hover:bg-emerald-700 active:scale-[0.98] transition"
-          >➕ Ajouter une recette</button
-        >
-      </div>
-    </div>
-
-    <!-- Filtres -->
-    <div
-      class="mt-5 flex flex-col sm:flex-row gap-3 sm:gap-4 sm:items-center sm:justify-between"
-    >
-      <div class="w-full sm:max-w-md">
-        <input
-          id="searchInput"
-          type="text"
-          placeholder="Rechercher une recette… (titre ou ingrédient)"
-          class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-        />
+  <div class="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+    <div class="mx-auto max-w-6xl px-4 py-12">
+      <!-- Header -->
+      <div class="mb-8 text-center">
+        <h1 class="text-4xl font-bold text-slate-900 mb-2">Mes recettes</h1>
+        <p class="text-slate-600">Découvrez et gérez votre collection</p>
       </div>
 
-      <div class="flex w-full sm:w-auto items-center gap-4">
-        <div class="flex items-center gap-2">
-          <label for="saltFilter" class="text-sm text-gray-700">Type</label>
+      <!-- Filters and Add Button -->
+      <div class="mb-8 flex flex-col gap-4">
+        <!-- Search and Add Button Row -->
+        <div class="flex flex-col sm:flex-row gap-3">
+          <input
+            id="searchInput"
+            type="text"
+            placeholder="Rechercher une recette..."
+            class="flex-1 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
+          />
+          <button
+            id="openAddModal"
+            class="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/30 transition-all hover:bg-blue-700 hover:shadow-xl hover:scale-105 active:scale-95"
+          >
+            <svg
+              class="h-5 w-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2.5"
+                d="M12 4v16m8-8H4"></path>
+            </svg>
+            Ajouter
+          </button>
+        </div>
+
+        <!-- Filters Row -->
+        <div class="flex flex-wrap items-center gap-3">
           <select
             id="saltFilter"
-            class="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+            class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
           >
-            <option value="all">Tous</option>
+            <option value="all">Tous les types</option>
             <option value="salty">Salé</option>
             <option value="sweet">Sucré</option>
           </select>
+
+          <label
+            class="inline-flex items-center gap-2 select-none cursor-pointer"
+          >
+            <input
+              id="mamanFilter"
+              type="checkbox"
+              class="h-5 w-5 rounded border-slate-300 text-blue-600 focus:ring-2 focus:ring-blue-500"
+            />
+            <span class="text-sm font-medium text-slate-700"
+              >Recettes de maman</span
+            >
+          </label>
         </div>
-
-        <label class="inline-flex items-center gap-2 select-none">
-          <input
-            id="mamanFilter"
-            type="checkbox"
-            class="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-400"
-          />
-          <span class="text-sm text-gray-800">Seulement recettes de maman</span>
-        </label>
       </div>
-    </div>
 
-    <!-- Grille -->
-    <div
-      id="grid"
-      class="mt-6 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
-    >
-    </div>
+      <!-- Grid -->
+      <div
+        id="grid"
+        class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6"
+      >
+      </div>
 
-    <!-- Données -->
-    <div id="recipes-data" data-recipes={RECIPES_ENC} class="hidden"></div>
+      <!-- Data -->
+      <div id="recipes-data" data-recipes={RECIPES_ENC} class="hidden"></div>
+    </div>
   </div>
 
   <!-- Modale d’ajout -->
@@ -230,7 +241,7 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
 
       function makeBadge(text, cls) {
         const span = document.createElement("span");
-        span.className = `inline-flex items-center gap-1 rounded-full px-2 py-0.5 border ${cls}`;
+        span.className = `inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${cls}`;
         span.textContent = text;
         return span;
       }
@@ -238,89 +249,71 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
       function makeChefBadge() {
         const span = document.createElement("span");
         span.className =
-          "inline-flex items-center gap-1 rounded-full px-2 py-0.5 border border-pink-300 text-pink-700 bg-pink-50";
+          "inline-flex items-center gap-1 rounded-full px-2 py-0.5 bg-pink-100 text-pink-700";
         span.title = "Recette de maman";
         span.setAttribute("aria-label", "Recette de maman");
-        span.innerHTML = `<i class="fa-solid fa-paw text-[14px]" aria-hidden="true"></i>`;
+        span.innerHTML = `<i class="fa-solid fa-paw text-xs" aria-hidden="true"></i>`;
         return span;
       }
 
       function makeCard(r) {
         const card = document.createElement("div");
         card.className =
-          "group relative flex flex-col rounded-xl border border-gray-200 bg-white shadow-sm hover:shadow-md transition overflow-hidden cursor-pointer";
+          "group relative rounded-3xl bg-white shadow-lg shadow-slate-200/50 transition-all duration-300 hover:shadow-xl hover:shadow-slate-300/50 hover:scale-[1.02] overflow-hidden cursor-pointer";
         card.addEventListener("click", () => {
           const q = dayParam ? `?day=${encodeURIComponent(dayParam)}` : "";
           window.location.href = `/recipes/${r.id}${q}`;
         });
 
-        if (dayParam) {
+        if (dayParam || slotParam) {
           const addBtn = document.createElement("button");
           addBtn.type = "button";
           addBtn.className =
-            "absolute right-2 top-2 z-10 inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-green-600 ring-1 ring-green-200 shadow hover:bg-white hover:text-green-700 hover:ring-green-300 transition";
-          addBtn.title = `Ajouter au ${dayParam}`;
+            "absolute right-2 top-2 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/95 backdrop-blur-sm text-blue-600 shadow-lg transition-all hover:bg-blue-600 hover:text-white hover:scale-110";
+          addBtn.title = dayParam
+            ? `Ajouter au ${dayParam}`
+            : `Choisir pour ${slotParam}`;
           addBtn.setAttribute(
             "aria-label",
-            `Ajouter "${r.title}" au ${dayParam}`
+            dayParam
+              ? `Ajouter "${r.title}" au ${dayParam}`
+              : `Choisir "${r.title}" pour ${slotParam}`,
           );
           addBtn.innerHTML =
-            '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16M20 12H4" /></svg>';
+            '<svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16M20 12H4" /></svg>';
           addBtn.addEventListener("click", async (e) => {
             e.stopPropagation();
             e.preventDefault();
             try {
-              const res = await fetch("/api/assign-recipe", {
+              const endpoint = dayParam
+                ? "/api/assign-recipe"
+                : "/api/assign-reception";
+              const body = dayParam
+                ? { day: dayParam, id: r.id }
+                : { slot: slotParam, id: r.id };
+              const res = await fetch(endpoint, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ day: dayParam, id: r.id }),
+                body: JSON.stringify(body),
               });
               if (!res.ok) throw new Error("assign failed");
-              window.location.href = "/";
+              window.location.href = dayParam ? "/" : "/reception";
             } catch (err) {
               console.error("Assignation échouée:", err);
-              alert("Impossible d’ajouter la recette au planning.");
-            }
-          });
-          card.appendChild(addBtn);
-        }
-        if (slotParam) {
-          const addBtn = document.createElement("button");
-          addBtn.type = "button";
-          addBtn.className =
-            "absolute right-2 top-2 z-10 inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-green-600 ring-1 ring-green-200 shadow hover:bg-white hover:text-green-700 hover:ring-green-300 transition";
-          addBtn.title = `Choisir pour ${slotParam}`;
-          addBtn.setAttribute(
-            "aria-label",
-            `Choisir "${r.title}" pour ${slotParam}`
-          );
-          addBtn.innerHTML =
-            '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16M20 12H4" /></svg>';
-          addBtn.addEventListener("click", async (e) => {
-            e.stopPropagation();
-            e.preventDefault();
-            try {
-              const res = await fetch("/api/assign-reception", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ slot: slotParam, id: r.id }),
-              });
-              if (!res.ok) throw new Error("assign failed");
-              window.location.href = "/reception";
-            } catch (err) {
-              console.error("Assignation réception échouée:", err);
-              alert("Impossible de sélectionner la recette pour la réception.");
+              alert("Impossible d'ajouter la recette.");
             }
           });
           card.appendChild(addBtn);
         }
 
+        // Image container
         const imgWrap = document.createElement("div");
-        imgWrap.className = "aspect-[4/3] w-full overflow-hidden bg-gray-100";
+        imgWrap.className =
+          "relative h-32 overflow-hidden rounded-t-3xl bg-slate-100";
         const img = document.createElement("img");
         img.loading = "lazy";
         img.className =
-          "h-full w-full object-cover group-hover:scale-[1.03] transition-transform duration-300";
+          "h-full w-full object-cover transition-transform duration-500 group-hover:scale-110";
         img.src = r.image || DEFAULT_IMG;
         img.alt = r.title || "";
         img.onerror = () => {
@@ -329,24 +322,22 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
         imgWrap.appendChild(img);
         card.appendChild(imgWrap);
 
+        // Content
         const body = document.createElement("div");
-        body.className = "relative flex-1 flex flex-col p-3 pb-10";
+        body.className = "p-3";
 
-        const title = document.createElement("span");
+        const title = document.createElement("h3");
         title.className =
-          "text-sm font-semibold text-gray-900 line-clamp-2 group-hover:underline";
+          "text-sm font-bold text-slate-900 line-clamp-2 mb-2 min-h-[2.5rem]";
         title.textContent = r.title || "";
         body.appendChild(title);
 
+        // Badges
         const meta = document.createElement("div");
-        meta.className =
-          "absolute left-3 bottom-3 text-xs text-gray-500 flex items-center gap-2";
+        meta.className = "flex items-center gap-2 flex-wrap";
         if (typeof r.salt === "boolean")
           meta.appendChild(
-            makeBadge(
-              r.salt ? "Salé" : "Sucré",
-              "border-gray-200 text-gray-600"
-            )
+            makeBadge(r.salt ? "Salé" : "Sucré", "bg-slate-100 text-slate-700"),
           );
         if (r.maman === true) meta.appendChild(makeChefBadge());
         body.appendChild(meta);
@@ -527,7 +518,7 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
           .filter(Boolean);
 
         const stepInputs = Array.from(
-          stepsList.querySelectorAll(".step-row input")
+          stepsList.querySelectorAll(".step-row input"),
         );
         const steps = stepInputs.map((el) => el.value.trim()).filter(Boolean);
 
