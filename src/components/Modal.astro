@@ -1,25 +1,53 @@
 ---
 // src/components/Modal.astro
 export interface Props {
-  id: string;            // ex: "addModal" | "editModal"
-  title: string;         // Titre affiché dans la barre haute
+  id: string; // ex: "addModal" | "editModal"
+  title: string; // Titre affiché dans la barre haute
   maxHeightClass?: string; // optionnel: override de hauteur
 }
 const { id, title, maxHeightClass = "max-h-[calc(100dvh-4rem)]" } = Astro.props;
 ---
 
-<div id={id} class="fixed inset-0 z-50 hidden overflow-y-auto overscroll-contain">
-  <div class="absolute inset-0 bg-black/40" aria-hidden="true"></div>
+<div
+  id={id}
+  class="fixed inset-0 z-50 hidden overflow-y-auto overscroll-contain"
+>
+  <div
+    class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"
+    aria-hidden="true"
+  >
+  </div>
 
   <div
-    class={`relative mx-auto my-8 max-w-2xl rounded-2xl bg-white p-5 shadow-xl ${maxHeightClass} overflow-y-auto`}
+    class={`relative mx-auto my-4 sm:my-8 w-full max-w-2xl rounded-2xl bg-white p-6 shadow-2xl ring-1 ring-black/5 ${maxHeightClass} overflow-y-auto transform transition-all`}
     role="dialog"
     aria-modal="true"
     aria-labelledby={`${id}-title`}
   >
-    <div class="flex items-center justify-between mb-3">
-      <h2 id={`${id}-title`} class="text-lg font-semibold text-gray-900">{title}</h2>
-      <button id={`${id}-close`} class="rounded-md p-2 hover:bg-gray-100" aria-label="Fermer">✕</button>
+    <div
+      class="flex items-center justify-between mb-6 border-b border-slate-100 pb-4"
+    >
+      <h2 id={`${id}-title`} class="text-xl font-bold text-slate-900">
+        {title}
+      </h2>
+      <button
+        id={`${id}-close`}
+        class="rounded-xl p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
+        aria-label="Fermer"
+      >
+        <svg
+          class="h-5 w-5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
     </div>
 
     <slot />
