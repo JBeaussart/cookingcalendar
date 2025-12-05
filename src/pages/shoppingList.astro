@@ -2,64 +2,147 @@
 import Layout from "../layouts/Layout.astro";
 ---
 
-<Layout title="Liste de courses (planning + custom)">
-  <div class="mx-auto max-w-3xl px-4 py-6">
-    <div
-      class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
-    >
-      <h1 class="text-2xl font-bold text-gray-900">🛒 Liste de courses</h1>
-      <div class="flex flex-wrap gap-2">
-        <button
-          id="btnCheckAll"
-          type="button"
-          class="rounded-md bg-emerald-100 px-3 py-2 text-sm font-medium text-emerald-700 transition hover:bg-emerald-200"
-        >
-          Tout cocher
-        </button>
-        <button
-          id="btnUncheckAll"
-          type="button"
-          class="rounded-md bg-white px-3 py-2 text-sm font-medium text-emerald-600 ring-1 ring-inset ring-emerald-200 transition hover:bg-emerald-50"
-        >
-          Tout décocher
-        </button>
+<Layout title="Liste de courses">
+  <div class="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+    <div class="mx-auto max-w-3xl px-4 py-12">
+      <!-- Header -->
+      <div class="mb-8 text-center">
+        <h1 class="text-4xl font-bold text-slate-900 mb-2">Ma liste</h1>
+        <p class="text-slate-600">N'oubliez rien pour vos recettes !</p>
       </div>
-    </div>
 
-    <!-- Formulaire d’ajout d’un élément custom -->
-    <form id="addForm" class="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-2">
-      <input
-        id="fItem"
-        type="text"
-        placeholder="Nom"
-        class="border rounded px-3 py-2 sm:col-span-2 focus:ring-2 focus:ring-emerald-400"
-        required
-      />
-      <input
-        id="fQty"
-        type="number"
-        step="any"
-        placeholder="Quantité"
-        class="border rounded px-3 py-2 focus:ring-2 focus:ring-emerald-400"
-      />
-      <button
-        type="submit"
-        class="rounded bg-emerald-600 px-3 py-2 text-white hover:bg-emerald-700 transition"
+      <!-- Actions & Add Form -->
+      <div class="mb-8 space-y-6">
+        <!-- Bulk Actions -->
+        <div class="flex justify-center gap-3">
+          <button
+            id="btnCheckAll"
+            type="button"
+            class="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm ring-1 ring-slate-200 transition hover:bg-slate-50 hover:text-blue-600 active:scale-95"
+          >
+            <svg
+              class="h-4 w-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M5 13l4 4L19 7"></path>
+            </svg>
+            Tout cocher
+          </button>
+          <button
+            id="btnUncheckAll"
+            type="button"
+            class="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm ring-1 ring-slate-200 transition hover:bg-slate-50 hover:text-blue-600 active:scale-95"
+          >
+            <svg
+              class="h-4 w-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+            Tout décocher
+          </button>
+        </div>
+
+        <!-- Add Form -->
+        <form id="addForm" class="flex flex-col sm:flex-row gap-3">
+          <div class="relative flex-1">
+            <input
+              id="fItem"
+              type="text"
+              placeholder="Ajouter un article..."
+              class="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 pl-11 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
+              required
+            />
+            <div
+              class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400"
+            >
+              <svg
+                class="h-5 w-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 4v16m8-8H4"></path>
+              </svg>
+            </div>
+          </div>
+          <input
+            id="fQty"
+            type="number"
+            step="any"
+            placeholder="Qté"
+            class="w-full sm:w-24 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
+          />
+          <button
+            type="submit"
+            class="inline-flex items-center justify-center rounded-xl bg-blue-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-blue-600/30 transition-all hover:bg-blue-700 hover:shadow-xl hover:scale-105 active:scale-95"
+          >
+            Ajouter
+          </button>
+        </form>
+      </div>
+
+      <!-- List Container -->
+      <div
+        class="rounded-3xl bg-white shadow-xl shadow-slate-200/50 overflow-hidden ring-1 ring-slate-100 mb-20 sm:mb-0"
       >
-        Ajouter
-      </button>
-    </form>
+        <ul id="list" class="divide-y divide-slate-100"></ul>
 
-    <ul
-      id="list"
-      class="divide-y divide-gray-100 rounded-2xl border border-gray-200 bg-white shadow-sm"
-    >
-    </ul>
-    <p id="status" class="mt-3 text-sm text-gray-500"></p>
+        <!-- Empty State (handled in JS, but default hidden here) -->
+        <div id="emptyState" class="hidden p-12 text-center">
+          <div
+            class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-slate-50"
+          >
+            <svg
+              class="h-8 w-8 text-slate-300"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
+              ></path>
+            </svg>
+          </div>
+          <h3 class="text-lg font-medium text-slate-900">
+            Votre liste est vide
+          </h3>
+          <p class="mt-1 text-slate-500">
+            Ajoutez des recettes au planning ou des articles manuellement.
+          </p>
+        </div>
+      </div>
+
+      <p
+        id="status"
+        class="mt-4 text-center text-sm font-medium text-slate-400"
+      >
+      </p>
+    </div>
   </div>
 
   <script type="module">
     const listEl = document.getElementById("list");
+    const emptyStateEl = document.getElementById("emptyState");
     const statusEl = document.getElementById("status");
     const btnCheckAll = document.getElementById("btnCheckAll");
     const btnUncheckAll = document.getElementById("btnUncheckAll");
@@ -226,7 +309,7 @@ import Layout from "../layouts/Layout.astro";
       items = items.map((it) => ({ ...it, checked: nextChecked }));
       render();
 
-      status(nextChecked ? "Cochement…" : "Décochage…");
+      status(nextChecked ? "Cochement..." : "Décochage...");
 
       try {
         const computedPayload = serializeComputedItems();
@@ -268,10 +351,15 @@ import Layout from "../layouts/Layout.astro";
 
     function sortItems() {
       items.sort((a, b) => {
+        // 1. Checked status (unchecked first)
+        if (a.checked !== b.checked) return a.checked ? 1 : -1;
+
+        // 2. Section
         const keyA = a.sectionKey || "";
         const keyB = b.sectionKey || "";
         if (keyA !== keyB) return keyA.localeCompare(keyB, "fr");
-        if (a.checked !== b.checked) return a.checked ? 1 : -1;
+
+        // 3. Name
         return String(a.item || "").localeCompare(String(b.item || ""), "fr");
       });
     }
@@ -280,29 +368,35 @@ import Layout from "../layouts/Layout.astro";
       sortItems();
       listEl.innerHTML = "";
       updateBulkButtons();
+
       if (!Array.isArray(items) || items.length === 0) {
-        listEl.innerHTML = `
-          <li class="px-6 py-10 text-center text-sm text-gray-600">
-            Liste vide
-          </li>`;
+        listEl.classList.add("hidden");
+        emptyStateEl.classList.remove("hidden");
         return;
+      } else {
+        listEl.classList.remove("hidden");
+        emptyStateEl.classList.add("hidden");
       }
 
       let currentSectionKey = null;
 
       items.forEach((row, idx) => {
         const isCustom = row.source === "custom";
-        const sectionKey =
-          row.sectionKey || (isCustom ? "2:custom" : "1:autres");
-        const sectionLabel =
+        let sectionKey = row.sectionKey || (isCustom ? "2:custom" : "1:autres");
+        let sectionLabel =
           row.sectionLabel || (isCustom ? SECTION_CUSTOM : SECTION_FALLBACK);
+
+        // Group checked items at the bottom
+        if (row.checked) {
+          sectionKey = "ZZ:checked";
+          sectionLabel = "Terminé";
+        }
 
         if (sectionKey !== currentSectionKey) {
           currentSectionKey = sectionKey;
           const header = document.createElement("li");
           header.className =
-            "bg-emerald-50/70 px-4 py-2 text-xs font-semibold uppercase " +
-            "tracking-wide text-emerald-700 sm:text-sm";
+            "bg-slate-50/80 px-5 py-3 text-xs font-bold uppercase tracking-wider text-slate-500 border-b border-slate-100 sticky top-0 backdrop-blur-sm z-10";
 
           if (sectionKey === "2:custom") {
             const wrap = document.createElement("div");
@@ -315,9 +409,7 @@ import Layout from "../layouts/Layout.astro";
             const btn = document.createElement("button");
             btn.type = "button";
             btn.className =
-              "rounded-full border border-rose-200 bg-white px-3 py-1 text-[11px] " +
-              "font-semibold uppercase tracking-wide text-rose-600 shadow-sm " +
-              "transition hover:bg-rose-50 hover:text-rose-700";
+              "rounded-lg bg-rose-50 px-3 py-1 text-[10px] font-bold uppercase tracking-wide text-rose-600 transition hover:bg-rose-100 hover:text-rose-700";
             btn.textContent = "Tout supprimer";
 
             btn.addEventListener("click", async () => {
@@ -327,7 +419,7 @@ import Layout from "../layouts/Layout.astro";
               );
               if (!confirmDelete) return;
 
-              status("Suppression…");
+              status("Suppression...");
               btn.disabled = true;
               btn.classList.add("opacity-60", "cursor-not-allowed");
               try {
@@ -362,29 +454,27 @@ import Layout from "../layouts/Layout.astro";
 
         const li = document.createElement("li");
         li.className =
-          "group flex items-center justify-between gap-3 px-4 py-3 sm:px-5 " +
-          "hover:bg-emerald-50/60 transition";
+          "group flex items-center justify-between gap-4 px-5 py-4 hover:bg-slate-50 transition duration-200";
 
         // Gauche : checkbox + libellé
         const left = document.createElement("label");
         left.className =
-          "flex items-center gap-3 cursor-pointer select-none flex-1";
+          "flex items-center gap-4 cursor-pointer select-none flex-1 min-w-0";
 
         const cb = document.createElement("input");
         cb.type = "checkbox";
         cb.dataset.idx = String(idx);
         cb.checked = !!row.checked;
         cb.className =
-          "peer h-5 w-5 shrink-0 rounded-md border-gray-300 " +
-          "text-emerald-600 focus:ring-2 focus:ring-emerald-400";
+          "peer h-5 w-5 shrink-0 rounded-lg border-slate-300 text-blue-600 focus:ring-offset-0 focus:ring-2 focus:ring-blue-500 transition cursor-pointer";
 
         const labelWrapper = document.createElement("div");
-        labelWrapper.className = "flex flex-col";
+        labelWrapper.className = "flex flex-col min-w-0";
 
         const mainText = document.createElement("span");
         mainText.className =
-          "text-[15px] " +
-          (cb.checked ? "line-through text-gray-400" : "text-gray-800");
+          "text-sm font-medium truncate transition-colors duration-200 " +
+          (cb.checked ? "line-through text-slate-400" : "text-slate-700");
         mainText.textContent = txt;
         labelWrapper.appendChild(mainText);
 
@@ -399,16 +489,11 @@ import Layout from "../layouts/Layout.astro";
           const del = document.createElement("button");
           del.type = "button";
           del.className =
-            "del-btn rounded-md p-2 text-rose-600 hover:text-rose-700 " +
-            "hover:bg-rose-50 transition";
+            "del-btn flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition opacity-0 group-hover:opacity-100";
           del.dataset.idx = String(idx);
           del.title = "Supprimer";
           del.innerHTML =
-            '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" ' +
-            'viewBox="0 0 24 24" fill="none" stroke="currentColor">' +
-            '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" ' +
-            'd="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m1 0H8m8 0l-1-3H9L8 7" />' +
-            "</svg>";
+            '<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m1 0H8m8 0l-1-3H9L8 7" /></svg>';
           right.appendChild(del);
         }
 
@@ -423,6 +508,16 @@ import Layout from "../layouts/Layout.astro";
           const i = Number(cb.dataset.idx);
           const target = items[i];
           if (!target) return;
+
+          // Update UI immediately
+          const textSpan = cb.nextElementSibling.querySelector("span");
+          if (cb.checked) {
+            textSpan.classList.add("line-through", "text-slate-400");
+            textSpan.classList.remove("text-slate-700");
+          } else {
+            textSpan.classList.remove("line-through", "text-slate-400");
+            textSpan.classList.add("text-slate-700");
+          }
 
           if (target.source === "computed") {
             const entryKey =
@@ -442,7 +537,10 @@ import Layout from "../layouts/Layout.astro";
             items[i] = { ...target, checked: cb.checked };
           }
 
-          status("Enregistrement…");
+          // Re-render to move item to bottom
+          render();
+
+          status("Enregistrement...");
 
           try {
             if (target.source === "custom") {
@@ -463,7 +561,6 @@ import Layout from "../layouts/Layout.astro";
                 body: JSON.stringify({ items: payload }),
               });
             }
-            render();
             status("✅ Sauvegardé");
           } catch (e) {
             console.error(e);
@@ -478,7 +575,7 @@ import Layout from "../layouts/Layout.astro";
           const i = Number(btn.dataset.idx);
           const it = items[i];
           if (!it || it.source !== "custom") return;
-          status("Suppression…");
+          status("Suppression...");
           try {
             const params = new URLSearchParams({ item: it.item });
             const r = await fetch(`/api/custom-items?${params.toString()}`, {
@@ -500,7 +597,7 @@ import Layout from "../layouts/Layout.astro";
     }
 
     async function load() {
-      status("Chargement…");
+      status("Chargement...");
       try {
         const [r1, r2, r3] = await Promise.all([
           fetch("/api/compute-shopping-totals"),
@@ -559,7 +656,7 @@ import Layout from "../layouts/Layout.astro";
       const qtyRaw = fQty.value.trim();
       if (!item) return;
 
-      status("Ajout…");
+      status("Ajout...");
       try {
         const payload = { item };
         if (qtyRaw !== "") payload.quantity = Number(qtyRaw);
