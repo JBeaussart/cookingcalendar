@@ -106,21 +106,23 @@ const DEFAULT_IMG = "/images/default-recipe.jpg";
                   />
                   <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
 
-                  {/* Badges Overlay */}
-                  <div class="absolute bottom-0 left-0 right-0 p-6 sm:p-8">
-                    <div class="flex flex-wrap items-center gap-3 mb-2">
-                      {recipe.maman && (
-                        <span class="inline-flex items-center gap-1 rounded-full bg-pink-500/90 backdrop-blur-sm px-3 py-1 text-xs font-bold text-white shadow-sm">
-                          <i class="fa-solid fa-paw" aria-hidden="true" />{" "}
-                          Recette de maman
-                        </span>
-                      )}
-                      <span
-                        class={`inline-flex items-center rounded-full px-3 py-1 text-xs font-bold text-white shadow-sm backdrop-blur-sm ${recipe.salt ? "bg-blue-500/90" : "bg-amber-500/90"}`}
-                      >
-                        {recipe.salt ? "Salé" : "Sucré"}
+                  {/* Badges (Top Left) */}
+                  <div class="absolute top-4 left-4 flex flex-wrap gap-2">
+                    {recipe.maman && (
+                      <span class="inline-flex items-center gap-1 rounded-full bg-pink-500/90 backdrop-blur-sm px-3 py-1 text-xs font-bold text-white shadow-sm">
+                        <i class="fa-solid fa-paw" aria-hidden="true" /> Recette
+                        de maman
                       </span>
-                    </div>
+                    )}
+                    <span
+                      class={`inline-flex items-center rounded-full px-3 py-1 text-xs font-bold text-white shadow-sm backdrop-blur-sm ${recipe.salt ? "bg-blue-500/90" : "bg-amber-500/90"}`}
+                    >
+                      {recipe.salt ? "Salé" : "Sucré"}
+                    </span>
+                  </div>
+
+                  {/* Title Overlay (Bottom) */}
+                  <div class="absolute bottom-0 left-0 right-0 p-6 sm:p-8">
                     <h1 class="text-3xl sm:text-4xl font-bold text-white drop-shadow-md">
                       {recipe.title}
                     </h1>
