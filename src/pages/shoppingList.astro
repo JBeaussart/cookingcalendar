@@ -351,15 +351,10 @@ import Layout from "../layouts/Layout.astro";
 
     function sortItems() {
       items.sort((a, b) => {
-        // 1. Checked status (unchecked first)
-        if (a.checked !== b.checked) return a.checked ? 1 : -1;
-
-        // 2. Section
         const keyA = a.sectionKey || "";
         const keyB = b.sectionKey || "";
         if (keyA !== keyB) return keyA.localeCompare(keyB, "fr");
-
-        // 3. Name
+        if (a.checked !== b.checked) return a.checked ? 1 : -1;
         return String(a.item || "").localeCompare(String(b.item || ""), "fr");
       });
     }
@@ -382,15 +377,10 @@ import Layout from "../layouts/Layout.astro";
 
       items.forEach((row, idx) => {
         const isCustom = row.source === "custom";
-        let sectionKey = row.sectionKey || (isCustom ? "2:custom" : "1:autres");
-        let sectionLabel =
+        const sectionKey =
+          row.sectionKey || (isCustom ? "2:custom" : "1:autres");
+        const sectionLabel =
           row.sectionLabel || (isCustom ? SECTION_CUSTOM : SECTION_FALLBACK);
-
-        // Group checked items at the bottom
-        if (row.checked) {
-          sectionKey = "ZZ:checked";
-          sectionLabel = "Terminé";
-        }
 
         if (sectionKey !== currentSectionKey) {
           currentSectionKey = sectionKey;
@@ -537,8 +527,7 @@ import Layout from "../layouts/Layout.astro";
             items[i] = { ...target, checked: cb.checked };
           }
 
-          // Re-render to move item to bottom
-          render();
+          // render(); // Don't re-render to avoid jumping
 
           status("Enregistrement...");
 
