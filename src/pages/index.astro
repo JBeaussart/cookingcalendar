@@ -184,8 +184,8 @@ const entries = days.map((day) => {
                             />
                           </svg>
                         </button>
-                        {/* Dropdown menu (hidden by default) */}
-                        <div class="move-dropdown absolute right-0 top-full mt-1 hidden w-40 rounded-lg border border-gray-200 bg-white shadow-lg z-50">
+                        {/* Dropdown menu (hidden by default) - will be positioned dynamically */}
+                        <div class="move-dropdown absolute right-0 hidden w-40 rounded-lg border border-gray-200 bg-white shadow-lg z-50">
                           <div class="py-1">
                             {days.map((targetDay) => {
                               const targetEntry = entries.find(
@@ -294,6 +294,27 @@ const entries = days.map((day) => {
         currentOpenDropdown = null;
       };
 
+      // Position dropdown based on available space
+      const positionDropdown = (btn, dropdown) => {
+        const btnRect = btn.getBoundingClientRect();
+        const dropdownHeight = dropdown.offsetHeight;
+        const viewportHeight = window.innerHeight;
+        const spaceBelow = viewportHeight - btnRect.bottom;
+        const spaceAbove = btnRect.top;
+
+        // Reset positioning classes
+        dropdown.classList.remove("top-full", "bottom-full", "mt-1", "mb-1");
+
+        // Position dropdown where there's more space
+        if (spaceBelow >= dropdownHeight || spaceBelow >= spaceAbove) {
+          // Open downward
+          dropdown.classList.add("top-full", "mt-1");
+        } else {
+          // Open upward
+          dropdown.classList.add("bottom-full", "mb-1");
+        }
+      };
+
       // Handle move button clicks
       moveButtons.forEach((btn) => {
         btn.addEventListener("click", (e) => {
@@ -310,6 +331,8 @@ const entries = days.map((day) => {
           const isHidden = dropdown.classList.contains("hidden");
           if (isHidden) {
             dropdown.classList.remove("hidden");
+            // Position dropdown after making it visible so we can measure it
+            positionDropdown(btn, dropdown);
             currentOpenDropdown = dropdown;
           } else {
             dropdown.classList.add("hidden");
