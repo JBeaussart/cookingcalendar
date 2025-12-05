@@ -52,15 +52,34 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
         </div>
 
         <!-- Filters Row -->
-        <div class="flex flex-wrap items-center gap-3">
-          <select
-            id="saltFilter"
-            class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
+        <div class="flex flex-wrap items-center gap-4">
+          <!-- Segmented Control for Salt/Sweet -->
+          <div
+            class="flex items-center p-1 bg-slate-100 rounded-xl border border-slate-200"
+            id="saltFilterContainer"
           >
-            <option value="all">Tous les types</option>
-            <option value="salty">Salé</option>
-            <option value="sweet">Sucré</option>
-          </select>
+            <button
+              type="button"
+              data-value="all"
+              class="filter-btn px-4 py-1.5 text-sm font-bold rounded-lg transition-all shadow-sm bg-white text-blue-600"
+            >
+              Tous
+            </button>
+            <button
+              type="button"
+              data-value="salty"
+              class="filter-btn px-4 py-1.5 text-sm font-medium rounded-lg transition-all text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
+            >
+              Salé
+            </button>
+            <button
+              type="button"
+              data-value="sweet"
+              class="filter-btn px-4 py-1.5 text-sm font-medium rounded-lg transition-all text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
+            >
+              Sucré
+            </button>
+          </div>
 
           <label
             class="inline-flex items-center gap-2 select-none cursor-pointer"
@@ -264,7 +283,29 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
       const grid = document.getElementById("grid");
       const searchInput = document.getElementById("searchInput");
       const mamanFilter = document.getElementById("mamanFilter");
-      const saltFilter = document.getElementById("saltFilter");
+
+      // Filter Logic
+      let currentSaltMode = "all";
+      const filterBtns = document.querySelectorAll(".filter-btn");
+
+      filterBtns.forEach((btn) => {
+        btn.addEventListener("click", () => {
+          currentSaltMode = btn.dataset.value;
+
+          // Update visual state
+          filterBtns.forEach((b) => {
+            if (b.dataset.value === currentSaltMode) {
+              b.className =
+                "filter-btn px-4 py-1.5 text-sm font-bold rounded-lg transition-all shadow-sm bg-white text-blue-600";
+            } else {
+              b.className =
+                "filter-btn px-4 py-1.5 text-sm font-medium rounded-lg transition-all text-slate-500 hover:text-slate-700 hover:bg-slate-200/50";
+            }
+          });
+
+          apply();
+        });
+      });
 
       const params = new URLSearchParams(window.location.search);
       const dayParam = (params.get("day") || "").toLowerCase();
@@ -413,7 +454,7 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
       function apply() {
         const q = normalize(searchInput.value);
         const mamanOnly = mamanFilter.checked;
-        const mode = saltFilter.value;
+        const mode = currentSaltMode;
 
         // 🔎 Titre OU ingrédients
         let list = ALL.filter((r) => recipeMatchesQuery(r, q));
@@ -428,7 +469,6 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
 
       searchInput.addEventListener("input", apply);
       mamanFilter.addEventListener("change", apply);
-      saltFilter.addEventListener("change", apply);
       apply();
 
       // ----- (le reste de ta modale d’ajout inchangé) -----
