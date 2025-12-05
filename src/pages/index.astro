@@ -93,7 +93,7 @@ const entries = days.map((day) => {
               : "/images/default-recipe.jpg";
           return (
             <section
-              class="group rounded-xl border border-gray-200 bg-white shadow-sm transition hover:shadow-md js-planning-dropzone"
+              class="group rounded-xl border border-gray-200 bg-white shadow-sm transition hover:shadow-md"
               data-day={day}
               data-current-recipe-id={recipe ? recipe.id : ""}
             >
@@ -115,8 +115,7 @@ const entries = days.map((day) => {
               {recipe ? (
                 <div class="p-4">
                   <div
-                    class="flex items-start gap-3 rounded-lg border border-transparent transition-colors cursor-grab active:cursor-grabbing hover:border-emerald-200 hover:bg-emerald-50/40 js-planning-draggable"
-                    draggable="true"
+                    class="flex items-start gap-3 rounded-lg border border-transparent transition-colors"
                     data-day={day}
                     data-recipe-id={recipe.id}
                   >
@@ -128,7 +127,6 @@ const entries = days.map((day) => {
                     <div class="min-w-0 flex-1">
                       <a
                         href={`/recipes/${recipe.id}`}
-                        draggable="false"
                         class="block text-sm font-medium text-gray-900 hover:underline leading-snug"
                       >
                         {recipe.title}
@@ -139,7 +137,6 @@ const entries = days.map((day) => {
                       <a
                         href={`/recipes/${recipe.id}`}
                         title="Voir la recette"
-                        draggable="false"
                         class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 text-blue-600 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 transition"
                       >
                         <svg
@@ -163,6 +160,66 @@ const entries = days.map((day) => {
                         </svg>
                       </a>
 
+                      {/* Move button with dropdown */}
+                      <div class="relative move-dropdown-container">
+                        <button
+                          type="button"
+                          title="Déplacer vers un autre jour"
+                          class="move-btn inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 text-emerald-600 hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700 transition"
+                          data-day={day}
+                          data-recipe-id={recipe.id}
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.5"
+                            class="h-5 w-5"
+                          >
+                            <path
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5"
+                            />
+                          </svg>
+                        </button>
+                        {/* Dropdown menu (hidden by default) */}
+                        <div class="move-dropdown absolute right-0 top-full mt-1 hidden w-40 rounded-lg border border-gray-200 bg-white shadow-lg z-50">
+                          <div class="py-1">
+                            {days.map((targetDay) => {
+                              const targetEntry = entries.find(
+                                (e) => e.day === targetDay,
+                              );
+                              const hasRecipe = targetEntry?.recipe != null;
+                              const isCurrentDay = targetDay === day;
+
+                              return (
+                                <button
+                                  type="button"
+                                  class={`move-option w-full px-4 py-2 text-left text-sm transition ${
+                                    isCurrentDay || hasRecipe
+                                      ? "text-gray-400 cursor-not-allowed bg-gray-50"
+                                      : "text-gray-700 hover:bg-emerald-50 hover:text-emerald-700"
+                                  }`}
+                                  data-target-day={targetDay}
+                                  data-has-recipe={hasRecipe}
+                                  disabled={isCurrentDay || hasRecipe}
+                                >
+                                  <span class="capitalize">{targetDay}</span>
+                                  {isCurrentDay && (
+                                    <span class="ml-2 text-xs">(actuel)</span>
+                                  )}
+                                  {!isCurrentDay && hasRecipe && (
+                                    <span class="ml-2 text-xs">(occupé)</span>
+                                  )}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+
                       <form
                         method="post"
                         action={`/api/remove-recipe?day=${day}`}
@@ -171,7 +228,6 @@ const entries = days.map((day) => {
                         <button
                           type="submit"
                           title="Retirer la recette"
-                          draggable="false"
                           class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 text-red-600 hover:border-red-300 hover:bg-red-50 hover:text-red-700 transition"
                         >
                           <svg
@@ -225,261 +281,117 @@ const entries = days.map((day) => {
   </div>
 
   <script type="module">
-    // Enable drag & drop reassignment between planning days.
-    const initPlanningDnD = () => {
-      const dropzones = Array.from(
-        document.querySelectorAll(".js-planning-dropzone"),
-      );
-      const draggables = Array.from(
-        document.querySelectorAll(".js-planning-draggable"),
-      );
-      let dragPayload = null;
+    // Dropdown menu logic for moving recipes between days
+    const initMoveDropdowns = () => {
+      const moveButtons = document.querySelectorAll(".move-btn");
+      let currentOpenDropdown = null;
 
-      const DROP_HIGHLIGHT_CLASSES = [
-        "ring-2",
-        "ring-emerald-400",
-        "ring-offset-2",
-        "ring-offset-white",
-      ];
-
-      const highlightDropzone = (zone) => {
-        zone.classList.add(...DROP_HIGHLIGHT_CLASSES);
-      };
-
-      const removeDropHighlight = (zone) => {
-        zone.classList.remove(...DROP_HIGHLIGHT_CLASSES);
-      };
-
-      const clearDropHighlights = () => {
-        dropzones.forEach(removeDropHighlight);
-      };
-
-      const resetDragState = () => {
-        dragPayload = null;
-        clearDropHighlights();
-      };
-
-      const performAssignment = async (zone, payload) => {
-        if (!payload) {
-          resetDragState();
-          return;
-        }
-
-        const toDay = (zone.dataset.day || "").trim();
-        const currentId = (zone.dataset.currentRecipeId || "").trim();
-        const { day: fromDay, recipeId } = payload;
-        const sourceDay = (fromDay || "").trim();
-
-        if (!toDay || !recipeId || !sourceDay) {
-          resetDragState();
-          return;
-        }
-        if (toDay === sourceDay || currentId === recipeId) {
-          resetDragState();
-          return;
-        }
-
-        zone.classList.add("opacity-60");
-
-        try {
-          const res = await fetch("/api/move-recipe", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              fromDay: sourceDay,
-              toDay,
-              recipeId,
-              replaceWith: currentId || null,
-            }),
-          });
-
-          if (!res.ok) throw new Error("move failed");
-          window.location.reload();
-        } catch (err) {
-          console.error("Déplacement impossible", err);
-          alert("Impossible de déplacer la recette. Merci de réessayer.");
-        } finally {
-          zone.classList.remove("opacity-60");
-          resetDragState();
-        }
-      };
-
-      const findDropzoneAt = (clientX, clientY) => {
-        const el = document.elementFromPoint(clientX, clientY);
-        if (!el) return null;
-        return (
-          dropzones.find((zone) => zone === el || zone.contains(el)) || null
-        );
-      };
-
-      const maxTouchPoints =
-        typeof navigator !== "undefined" ? navigator.maxTouchPoints || 0 : 0;
-      const isTouchCapable =
-        typeof window !== "undefined" &&
-        ("ontouchstart" in window ||
-          maxTouchPoints > 0 ||
-          (window.matchMedia &&
-            window.matchMedia("(pointer: coarse)").matches));
-
-      draggables.forEach((el) => {
-        el.addEventListener("dragstart", (event) => {
-          const day = el.dataset.day;
-          const recipeId = el.dataset.recipeId;
-          if (!day || !recipeId) {
-            event.preventDefault();
-            return;
-          }
-          dragPayload = { day, recipeId };
-          el.classList.add("opacity-60");
-          if (event.dataTransfer) {
-            event.dataTransfer.effectAllowed = "move";
-            try {
-              event.dataTransfer.setData(
-                "application/json",
-                JSON.stringify(dragPayload),
-              );
-            } catch (_) {
-              event.dataTransfer.setData("text/plain", recipeId);
-            }
-          }
+      // Close dropdown when clicking outside
+      const closeAllDropdowns = () => {
+        document.querySelectorAll(".move-dropdown").forEach((dropdown) => {
+          dropdown.classList.add("hidden");
         });
+        currentOpenDropdown = null;
+      };
 
-        el.addEventListener("dragend", () => {
-          el.classList.remove("opacity-60");
-          resetDragState();
-        });
+      // Handle move button clicks
+      moveButtons.forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const container = btn.closest(".move-dropdown-container");
+          const dropdown = container.querySelector(".move-dropdown");
 
-        if (!isTouchCapable) {
-          return;
-        }
+          // Close other dropdowns
+          if (currentOpenDropdown && currentOpenDropdown !== dropdown) {
+            currentOpenDropdown.classList.add("hidden");
+          }
 
-        el.style.touchAction = "none";
-
-        el.addEventListener("pointerdown", (event) => {
-          if (event.pointerType !== "touch") return;
-          if (event.target && event.target.closest("a, button")) return;
-
-          const day = el.dataset.day;
-          const recipeId = el.dataset.recipeId;
-          if (!day || !recipeId) return;
-
-          event.preventDefault();
-
-          dragPayload = { day, recipeId };
-          el.classList.add("opacity-60");
-
-          const rect = el.getBoundingClientRect();
-          const offsetX = event.clientX - rect.left;
-          const offsetY = event.clientY - rect.top;
-
-          const ghost = el.cloneNode(true);
-          ghost.style.position = "fixed";
-          ghost.style.top = "0px";
-          ghost.style.left = "0px";
-          ghost.style.width = `${rect.width}px`;
-          ghost.style.pointerEvents = "none";
-          ghost.style.zIndex = "9999";
-          ghost.style.transform = "translate3d(0, 0, 0)";
-          ghost.classList.add(
-            "shadow-lg",
-            "ring-1",
-            "ring-emerald-200",
-            "bg-white",
-          );
-          document.body.appendChild(ghost);
-
-          let activeZone = null;
-
-          const updateGhostPosition = (clientX, clientY) => {
-            ghost.style.transform = `translate3d(${clientX - offsetX}px, ${
-              clientY - offsetY
-            }px, 0)`;
-          };
-
-          updateGhostPosition(event.clientX, event.clientY);
-
-          const pointerId = event.pointerId;
-
-          const handleMove = (moveEvent) => {
-            if (moveEvent.pointerId !== pointerId) return;
-            moveEvent.preventDefault();
-            updateGhostPosition(moveEvent.clientX, moveEvent.clientY);
-            const zone = findDropzoneAt(moveEvent.clientX, moveEvent.clientY);
-            if (zone !== activeZone) {
-              if (activeZone) removeDropHighlight(activeZone);
-              activeZone = zone;
-              if (activeZone) highlightDropzone(activeZone);
-            }
-          };
-
-          const finishDrag = (finalEvent, shouldDrop) => {
-            if (finalEvent.pointerId !== pointerId) return;
-            finalEvent.preventDefault();
-            document.removeEventListener("pointermove", handleMove);
-            document.removeEventListener("pointerup", onPointerUp);
-            document.removeEventListener("pointercancel", onPointerCancel);
-            ghost.remove();
-            el.classList.remove("opacity-60");
-            if (activeZone && shouldDrop) {
-              const target = activeZone;
-              activeZone = null;
-              void performAssignment(target, dragPayload);
-            } else {
-              if (activeZone) removeDropHighlight(activeZone);
-              resetDragState();
-            }
-          };
-
-          const onPointerUp = (upEvent) => finishDrag(upEvent, true);
-          const onPointerCancel = (cancelEvent) =>
-            finishDrag(cancelEvent, false);
-
-          document.addEventListener("pointermove", handleMove, {
-            passive: false,
-          });
-          document.addEventListener("pointerup", onPointerUp, {
-            passive: false,
-          });
-          document.addEventListener("pointercancel", onPointerCancel, {
-            passive: false,
-          });
+          // Toggle current dropdown
+          const isHidden = dropdown.classList.contains("hidden");
+          if (isHidden) {
+            dropdown.classList.remove("hidden");
+            currentOpenDropdown = dropdown;
+          } else {
+            dropdown.classList.add("hidden");
+            currentOpenDropdown = null;
+          }
         });
       });
 
-      dropzones.forEach((zone) => {
-        zone.addEventListener("dragenter", (event) => {
-          if (!dragPayload) return;
-          event.preventDefault();
-          highlightDropzone(zone);
-        });
+      // Handle day selection
+      document.querySelectorAll(".move-option").forEach((option) => {
+        option.addEventListener("click", async (e) => {
+          if (option.disabled) return;
 
-        zone.addEventListener("dragover", (event) => {
-          if (!dragPayload) return;
-          event.preventDefault();
-        });
+          // Check if day has a recipe (double-check)
+          const hasRecipe = option.dataset.hasRecipe === "true";
+          if (hasRecipe) {
+            alert(
+              "Ce jour a déjà une recette assignée. Veuillez choisir un jour vide.",
+            );
+            return;
+          }
 
-        zone.addEventListener("dragleave", (event) => {
-          if (!dragPayload) return;
-          const related = event.relatedTarget;
-          if (related && zone.contains(related)) return;
-          removeDropHighlight(zone);
-        });
+          const targetDay = option.dataset.targetDay;
+          const container = option.closest(".move-dropdown-container");
+          const moveBtn = container.querySelector(".move-btn");
+          const fromDay = moveBtn.dataset.day;
+          const recipeId = moveBtn.dataset.recipeId;
 
-        zone.addEventListener("drop", (event) => {
-          if (!dragPayload) return;
-          event.preventDefault();
-          removeDropHighlight(zone);
-          void performAssignment(zone, dragPayload);
+          if (!targetDay || !fromDay || !recipeId || targetDay === fromDay) {
+            return;
+          }
+
+          // Visual feedback
+          option.classList.add("opacity-60");
+          option.disabled = true;
+
+          try {
+            const res = await fetch("/api/move-recipe", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                fromDay,
+                toDay: targetDay,
+                recipeId,
+                replaceWith: null,
+              }),
+            });
+
+            if (!res.ok) throw new Error("Move failed");
+
+            // Reload page to show updated planning
+            window.location.reload();
+          } catch (err) {
+            console.error("Déplacement impossible:", err);
+            alert("Impossible de déplacer la recette. Merci de réessayer.");
+            option.classList.remove("opacity-60");
+            option.disabled = false;
+          }
         });
+      });
+
+      // Close dropdowns when clicking outside
+      document.addEventListener("click", (e) => {
+        if (!e.target.closest(".move-dropdown-container")) {
+          closeAllDropdowns();
+        }
+      });
+
+      // Close dropdowns on escape key
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+          closeAllDropdowns();
+        }
       });
     };
 
     if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", initPlanningDnD, {
+      document.addEventListener("DOMContentLoaded", initMoveDropdowns, {
         once: true,
       });
     } else {
-      initPlanningDnD();
+      initMoveDropdowns();
     }
   </script>
 </Layout>
