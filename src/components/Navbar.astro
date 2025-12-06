@@ -33,7 +33,9 @@ const isActive = (href: string) => {
 ---
 
 <!-- Desktop navigation (top bar) -->
-<nav class="bg-white border-b border-gray-200 shadow-md hidden sm:block">
+<nav
+  class="desktop-nav bg-white border-b border-gray-200 shadow-md hidden sm:block"
+>
   <div class="max-w-screen-xl mx-auto px-4 py-3">
     <ul class="flex flex-wrap justify-center gap-2 md:gap-6">
       {
@@ -59,7 +61,7 @@ const isActive = (href: string) => {
 
 <!-- Mobile navigation (bottom tab bar) -->
 <nav
-  class="sm:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50"
+  class="mobile-nav sm:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50"
 >
   <ul class="flex justify-around items-center h-16">
     {
@@ -94,3 +96,24 @@ const isActive = (href: string) => {
     }
   </ul>
 </nav>
+
+<style>
+  /* Enforce visibility rules to prevent duplicate navbars */
+  @media (min-width: 640px) {
+    .mobile-nav {
+      display: none !important;
+    }
+    .desktop-nav {
+      display: block !important;
+    }
+  }
+
+  @media (max-width: 639px) {
+    .mobile-nav {
+      display: block !important;
+    }
+    .desktop-nav {
+      display: none !important;
+    }
+  }
+</style>
