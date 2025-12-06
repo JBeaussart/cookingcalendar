@@ -11,14 +11,16 @@ import {
   doc,
 } from "firebase/firestore";
 
-// ⚠️ Mets ta config Firebase (copie de src/firebase.js)
+import "dotenv/config";
+
+// ⚠️ Utilise les variables d'environnement
 const firebaseConfig = {
-  apiKey: "AIzaSyCFQHBm3Hng9tzVtO3ZrjjFEtJ1xj0hJvA",
-  authDomain: "cookingcalendar-38722.firebaseapp.com",
-  projectId: "cookingcalendar-38722",
-  storageBucket: "cookingcalendar-38722.firebasestorage.app",
-  messagingSenderId: "780270414824",
-  appId: "1:780270414824:web:bf4009dbb0ba6883a8d25d",
+  apiKey: process.env.PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.PUBLIC_FIREBASE_APP_ID,
 };
 
 const app = initializeApp(firebaseConfig);
