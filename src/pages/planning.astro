@@ -27,6 +27,7 @@ const days = [
 ];
 
 // Lire planning (day = nom du jour, champ: recipe_id) - filtré par user_id
+// Optimisation : utiliser une seule requête avec jointure si possible, sinon charger en parallèle
 const { data: planningData } = await authenticatedSupabase
   .from("planning")
   .select("day, recipe_id")
@@ -36,7 +37,7 @@ const planningMap = new Map(
   (planningData || []).map((p) => [p.day, p.recipe_id || ""]),
 );
 
-// Charger les recettes référencées
+// Charger les recettes référencées (une seule requête pour toutes)
 const recipeIds = days.map((d) => planningMap.get(d) || "").filter(Boolean);
 const recipesById = new Map();
 
@@ -90,6 +91,8 @@ const entries = days.map((day) => {
                       <img
                         src={img}
                         alt={recipe.title}
+                        loading="lazy"
+                        decoding="async"
                         class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
                       />
                       <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />

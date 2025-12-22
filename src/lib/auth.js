@@ -14,7 +14,7 @@ export async function getServerSession(request) {
     const refreshToken = extractTokenFromCookies(cookies, "sb-refresh-token");
 
     if (!accessToken) {
-      return { user: null, session: null };
+      return { user: null, session: null, supabase: null };
     }
 
     // Créer un client Supabase avec le token
@@ -22,7 +22,7 @@ export async function getServerSession(request) {
     const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
 
     if (!supabaseUrl || !supabaseAnonKey) {
-      return { user: null, session: null };
+      return { user: null, session: null, supabase: null };
     }
 
     const client = createClient(supabaseUrl, supabaseAnonKey, {
@@ -40,7 +40,7 @@ export async function getServerSession(request) {
     } = await client.auth.getUser(accessToken);
 
     if (userError || !user) {
-      return { user: null, session: null };
+      return { user: null, session: null, supabase: null };
     }
 
     // Récupérer le profil utilisateur avec le rôle
@@ -61,10 +61,11 @@ export async function getServerSession(request) {
         user_role: profile?.user_role || "free", // Alias pour compatibilité
       },
       session: { access_token: accessToken, refresh_token: refreshToken },
+      supabase: client, // Retourner le client pour réutilisation
     };
   } catch (error) {
     console.error("Error getting server session:", error);
-    return { user: null, session: null };
+    return { user: null, session: null, supabase: null };
   }
 }
 
@@ -78,16 +79,23 @@ function extractTokenFromCookies(cookies, name) {
 
 /**
  * Crée un client Supabase authentifié pour les endpoints API
+ * Optimisé pour réutiliser le client créé dans getServerSession
  * @param {Request} request - La requête HTTP
  * @returns {Promise<{supabase: object, user: object | null}>}
  */
 export async function getAuthenticatedSupabase(request) {
-  const { user, session } = await getServerSession(request);
+  const { user, session, supabase: existingClient } = await getServerSession(request);
   
   if (!user || !session) {
     return { supabase: null, user: null };
   }
 
+  // Si on a déjà un client, on le réutilise
+  if (existingClient) {
+    return { supabase: existingClient, user };
+  }
+
+  // Sinon, on en crée un nouveau
   const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
 

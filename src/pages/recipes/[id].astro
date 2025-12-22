@@ -117,6 +117,8 @@ const DEFAULT_IMG = "/images/default-recipe.jpg";
                   <img
                     src={recipe.image || DEFAULT_IMG}
                     alt={recipe.title}
+                    loading="eager"
+                    decoding="async"
                     class="h-full w-full object-cover"
                     onerror={`this.src='${DEFAULT_IMG}'`}
                   />

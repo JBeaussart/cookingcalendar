@@ -302,6 +302,15 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
       const searchInput = document.getElementById("searchInput");
       const mamanFilter = document.getElementById("mamanFilter");
 
+      // Debounce pour la recherche (optimisation performance)
+      let searchTimeout;
+      function debounceSearch(fn, delay = 300) {
+        return function(...args) {
+          clearTimeout(searchTimeout);
+          searchTimeout = setTimeout(() => fn.apply(this, args), delay);
+        };
+      }
+
       // Filter Logic
       let currentSaltMode = "all";
       const filterBtns = document.querySelectorAll(".filter-btn");
@@ -423,6 +432,7 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
           "relative h-32 overflow-hidden rounded-t-3xl bg-slate-100";
         const img = document.createElement("img");
         img.loading = "lazy";
+        img.decoding = "async";
         img.className =
           "h-full w-full object-cover transition-transform duration-500 group-hover:scale-110";
         img.src = r.image || DEFAULT_IMG;
@@ -485,7 +495,8 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
         render(list);
       }
 
-      searchInput.addEventListener("input", apply);
+      // Utiliser debounce pour la recherche (optimisation performance)
+      searchInput.addEventListener("input", debounceSearch(() => apply(), 300));
       mamanFilter.addEventListener("change", apply);
       apply();
 

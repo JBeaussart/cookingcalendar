@@ -16,23 +16,22 @@ export async function GET({ request }) {
     const url = new URL(request.url);
     const debug = url.searchParams.get("debug");
 
-    // 1. Charger le planning de l'utilisateur
-    const { data: planningData } = await authSupabase
-      .from('planning')
-      .select('day, recipe_id')
-      .eq('user_id', user.id);
+    // Optimisation : charger planning et reception en parallèle
+    const [planningResult, receptionResult] = await Promise.all([
+      authSupabase
+        .from('planning')
+        .select('day, recipe_id')
+        .eq('user_id', user.id),
+      authSupabase
+        .from('reception')
+        .select('data')
+        .eq('user_id', user.id)
+        .limit(1)
+        .maybeSingle() // Utiliser maybeSingle() au lieu de single() pour éviter l'erreur si aucun résultat
+    ]);
 
-    const planning = planningData || [];
-
-    // 1.b Charger la sélection Réception de l'utilisateur (aperitif/entree/plat/dessert)
-    const { data: receptionData } = await authSupabase
-      .from('reception')
-      .select('data')
-      .eq('user_id', user.id)
-      .limit(1)
-      .single();
-
-    const reception = receptionData?.data || {};
+    const planning = planningResult.data || [];
+    const reception = receptionResult.data?.data || {};
 
     // 2. Récupérer toutes les recettes (avec duplication si la même recette est utilisée plusieurs fois)
     const recipeIds = [

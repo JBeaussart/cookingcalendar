@@ -33,27 +33,33 @@ const { data: receptionData } = await authenticatedSupabase
 
 const data = receptionData?.data || {};
 
-async function loadRecipe(id?: string | null) {
-  if (!id) return null;
-  try {
-    const { data: recipe, error } = await authenticatedSupabase
-      .from("recipes")
-      .select("*")
-      .eq("id", id)
-      .eq("user_id", user.id) // S'assurer que l'utilisateur ne peut voir que ses propres recettes
-      .single();
+// Optimisation : charger toutes les recettes en une seule requête au lieu de 4 séquentielles
+const recipeIds = [
+  data.aperitifId,
+  data.entreeId,
+  data.platId,
+  data.dessertId,
+].filter(Boolean);
 
-    return error || !recipe ? null : recipe;
-  } catch {
-    return null;
+let recipesMap = new Map();
+
+if (recipeIds.length > 0) {
+  const { data: recipesData } = await authenticatedSupabase
+    .from("recipes")
+    .select("*")
+    .in("id", recipeIds)
+    .eq("user_id", user.id);
+
+  if (recipesData) {
+    recipesMap = new Map(recipesData.map((r) => [r.id, r]));
   }
 }
 
 const current = {
-  aperitif: await loadRecipe(data.aperitifId ?? null),
-  entree: await loadRecipe(data.entreeId ?? null),
-  plat: await loadRecipe(data.platId ?? null),
-  dessert: await loadRecipe(data.dessertId ?? null),
+  aperitif: recipesMap.get(data.aperitifId) || null,
+  entree: recipesMap.get(data.entreeId) || null,
+  plat: recipesMap.get(data.platId) || null,
+  dessert: recipesMap.get(data.dessertId) || null,
 };
 ---
 
@@ -86,6 +92,8 @@ const current = {
                       <img
                         src={img}
                         alt={r.title}
+                        loading="lazy"
+                        decoding="async"
                         class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
                       />
                       <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
