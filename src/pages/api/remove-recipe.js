@@ -1,6 +1,5 @@
 // src/pages/api/remove-recipe.js
-import { db } from "../../firebase";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { supabase } from "../../supabase";
 
 export async function POST({ request }) {
   try {
@@ -12,18 +11,24 @@ export async function POST({ request }) {
     }
 
     // 1. Récupérer l'ID de la recette avant suppression
-    const planningRef = doc(db, "planning", day);
-    const planningSnap = await getDoc(planningRef);
-    const recipeId = planningSnap.exists() ? planningSnap.data()?.recipeId : null;
+    const { data: planningData } = await supabase
+      .from('planning')
+      .select('recipe_id')
+      .eq('day', day)
+      .single();
+
+    const recipeId = planningData?.recipe_id;
 
     // 2. Si une recette était présente, nettoyer les items cochés dans shoppingTotals
     if (recipeId) {
-      const shoppingRef = doc(db, "shoppingTotals", "current");
-      const shoppingSnap = await getDoc(shoppingRef);
+      const { data: shoppingData } = await supabase
+        .from('shopping_totals')
+        .select('data')
+        .limit(1)
+        .single();
 
-      if (shoppingSnap.exists()) {
-        const data = shoppingSnap.data() || {};
-        const items = Array.isArray(data.items) ? data.items : [];
+      if (shoppingData?.data) {
+        const items = Array.isArray(shoppingData.data.items) ? shoppingData.data.items : [];
 
         // On filtre pour retirer les entrées liées à cette recette
         const suffix = `||recipe:${recipeId}`;
@@ -33,13 +38,19 @@ export async function POST({ request }) {
         });
 
         if (newItems.length !== items.length) {
-          await setDoc(shoppingRef, { items: newItems }, { merge: true });
+          await supabase
+            .from('shopping_totals')
+            .update({ data: { items: newItems } })
+            .eq('id', shoppingData.id);
         }
       }
     }
 
-    // 3. Supprimer la recette du planning
-    await setDoc(planningRef, { recipeId: "" }, { merge: true });
+    // 3. Supprimer la recette du planning (mettre recipe_id à null)
+    await supabase
+      .from('planning')
+      .update({ recipe_id: null })
+      .eq('day', day);
 
     console.log(`✅ Recette supprimée pour le jour ${day}`);
 

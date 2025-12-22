@@ -1,10 +1,4 @@
-import { db } from "../firebase.js";
-import {
-    collection,
-    doc,
-    onSnapshot,
-    query
-} from "firebase/firestore";
+import { supabase } from "../supabase.js";
 
 console.log("Shopping List script starting (external)...");
 
@@ -19,8 +13,8 @@ const fQty = document.getElementById("fQty");
 
 // Data sources
 let computedBase = []; // From API (structure)
-let savedState = new Map(); // From Firestore listener (checked status)
-let customItems = []; // From Firestore listener (manual items)
+let savedState = new Map(); // From Supabase listener (checked status)
+let customItems = []; // From Supabase listener (manual items)
 
 // Merged list for display
 let items = [];
@@ -126,10 +120,15 @@ async function fetchComputed() {
 // --- Listeners ---
 
 function setupListeners() {
-    // 1. Listen to Shopping Totals (Checked State)
-    onSnapshot(doc(db, "shoppingTotals", "current"), (docSnap) => {
-        const data = docSnap.data() || {};
-        const rawItems = Array.isArray(data.items) ? data.items : [];
+    // 1. Listen to Shopping Totals (Checked State) - Poll for now since it's a single doc
+    async function fetchShoppingTotals() {
+        const { data } = await supabase
+            .from('shopping_totals')
+            .select('data')
+            .limit(1)
+            .single();
+
+        const rawItems = Array.isArray(data?.data?.items) ? data.data.items : [];
 
         const newSavedState = new Map();
         for (const s of rawItems) {
@@ -148,29 +147,58 @@ function setupListeners() {
 
         savedState = newSavedState;
         updateAndRender();
-    }, (err) => console.error("Error listening to shoppingTotals:", err));
+    }
 
     // 2. Listen to Custom Items
-    onSnapshot(doc(db, "shoppingCustom", "current"), (docSnap) => {
-        const data = docSnap.data() || {};
-        console.log("Custom items snapshot:", data);
-        const rawCustoms = Array.isArray(data.items) ? data.items : [];
+    async function fetchCustomItems() {
+        const { data } = await supabase
+            .from('shopping_custom')
+            .select('*')
+            .order('created_at', { ascending: true });
+
+        console.log("Custom items data:", data);
+        const rawCustoms = data || [];
         console.log("Raw custom items:", rawCustoms);
         customItems = rawCustoms.map(decorateCustomItem);
         console.log("Decorated custom items:", customItems);
         updateAndRender();
-    }, (err) => console.error("Error listening to customItems:", err));
+    }
+
+    // Initial fetch
+    fetchShoppingTotals();
+    fetchCustomItems();
+
+    // Subscribe to changes using Supabase Realtime
+    const shoppingTotalsChannel = supabase
+        .channel('shopping_totals_changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'shopping_totals' }, () => {
+            fetchShoppingTotals();
+        })
+        .subscribe();
+
+    const customItemsChannel = supabase
+        .channel('shopping_custom_changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'shopping_custom' }, () => {
+            fetchCustomItems();
+        })
+        .subscribe();
 
     // 3. Listen to Planning & Reception changes to re-fetch computed structure
-    // We use a debounce to avoid double fetching if both change at once
     let fetchTimeout;
     const triggerFetch = () => {
         clearTimeout(fetchTimeout);
         fetchTimeout = setTimeout(fetchComputed, 500);
     };
 
-    onSnapshot(collection(db, "planning"), triggerFetch, (err) => console.error("Error listening to planning:", err));
-    onSnapshot(doc(db, "reception", "current"), triggerFetch, (err) => console.error("Error listening to reception:", err));
+    const planningChannel = supabase
+        .channel('planning_changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'planning' }, triggerFetch)
+        .subscribe();
+
+    const receptionChannel = supabase
+        .channel('reception_changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'reception' }, triggerFetch)
+        .subscribe();
 }
 
 // --- UI Rendering ---

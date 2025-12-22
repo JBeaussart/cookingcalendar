@@ -2,11 +2,14 @@
 // src/pages/recipes/index.astro
 import Layout from "../../layouts/Layout.astro";
 import Modal from "../../components/Modal.astro";
-import { db } from "../../firebase";
-import { collection, getDocs } from "firebase/firestore";
+import { supabase } from "../../supabase";
 
-const snap = await getDocs(collection(db, "recipes"));
-const recipes = snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) }));
+const { data: recipesData } = await supabase
+  .from("recipes")
+  .select("*")
+  .order("title", { ascending: true });
+
+const recipes = recipesData || [];
 
 const DEFAULT_IMG = "/images/default-recipe.jpg";
 const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));

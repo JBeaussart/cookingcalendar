@@ -1,6 +1,5 @@
 // src/pages/api/add-recipe.js
-import { db } from "../../firebase";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { supabase } from "../../supabase";
 
 export async function POST({ request }) {
   try {
@@ -32,8 +31,8 @@ export async function POST({ request }) {
         if (!item) return null;
         const qty =
           i.quantity === "" ||
-          i.quantity === null ||
-          typeof i.quantity === "undefined"
+            i.quantity === null ||
+            typeof i.quantity === "undefined"
             ? undefined
             : Number(i.quantity);
         const unit = String(i.unit || "").trim();
@@ -56,12 +55,20 @@ export async function POST({ request }) {
       steps: cleanSteps,
       maman: !!maman,
       salt: !!salt, // true = salé, false = sucré
-      createdAt: serverTimestamp(),
     };
 
-    const ref = await addDoc(collection(db, "recipes"), payload);
+    const { data, error } = await supabase
+      .from('recipes')
+      .insert(payload)
+      .select('id')
+      .single();
 
-    return new Response(JSON.stringify({ ok: true, id: ref.id }), {
+    if (error) {
+      console.error("❌ add-recipe error:", error);
+      return new Response("Erreur lors de l'ajout de la recette", { status: 500 });
+    }
+
+    return new Response(JSON.stringify({ ok: true, id: data.id }), {
       headers: { "Content-Type": "application/json" },
       status: 200,
     });

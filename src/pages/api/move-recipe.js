@@ -1,6 +1,5 @@
 // src/pages/api/move-recipe.js
-import { db } from "../../firebase";
-import { doc, setDoc, getDoc } from "firebase/firestore";
+import { supabase } from "../../supabase";
 
 export async function POST({ request }) {
   try {
@@ -45,10 +44,13 @@ export async function POST({ request }) {
     }
 
     // Optional: ensure the source day currently holds the recipe we move
-    const fromSnap = await getDoc(doc(db, "planning", fromDay));
-    const currentSourceId = fromSnap.exists()
-      ? (fromSnap.data()?.recipeId || "").trim()
-      : "";
+    const { data: fromData } = await supabase
+      .from('planning')
+      .select('recipe_id')
+      .eq('day', fromDay)
+      .single();
+
+    const currentSourceId = fromData?.recipe_id || "";
     if (currentSourceId && currentSourceId !== recipeId) {
       return new Response(
         JSON.stringify({
@@ -63,21 +65,20 @@ export async function POST({ request }) {
     }
 
     // Assign target day to recipeId
-    await setDoc(doc(db, "planning", toDay), { recipeId }, { merge: true });
+    await supabase
+      .from('planning')
+      .upsert({ day: toDay, recipe_id: recipeId }, { onConflict: 'day' });
 
     // If the target day already had a recipe, swap it back to the source day.
     if (replaceWith) {
-      await setDoc(
-        doc(db, "planning", fromDay),
-        { recipeId: replaceWith },
-        { merge: true },
-      );
+      await supabase
+        .from('planning')
+        .upsert({ day: fromDay, recipe_id: replaceWith }, { onConflict: 'day' });
     } else {
-      await setDoc(
-        doc(db, "planning", fromDay),
-        { recipeId: "" },
-        { merge: true },
-      );
+      await supabase
+        .from('planning')
+        .update({ recipe_id: null })
+        .eq('day', fromDay);
     }
 
     return new Response(JSON.stringify({ ok: true }), {

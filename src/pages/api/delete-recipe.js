@@ -1,62 +1,40 @@
 // src/pages/api/delete-recipe.js
-import { db } from "../../firebase";
-import {
-  doc,
-  deleteDoc,
-  collection,
-  getDocs,
-  getDoc,
-  query,
-  where,
-  updateDoc,
-  setDoc,
-} from "firebase/firestore";
+import { supabase } from "../../supabase";
 
 export async function DELETE({ request }) {
   try {
-    const url = new URL(request.url);
-    let id = url.searchParams.get("id");
-    if (!id) {
-      const body = await request.json().catch(() => null);
-      id = body?.id;
+    const body = await request.json().catch(() => null);
+    if (!body || typeof body !== "object") {
+      return new Response("Corps JSON invalide", { status: 400 });
     }
+
+    const { id } = body;
     if (!id) {
       return new Response("Paramètre 'id' manquant.", { status: 400 });
     }
 
     // Supprimer la recette
-    await deleteDoc(doc(db, "recipes", id));
+    const { error: deleteError } = await supabase
+      .from('recipes')
+      .delete()
+      .eq('id', id);
 
-    // Nettoyer le planning (retire la recette si utilisée)
-    const qPlanning = query(
-      collection(db, "planning"),
-      where("recipeId", "==", id),
-    );
-    const snap = await getDocs(qPlanning);
-    await Promise.all(
-      snap.docs.map(async (d) => {
-        await updateDoc(doc(db, "planning", d.id), { recipeId: "" });
-      }),
-    );
-
-    const receptionRef = doc(db, "reception", "current");
-    const receptionSnap = await getDoc(receptionRef);
-    if (receptionSnap.exists()) {
-      const data = receptionSnap.data() || {};
-      const slots = ["aperitifId", "entreeId", "platId", "dessertId"];
-      const updates = {};
-      for (const field of slots) {
-        if (data[field] === id) updates[field] = null;
-      }
-      if (Object.keys(updates).length > 0) {
-        await setDoc(receptionRef, updates, { merge: true });
-      }
+    if (deleteError) {
+      console.error("❌ delete-recipe error:", deleteError);
+      return new Response("Erreur lors de la suppression", { status: 500 });
     }
 
-    // Renvoie une URL de redirection (change-la si tu utilises /recettes)
-    const redirect = "/recipes";
+    // Nettoyer le planning (mettre recipe_id à null pour les jours qui utilisaient cette recette)
+    const { error: planningError } = await supabase
+      .from('planning')
+      .update({ recipe_id: null })
+      .eq('recipe_id', id);
 
-    return new Response(JSON.stringify({ ok: true, redirect }), {
+    if (planningError) {
+      console.warn("⚠️ Erreur lors du nettoyage du planning:", planningError);
+    }
+
+    return new Response(JSON.stringify({ ok: true }), {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });

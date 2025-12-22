@@ -1,6 +1,5 @@
 // src/pages/api/compute-shopping-totals.js
-import { db } from "../../firebase";
-import { collection, getDocs, doc, getDoc } from "firebase/firestore";
+import { supabase } from "../../supabase";
 
 export async function GET({ request }) {
   try {
@@ -8,19 +7,24 @@ export async function GET({ request }) {
     const debug = url.searchParams.get("debug");
 
     // 1. Charger le planning
-    const planningSnap = await getDocs(collection(db, "planning"));
-    const planning = planningSnap.docs.map((d) => ({
-      id: d.id,
-      ...d.data(),
-    }));
+    const { data: planningData } = await supabase
+      .from('planning')
+      .select('day, recipe_id');
+
+    const planning = planningData || [];
 
     // 1.b Charger la sélection Réception (aperitif/entree/plat/dessert)
-    const receptionDoc = await getDoc(doc(db, "reception", "current"));
-    const reception = receptionDoc.exists() ? receptionDoc.data() || {} : {};
+    const { data: receptionData } = await supabase
+      .from('reception')
+      .select('data')
+      .limit(1)
+      .single();
+
+    const reception = receptionData?.data || {};
 
     // 2. Récupérer toutes les recettes (avec duplication si la même recette est utilisée plusieurs fois)
     const recipeIds = [
-      ...planning.map((p) => p.recipeId).filter(Boolean),
+      ...planning.map((p) => p.recipe_id).filter(Boolean),
       reception.aperitifId || null,
       reception.entreeId || null,
       reception.platId || null,
@@ -33,29 +37,32 @@ export async function GET({ request }) {
     // Compter combien de fois chaque recette apparaît
     const recipeCount = {};
     for (const p of planning) {
-      if (p.recipeId) {
-        recipeCount[p.recipeId] = (recipeCount[p.recipeId] || 0) + 1;
+      if (p.recipe_id) {
+        recipeCount[p.recipe_id] = (recipeCount[p.recipe_id] || 0) + 1;
       }
     }
     // Ajouter les 4 slots de la réception
-    const slots = ["aperitifId", "entreeId", "platId", "dessertId"]; 
+    const slots = ["aperitifId", "entreeId", "platId", "dessertId"];
     for (const s of slots) {
       const id = reception[s];
       if (id) recipeCount[id] = (recipeCount[id] || 0) + 1;
     }
 
-    for (const id of [...new Set(recipeIds)]) {
-      try {
-        const snap = await getDoc(doc(db, "recipes", id));
-        if (snap.exists()) {
-          loaded.push({ id: snap.id, ...snap.data() });
-        } else {
-          skipped.push(id);
-        }
-      } catch (e) {
-        console.error("Erreur chargement recette", id, e);
-        skipped.push(id);
+    // Charger les recettes uniques
+    const uniqueRecipeIds = [...new Set(recipeIds)];
+    if (uniqueRecipeIds.length > 0) {
+      const { data: recipesData } = await supabase
+        .from('recipes')
+        .select('*')
+        .in('id', uniqueRecipeIds);
+
+      if (recipesData) {
+        loaded.push(...recipesData);
       }
+
+      // Identifier les recettes manquantes
+      const loadedIds = new Set(recipesData?.map(r => r.id) || []);
+      skipped.push(...uniqueRecipeIds.filter(id => !loadedIds.has(id)));
     }
 
     // 3. Calcul des totaux (agrégation)

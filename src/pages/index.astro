@@ -1,14 +1,7 @@
 ---
 /* src/pages/index.astro (planning) */
 import Layout from "../layouts/Layout.astro";
-import { db } from "../firebase";
-import {
-  collection,
-  getDocs,
-  query,
-  where,
-  documentId,
-} from "firebase/firestore";
+import { supabase } from "../supabase";
 
 const days = [
   "lundi",
@@ -20,25 +13,28 @@ const days = [
   "dimanche",
 ];
 
-// Lire planning (doc id = nom du jour, champ: recipeId)
-const planningSnap = await getDocs(collection(db, "planning"));
+// Lire planning (day = nom du jour, champ: recipe_id)
+const { data: planningData } = await supabase
+  .from("planning")
+  .select("day, recipe_id");
+
 const planningMap = new Map(
-  planningSnap.docs.map((d) => [d.id, d.data()?.recipeId || ""]),
+  (planningData || []).map((p) => [p.day, p.recipe_id || ""]),
 );
 
-// Charger les recettes référencées (lotissement par 10)
+// Charger les recettes référencées
 const recipeIds = days.map((d) => planningMap.get(d) || "").filter(Boolean);
 const recipesById = new Map();
+
 if (recipeIds.length) {
-  for (let i = 0; i < recipeIds.length; i += 10) {
-    const chunk = recipeIds.slice(i, i + 10);
-    const q = query(
-      collection(db, "recipes"),
-      where(documentId(), "in", chunk),
-    );
-    const snap = await getDocs(q);
-    for (const d of snap.docs) {
-      recipesById.set(d.id, { id: d.id, ...d.data() });
+  const { data: recipesData } = await supabase
+    .from("recipes")
+    .select("*")
+    .in("id", recipeIds);
+
+  if (recipesData) {
+    for (const recipe of recipesData) {
+      recipesById.set(recipe.id, recipe);
     }
   }
 }
