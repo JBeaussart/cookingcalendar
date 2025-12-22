@@ -2,17 +2,20 @@
 // src/pages/recipes/[id].astro
 import Layout from "../../layouts/Layout.astro";
 import Modal from "../../components/Modal.astro";
-import { db } from "../../firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { supabase } from "../../supabase";
 
 const { id } = Astro.params;
 
 const recipe = await (async () => {
   try {
-    const ref = doc(db, "recipes", id);
-    const snap = await getDoc(ref);
-    if (!snap.exists()) return null;
-    return { id: snap.id, ...snap.data() };
+    const { data, error } = await supabase
+      .from('recipes')
+      .select('*')
+      .eq('id', id)
+      .single();
+    
+    if (error || !data) return null;
+    return data;
   } catch {
     return null;
   }

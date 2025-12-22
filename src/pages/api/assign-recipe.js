@@ -1,6 +1,5 @@
 // src/pages/api/assign-recipe.js
-import { db } from "../../firebase";
-import { doc, setDoc } from "firebase/firestore";
+import { supabase } from "../../supabase";
 
 export async function POST({ request }) {
   try {
@@ -11,8 +10,15 @@ export async function POST({ request }) {
       return new Response("Paramètres manquants (day, id).", { status: 400 });
     }
 
-    // On stocke dans la collection planning : 1 doc = 1 jour
-    await setDoc(doc(db, "planning", day), { recipeId: id }, { merge: true });
+    // On stocke dans la table planning : 1 row = 1 jour
+    const { error } = await supabase
+      .from('planning')
+      .upsert({ day, recipe_id: id }, { onConflict: 'day' });
+
+    if (error) {
+      console.error("Erreur assign-recipe:", error);
+      return new Response("Erreur serveur", { status: 500 });
+    }
 
     return new Response(JSON.stringify({ ok: true }), {
       status: 200,

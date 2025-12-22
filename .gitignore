@@ -31,3 +31,6 @@ serviceAccountKey.json
 
 # firebase
 serviceAccountKey.json
+
+# migration exports
+exports/

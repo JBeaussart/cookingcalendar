@@ -1,6 +1,5 @@
 // src/pages/api/update-recipe.js
-import { db } from "../../firebase";
-import { doc, updateDoc } from "firebase/firestore";
+import { supabase } from "../../supabase";
 
 export async function PATCH({ request }) {
   try {
@@ -28,8 +27,8 @@ export async function PATCH({ request }) {
         if (!item) return null;
         const qty =
           i.quantity === "" ||
-          i.quantity === null ||
-          typeof i.quantity === "undefined"
+            i.quantity === null ||
+            typeof i.quantity === "undefined"
             ? undefined
             : Number(i.quantity);
         const unit = String(i.unit || "").trim();
@@ -54,7 +53,15 @@ export async function PATCH({ request }) {
       salt: !!salt, // true = salé, false = sucré
     };
 
-    await updateDoc(doc(db, "recipes", id), payload);
+    const { error } = await supabase
+      .from('recipes')
+      .update(payload)
+      .eq('id', id);
+
+    if (error) {
+      console.error("❌ update-recipe error:", error);
+      return new Response("Erreur lors de la mise à jour", { status: 500 });
+    }
 
     return new Response(JSON.stringify({ ok: true }), {
       status: 200,

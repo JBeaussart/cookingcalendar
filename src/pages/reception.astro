@@ -1,7 +1,6 @@
 ---
 import Layout from "../layouts/Layout.astro";
-import { db } from "../firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { supabase } from "../supabase";
 
 type SlotKey = "aperitif" | "entree" | "plat" | "dessert";
 
@@ -12,15 +11,24 @@ const SLOT_LABELS: Record<SlotKey, string> = {
   dessert: "Dessert",
 };
 
-const REF = doc(db, "reception", "current");
-const snap = await getDoc(REF);
-const data = snap.exists() ? (snap.data() as any) : {};
+const { data: receptionData } = await supabase
+  .from("reception")
+  .select("data")
+  .limit(1)
+  .single();
+
+const data = receptionData?.data || {};
 
 async function loadRecipe(id?: string | null) {
   if (!id) return null;
   try {
-    const s = await getDoc(doc(db, "recipes", id));
-    return s.exists() ? { id: s.id, ...(s.data() as any) } : null;
+    const { data: recipe, error } = await supabase
+      .from("recipes")
+      .select("*")
+      .eq("id", id)
+      .single();
+
+    return error || !recipe ? null : recipe;
   } catch {
     return null;
   }

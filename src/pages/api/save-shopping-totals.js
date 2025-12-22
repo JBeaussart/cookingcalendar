@@ -1,21 +1,28 @@
 // src/pages/api/save-shopping-totals.js
-import { db } from "../../firebase";
-import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
+import { supabase } from "../../supabase";
 
 // GET -> renvoie les items existants (et crée le doc s'il n'existe pas)
 export async function GET() {
   try {
-    const ref = doc(db, "shoppingTotals", "current");
-    const snap = await getDoc(ref);
-    if (!snap.exists()) {
-      await setDoc(ref, { items: [], savedAt: serverTimestamp() });
+    const { data } = await supabase
+      .from('shopping_totals')
+      .select('data')
+      .limit(1)
+      .single();
+
+    if (!data) {
+      // Créer un document initial
+      await supabase
+        .from('shopping_totals')
+        .insert({ data: { items: [] } });
+
       return new Response(JSON.stringify({ ok: true, items: [] }), {
         status: 200,
         headers: { "content-type": "application/json" },
       });
     }
-    const data = snap.data() || {};
-    const items = Array.isArray(data.items) ? data.items : [];
+
+    const items = Array.isArray(data.data?.items) ? data.data.items : [];
     return new Response(JSON.stringify({ ok: true, items }), {
       status: 200,
       headers: { "content-type": "application/json" },
@@ -66,14 +73,23 @@ export async function POST({ request }) {
       };
     });
 
-    await setDoc(
-      doc(db, "shoppingTotals", "current"),
-      {
-        items,
-        savedAt: serverTimestamp(),
-      },
-      { merge: true },
-    );
+    // Récupérer l'ID du document existant ou créer
+    const { data: existing } = await supabase
+      .from('shopping_totals')
+      .select('id')
+      .limit(1)
+      .single();
+
+    if (existing) {
+      await supabase
+        .from('shopping_totals')
+        .update({ data: { items } })
+        .eq('id', existing.id);
+    } else {
+      await supabase
+        .from('shopping_totals')
+        .insert({ data: { items } });
+    }
 
     return new Response(JSON.stringify({ ok: true, count: items.length }), {
       status: 200,

@@ -1,6 +1,5 @@
 // src/pages/api/assign-reception.js
-import { db } from "../../firebase";
-import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { supabase } from "../../supabase";
 
 const SLOTS = new Set(["aperitif", "entree", "plat", "dessert"]);
 
@@ -14,9 +13,27 @@ export async function POST({ request }) {
     }
 
     const field = `${slot}Id`;
-    const payload = { [field]: id || null, updatedAt: serverTimestamp() };
 
-    await setDoc(doc(db, "reception", "current"), payload, { merge: true });
+    // Récupérer ou créer le document reception
+    const { data: existing } = await supabase
+      .from('reception')
+      .select('id, data')
+      .limit(1)
+      .single();
+
+    const receptionData = existing?.data || {};
+    receptionData[field] = id || null;
+
+    if (existing) {
+      await supabase
+        .from('reception')
+        .update({ data: receptionData })
+        .eq('id', existing.id);
+    } else {
+      await supabase
+        .from('reception')
+        .insert({ data: receptionData });
+    }
 
     return new Response(JSON.stringify({ ok: true }), {
       status: 200,
@@ -27,4 +44,3 @@ export async function POST({ request }) {
     return new Response("Erreur serveur", { status: 500 });
   }
 }
-

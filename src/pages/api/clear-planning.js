@@ -1,6 +1,5 @@
 // src/pages/api/clear-planning.js
-import { db } from "../../firebase";
-import { doc, setDoc } from "firebase/firestore";
+import { supabase } from "../../supabase";
 
 const days = [
   "lundi",
@@ -14,10 +13,12 @@ const days = [
 
 export async function POST() {
   try {
-    // On vide tous les recipeId
-    for (const day of days) {
-      await setDoc(doc(db, "planning", day), { recipeId: "" }, { merge: true });
-    }
+    // On vide tous les recipe_id
+    await supabase
+      .from('planning')
+      .update({ recipe_id: null })
+      .in('day', days);
+
     return new Response(null, {
       status: 303,
       headers: { Location: "/" },

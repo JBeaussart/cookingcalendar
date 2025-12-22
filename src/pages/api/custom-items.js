@@ -1,6 +1,5 @@
 // src/pages/api/custom-items.js
-import { db } from "../../firebase";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { supabase } from "../../supabase";
 
 /**
  * GET  -> retourne { items }
@@ -9,16 +8,13 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
  * DELETE -> supprime un item (query: ?item=...&unit=...)
  */
 
-const REF = () => doc(db, "shoppingCustom", "current");
-
 async function readItems() {
-  const snap = await getDoc(REF());
-  const data = snap.exists() ? snap.data() : { items: [] };
-  return Array.isArray(data.items) ? data.items : [];
-}
+  const { data } = await supabase
+    .from('shopping_custom')
+    .select('*')
+    .order('created_at', { ascending: true });
 
-async function writeItems(items) {
-  await setDoc(REF(), { items, savedAt: new Date() }, { merge: true });
+  return data || [];
 }
 
 export async function GET() {
@@ -54,32 +50,43 @@ export async function POST({ request }) {
       });
     }
 
-    const items = await readItems();
-    // clé logique item+unit pour éviter les doublons
-    const key = (it) =>
-      `${(it.item || "").trim().toLowerCase()}|||${(it.unit || "").trim().toLowerCase()}`;
-    const kNew = `${item.toLowerCase()}|||${unit.toLowerCase()}`;
-    const exists = items.findIndex((it) => key(it) === kNew);
+    // Vérifier si l'item existe déjà
+    const { data: existing } = await supabase
+      .from('shopping_custom')
+      .select('*')
+      .ilike('item', item);
 
-    if (exists >= 0) {
-      // si déjà présent, on additionne la quantité si elle est numérique
-      const curr = items[exists];
+    const exists = existing?.find(it =>
+      it.item.toLowerCase() === item.toLowerCase()
+    );
+
+    if (exists) {
+      // Si déjà présent, on additionne la quantité si elle est numérique
       const nq = Number.isFinite(q) ? q : undefined;
-      if (Number.isFinite(curr.quantity) && Number.isFinite(nq))
-        curr.quantity += nq;
-      else if (!Number.isFinite(curr.quantity) && Number.isFinite(nq))
-        curr.quantity = nq;
-      // on garde checked tel quel
+      let newQuantity = exists.quantity;
+
+      if (Number.isFinite(exists.quantity) && Number.isFinite(nq)) {
+        newQuantity = exists.quantity + nq;
+      } else if (!Number.isFinite(exists.quantity) && Number.isFinite(nq)) {
+        newQuantity = nq;
+      }
+
+      await supabase
+        .from('shopping_custom')
+        .update({ quantity: newQuantity })
+        .eq('id', exists.id);
     } else {
-      items.push({
-        item,
-        unit,
-        checked: false,
-        ...(Number.isFinite(q) ? { quantity: q } : {}),
-      });
+      // Créer un nouvel item
+      await supabase
+        .from('shopping_custom')
+        .insert({
+          item,
+          checked: false,
+          ...(Number.isFinite(q) ? { quantity: q } : {}),
+        });
     }
 
-    await writeItems(items);
+    const items = await readItems();
     return new Response(JSON.stringify({ ok: true, items }), {
       status: 200,
       headers: { "content-type": "application/json" },
@@ -99,36 +106,40 @@ export async function PATCH({ request }) {
   try {
     const body = await request.json().catch(() => ({}));
     const item = String(body.item || "").trim();
-    const unit = String(body.unit || "").trim();
+
     if (!item) {
       return new Response(JSON.stringify({ ok: false, error: "item requis" }), {
         status: 400,
       });
     }
 
-    const items = await readItems();
-    const key = (it) =>
-      `${(it.item || "").trim().toLowerCase()}|||${(it.unit || "").trim().toLowerCase()}`;
-    const k = `${item.toLowerCase()}|||${unit.toLowerCase()}`;
-    const idx = items.findIndex((it) => key(it) === k);
-    if (idx < 0) {
+    // Trouver l'item
+    const { data: existing } = await supabase
+      .from('shopping_custom')
+      .select('*')
+      .ilike('item', item)
+      .limit(1);
+
+    if (!existing || existing.length === 0) {
       return new Response(
         JSON.stringify({ ok: false, error: "item introuvable" }),
         { status: 404 },
       );
     }
 
-    const up = items[idx];
-    if (typeof body.checked === "boolean") up.checked = body.checked;
+    const updates = {};
+    if (typeof body.checked === "boolean") updates.checked = body.checked;
     if (body.quantity !== undefined && body.quantity !== null) {
       const q = Number(body.quantity);
-      if (!Number.isNaN(q)) up.quantity = q;
+      if (!Number.isNaN(q)) updates.quantity = q;
     }
-    if (typeof body.unit === "string") up.unit = unit;
 
-    items[idx] = up;
-    await writeItems(items);
+    await supabase
+      .from('shopping_custom')
+      .update(updates)
+      .eq('id', existing[0].id);
 
+    const items = await readItems();
     return new Response(JSON.stringify({ ok: true, items }), {
       status: 200,
       headers: { "content-type": "application/json" },
@@ -150,7 +161,7 @@ export async function DELETE({ request }) {
     const deleteAll = url.searchParams.get("all");
 
     if (deleteAll) {
-      await writeItems([]);
+      await supabase.from('shopping_custom').delete().neq('id', '00000000-0000-0000-0000-000000000000');
       return new Response(JSON.stringify({ ok: true, items: [] }), {
         status: 200,
         headers: { "content-type": "application/json" },
@@ -158,7 +169,6 @@ export async function DELETE({ request }) {
     }
 
     const item = String(url.searchParams.get("item") || "").trim();
-    const unit = String(url.searchParams.get("unit") || "").trim();
 
     if (!item) {
       return new Response(JSON.stringify({ ok: false, error: "item requis" }), {
@@ -166,14 +176,13 @@ export async function DELETE({ request }) {
       });
     }
 
-    const items = await readItems();
-    const key = (it) =>
-      `${(it.item || "").trim().toLowerCase()}|||${(it.unit || "").trim().toLowerCase()}`;
-    const k = `${item.toLowerCase()}|||${unit.toLowerCase()}`;
-    const next = items.filter((it) => key(it) !== k);
+    await supabase
+      .from('shopping_custom')
+      .delete()
+      .ilike('item', item);
 
-    await writeItems(next);
-    return new Response(JSON.stringify({ ok: true, items: next }), {
+    const items = await readItems();
+    return new Response(JSON.stringify({ ok: true, items }), {
       status: 200,
       headers: { "content-type": "application/json" },
     });
