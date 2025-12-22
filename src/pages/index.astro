@@ -1,380 +1,194 @@
 ---
-/* src/pages/index.astro (planning) */
-import Layout from "../layouts/Layout.astro";
-import { supabase } from "../supabase";
+/* src/pages/index.astro (landing page) */
+import LandingLayout from "../layouts/LandingLayout.astro";
+import { getServerSession } from "../lib/auth";
 
-const days = [
-  "lundi",
-  "mardi",
-  "mercredi",
-  "jeudi",
-  "vendredi",
-  "samedi",
-  "dimanche",
-];
+// Vérifier si l'utilisateur est connecté
+const { user } = await getServerSession(Astro.request);
 
-// Lire planning (day = nom du jour, champ: recipe_id)
-const { data: planningData } = await supabase
-  .from("planning")
-  .select("day, recipe_id");
-
-const planningMap = new Map(
-  (planningData || []).map((p) => [p.day, p.recipe_id || ""]),
-);
-
-// Charger les recettes référencées
-const recipeIds = days.map((d) => planningMap.get(d) || "").filter(Boolean);
-const recipesById = new Map();
-
-if (recipeIds.length) {
-  const { data: recipesData } = await supabase
-    .from("recipes")
-    .select("*")
-    .in("id", recipeIds);
-
-  if (recipesData) {
-    for (const recipe of recipesData) {
-      recipesById.set(recipe.id, recipe);
-    }
-  }
+// Si connecté, rediriger vers le planning
+if (user) {
+  return Astro.redirect("/planning", 302);
 }
-
-const entries = days.map((day) => {
-  const rid = planningMap.get(day) || "";
-  return { day, recipe: rid ? (recipesById.get(rid) ?? null) : null };
-});
 ---
 
-<Layout title="Planning">
-  <div class="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-    <div class="mx-auto max-w-5xl px-4 py-12">
-      <!-- Header -->
-      <div class="mb-12 text-center">
-        <h1 class="text-4xl font-bold text-slate-900 mb-2">Ma semaine</h1>
-        <p class="text-slate-600">Planifiez vos repas en un clin d'œil</p>
-      </div>
-
-      <!-- Days Grid -->
-      <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {
-          entries.map(({ day, recipe }) => {
-            const img =
-              recipe?.image && String(recipe.image).trim()
-                ? recipe.image
-                : "/images/default-recipe.jpg";
-            return (
-              <div
-                class="group relative rounded-3xl bg-white shadow-lg shadow-slate-200/50 transition-all duration-300 hover:shadow-xl hover:shadow-slate-300/50 hover:scale-[1.02]"
-                data-day={day}
-                data-current-recipe-id={recipe ? recipe.id : ""}
-              >
-                {recipe ? (
-                  <>
-                    {/* Recipe Image Background */}
-                    <div class="relative h-28 overflow-hidden rounded-t-3xl">
-                      <img
-                        src={img}
-                        alt={recipe.title}
-                        class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
-                      />
-                      <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-
-                      {/* Day Badge */}
-                      <div class="absolute top-2 left-2">
-                        <div class="rounded-full bg-white/95 backdrop-blur-sm px-3 py-1 shadow-lg">
-                          <span class="text-xs font-bold capitalize text-slate-900">
-                            {day}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Recipe Title Overlay */}
-                      <div class="absolute bottom-0 left-0 right-0 p-3">
-                        <a
-                          href={`/recipes/${recipe.id}`}
-                          class="block text-base font-bold text-white drop-shadow-lg hover:text-blue-200 transition line-clamp-2"
-                        >
-                          {recipe.title}
-                        </a>
-                      </div>
-                    </div>
-
-                    {/* Actions Bar */}
-                    <div class="flex items-center justify-between border-t border-slate-100 bg-slate-50/50 px-3 py-2">
-                      <a
-                        href={`/recipes/${recipe.id}`}
-                        class="flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-blue-600 transition"
-                      >
-                        <svg
-                          class="h-4 w-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                          />
-                          <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                          />
-                        </svg>
-                        Voir
-                      </a>
-
-                      <div class="flex items-center gap-1">
-                        {/* Move button */}
-                        <button
-                          type="button"
-                          title="Déplacer"
-                          class="move-btn flex h-8 w-8 items-center justify-center rounded-lg text-slate-600 hover:bg-slate-200/50 transition"
-                          data-day={day}
-                          data-recipe-id={recipe.id}
-                        >
-                          <svg
-                            class="h-4 w-4"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              stroke-linecap="round"
-                              stroke-linejoin="round"
-                              stroke-width="2"
-                              d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5"
-                            />
-                          </svg>
-                        </button>
-
-                        <form
-                          method="post"
-                          action={`/api/remove-recipe?day=${day}`}
-                        >
-                          <button
-                            type="submit"
-                            title="Retirer"
-                            class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-600 hover:bg-red-50 hover:text-red-600 transition"
-                          >
-                            <svg
-                              class="h-4 w-4"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                stroke-width="2"
-                                d="M6 18L18 6M6 6l12 12"
-                              />
-                            </svg>
-                          </button>
-                        </form>
-                      </div>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    {/* Empty state - just the image area */}
-                    <a href={`/recipes?day=${day}`} class="block">
-                      <div class="relative h-28 overflow-hidden rounded-3xl bg-gradient-to-br from-slate-100 to-slate-200 transition hover:from-slate-200 hover:to-slate-300">
-                        {/* Day Badge */}
-                        <div class="absolute top-2 left-2">
-                          <div class="rounded-full bg-white/95 backdrop-blur-sm px-3 py-1 shadow-lg">
-                            <span class="text-xs font-bold capitalize text-slate-900">
-                              {day}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Centered Add Icon */}
-                        <div class="absolute inset-0 flex items-center justify-center">
-                          <div class="flex h-12 w-12 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg shadow-blue-600/30 transition-all hover:bg-blue-700 hover:scale-110">
-                            <svg
-                              class="h-6 w-6"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                stroke-width="2.5"
-                                d="M12 4v16m8-8H4"
-                              />
-                            </svg>
-                          </div>
-                        </div>
-                      </div>
-                    </a>
-                  </>
-                )}
-              </div>
-            );
-          })
-        }
-      </div>
-
-      {/* Clear Planning Button */}
-      <div class="mt-12 pb-16 sm:pb-0 text-center">
-        <form method="post" action="/api/clear-planning" class="inline-block">
-          <button
-            type="submit"
-            class="rounded-full bg-slate-900 px-6 py-3 text-sm font-semibold text-white shadow-lg transition hover:bg-slate-800 hover:shadow-xl"
-            title="Réinitialiser le planning"
+<LandingLayout title="Cooking Calendar - Planifiez vos repas">
+  <div class="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+    <!-- Hero Section -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+      <div class="text-center">
+        <h1 class="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
+          Planifiez vos repas
+          <span class="block text-blue-600">en toute simplicité</span>
+        </h1>
+        <p class="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
+          Organisez votre semaine culinaire, gérez vos recettes et générez automatiquement votre liste de courses. 
+          Tout ce dont vous avez besoin pour cuisiner sereinement.
+        </p>
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+          <a
+            href="/signup"
+            class="inline-flex items-center justify-center px-8 py-4 bg-blue-600 text-white text-lg font-semibold rounded-lg shadow-lg hover:bg-blue-700 transition transform hover:scale-105"
           >
-            Réinitialiser le planning
-          </button>
-        </form>
+            Créer un compte gratuit
+          </a>
+          <a
+            href="/login"
+            class="inline-flex items-center justify-center px-8 py-4 bg-white text-blue-600 text-lg font-semibold rounded-lg border-2 border-blue-600 hover:bg-blue-50 transition"
+          >
+            Se connecter
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Features Section -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+      <div class="grid md:grid-cols-3 gap-8">
+        <!-- Feature 1 -->
+        <div class="bg-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition">
+          <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+            <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          </div>
+          <h3 class="text-xl font-bold text-gray-900 mb-2">Planning hebdomadaire</h3>
+          <p class="text-gray-600">
+            Organisez vos repas de la semaine en un clin d'œil. Glissez-déposez vos recettes sur les jours qui vous conviennent.
+          </p>
+        </div>
+
+        <!-- Feature 2 -->
+        <div class="bg-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition">
+          <div class="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mb-4">
+            <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+            </svg>
+          </div>
+          <h3 class="text-xl font-bold text-gray-900 mb-2">Catalogue de recettes</h3>
+          <p class="text-gray-600">
+            Créez et gérez votre bibliothèque personnelle de recettes. Ajoutez des ingrédients, des étapes et des photos.
+          </p>
+        </div>
+
+        <!-- Feature 3 -->
+        <div class="bg-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition">
+          <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+            <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+            </svg>
+          </div>
+          <h3 class="text-xl font-bold text-gray-900 mb-2">Liste de courses automatique</h3>
+          <p class="text-gray-600">
+            Générez automatiquement votre liste de courses à partir de votre planning. Plus besoin de réfléchir à ce qu'il faut acheter !
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pricing Section -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+      <div class="text-center mb-12">
+        <h2 class="text-4xl font-bold text-gray-900 mb-4">Choisissez votre formule</h2>
+        <p class="text-xl text-gray-600">Des fonctionnalités adaptées à vos besoins</p>
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+        <!-- Free Plan -->
+        <div class="bg-white p-8 rounded-2xl shadow-lg border-2 border-gray-200">
+          <div class="text-center mb-6">
+            <h3 class="text-2xl font-bold text-gray-900 mb-2">Gratuit</h3>
+            <div class="text-4xl font-bold text-gray-900 mb-1">0€</div>
+            <p class="text-gray-600 text-sm">par mois</p>
+          </div>
+          <ul class="space-y-3 mb-8">
+            <li class="flex items-center text-gray-700">
+              <svg class="w-5 h-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+              </svg>
+              Planning hebdomadaire
+            </li>
+            <li class="flex items-center text-gray-700">
+              <svg class="w-5 h-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+              </svg>
+              Jusqu'à 20 recettes
+            </li>
+            <li class="flex items-center text-gray-700">
+              <svg class="w-5 h-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+              </svg>
+              Liste de courses
+            </li>
+          </ul>
+          <a
+            href="/signup"
+            class="block w-full text-center px-6 py-3 bg-gray-100 text-gray-900 font-semibold rounded-lg hover:bg-gray-200 transition"
+          >
+            Commencer gratuitement
+          </a>
+        </div>
+
+        <!-- Premium Plan -->
+        <div class="bg-white p-8 rounded-2xl shadow-xl border-2 border-blue-500 transform scale-105">
+          <div class="text-center mb-6">
+            <div class="inline-block bg-blue-100 text-blue-600 text-xs font-bold px-3 py-1 rounded-full mb-2">
+              POPULAIRE
+            </div>
+            <h3 class="text-2xl font-bold text-gray-900 mb-2">Premium</h3>
+            <div class="text-4xl font-bold text-gray-900 mb-1">9,99€</div>
+            <p class="text-gray-600 text-sm">par mois</p>
+          </div>
+          <ul class="space-y-3 mb-8">
+            <li class="flex items-center text-gray-700">
+              <svg class="w-5 h-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+              </svg>
+              Recettes illimitées
+            </li>
+            <li class="flex items-center text-gray-700">
+              <svg class="w-5 h-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+              </svg>
+              Export PDF des recettes
+            </li>
+            <li class="flex items-center text-gray-700">
+              <svg class="w-5 h-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+              </svg>
+              Support prioritaire
+            </li>
+            <li class="flex items-center text-gray-700">
+              <svg class="w-5 h-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+              </svg>
+              Toutes les fonctionnalités Free
+            </li>
+          </ul>
+          <a
+            href="/signup"
+            class="block w-full text-center px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition shadow-lg"
+          >
+            Essayer Premium
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- CTA Section -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+      <div class="bg-gradient-to-r from-blue-600 to-purple-600 rounded-3xl p-12 text-center text-white">
+        <h2 class="text-4xl font-bold mb-4">Prêt à commencer ?</h2>
+        <p class="text-xl mb-8 opacity-90">
+          Rejoignez des milliers d'utilisateurs qui organisent déjà leurs repas avec Cooking Calendar
+        </p>
+        <a
+          href="/signup"
+          class="inline-flex items-center justify-center px-8 py-4 bg-white text-blue-600 text-lg font-semibold rounded-lg shadow-lg hover:bg-gray-100 transition transform hover:scale-105"
+        >
+          Créer mon compte gratuit
+        </a>
       </div>
     </div>
   </div>
-
-  <!-- Dropdown menu container (will be populated by JS) -->
-  <div
-    id="move-dropdown"
-    class="hidden fixed w-40 rounded-xl border border-slate-200 bg-white shadow-2xl z-[9999]"
-  >
-  </div>
-
-  <script type="module" define:vars={{ days, entries }}>
-    const initMoveDropdowns = () => {
-      const moveButtons = document.querySelectorAll(".move-btn");
-      const dropdown = document.getElementById("move-dropdown");
-      let currentButton = null;
-
-      const closeDropdown = () => {
-        dropdown.classList.add("hidden");
-        currentButton = null;
-      };
-
-      const showDropdown = (btn) => {
-        const fromDay = btn.dataset.day;
-        const recipeId = btn.dataset.recipeId;
-
-        // Build dropdown content
-        const dayOptions = days
-          .map((targetDay) => {
-            const targetEntry = entries.find((e) => e.day === targetDay);
-            const hasRecipe = targetEntry?.recipe != null;
-            const isCurrentDay = targetDay === fromDay;
-            const disabled = isCurrentDay || hasRecipe;
-
-            return `
-            <button
-              type="button"
-              class="move-option w-full px-3 py-2 text-left text-sm transition ${
-                disabled
-                  ? "text-slate-400 cursor-not-allowed"
-                  : "text-slate-700 hover:bg-slate-100"
-              }"
-              data-target-day="${targetDay}"
-              data-from-day="${fromDay}"
-              data-recipe-id="${recipeId}"
-              ${disabled ? "disabled" : ""}
-            >
-              <span class="capitalize">${targetDay}</span>
-              ${isCurrentDay ? '<span class="ml-2 text-xs text-slate-400">(actuel)</span>' : ""}
-              ${!isCurrentDay && hasRecipe ? '<span class="ml-2 text-xs text-slate-400">(occupé)</span>' : ""}
-            </button>
-          `;
-          })
-          .join("");
-
-        dropdown.innerHTML = `<div class="py-1.5">${dayOptions}</div>`;
-
-        // Position dropdown
-        const btnRect = btn.getBoundingClientRect();
-        const dropdownHeight = 250; // Approximate
-        const spaceBelow = window.innerHeight - btnRect.bottom;
-
-        dropdown.style.left = `${btnRect.right - 160}px`; // 160px = w-40
-
-        if (spaceBelow >= dropdownHeight) {
-          dropdown.style.top = `${btnRect.bottom + 4}px`;
-          dropdown.style.bottom = "auto";
-        } else {
-          dropdown.style.bottom = `${window.innerHeight - btnRect.top + 4}px`;
-          dropdown.style.top = "auto";
-        }
-
-        dropdown.classList.remove("hidden");
-        currentButton = btn;
-
-        // Add click handlers to options
-        dropdown.querySelectorAll(".move-option").forEach((option) => {
-          option.addEventListener("click", async () => {
-            if (option.disabled) return;
-
-            const targetDay = option.dataset.targetDay;
-            const fromDay = option.dataset.fromDay;
-            const recipeId = option.dataset.recipeId;
-
-            option.classList.add("opacity-60");
-            option.disabled = true;
-
-            try {
-              const res = await fetch("/api/move-recipe", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  fromDay,
-                  toDay: targetDay,
-                  recipeId,
-                  replaceWith: null,
-                }),
-              });
-
-              if (!res.ok) throw new Error("Move failed");
-              window.location.reload();
-            } catch (err) {
-              console.error("Déplacement impossible:", err);
-              alert("Impossible de déplacer la recette. Merci de réessayer.");
-              option.classList.remove("opacity-60");
-              option.disabled = false;
-            }
-          });
-        });
-      };
-
-      moveButtons.forEach((btn) => {
-        btn.addEventListener("click", (e) => {
-          e.stopPropagation();
-          if (currentButton === btn) {
-            closeDropdown();
-          } else {
-            showDropdown(btn);
-          }
-        });
-      });
-
-      document.addEventListener("click", (e) => {
-        if (
-          !e.target.closest(".move-btn") &&
-          !e.target.closest("#move-dropdown")
-        ) {
-          closeDropdown();
-        }
-      });
-
-      document.addEventListener("keydown", (e) => {
-        if (e.key === "Escape") {
-          closeDropdown();
-        }
-      });
-    };
-
-    if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", initMoveDropdowns, {
-        once: true,
-      });
-    } else {
-      initMoveDropdowns();
-    }
-  </script>
-</Layout>
+</LandingLayout>

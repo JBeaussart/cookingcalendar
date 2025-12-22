@@ -1,5 +1,5 @@
 // src/pages/api/assign-recipe.js
-import { supabase } from "../../supabase";
+import { getAuthenticatedSupabase } from "../../lib/auth";
 
 export async function POST({ request }) {
   try {
@@ -10,14 +10,24 @@ export async function POST({ request }) {
       return new Response("Paramètres manquants (day, id).", { status: 400 });
     }
 
-    // On stocke dans la table planning : 1 row = 1 jour
-    const { error } = await supabase
+    // Récupérer un client Supabase authentifié
+    const { supabase: authSupabase, user } = await getAuthenticatedSupabase(request);
+
+    if (!authSupabase || !user) {
+      return new Response("Non authentifié", { status: 401 });
+    }
+
+    // On stocke dans la table planning : 1 row = 1 jour avec user_id
+    const { error } = await authSupabase
       .from('planning')
-      .upsert({ day, recipe_id: id }, { onConflict: 'day' });
+      .upsert({ day, recipe_id: id, user_id: user.id }, { onConflict: 'day,user_id' });
 
     if (error) {
       console.error("Erreur assign-recipe:", error);
-      return new Response("Erreur serveur", { status: 500 });
+      return new Response(JSON.stringify({ error: error.message }), { 
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     return new Response(JSON.stringify({ ok: true }), {
@@ -26,6 +36,9 @@ export async function POST({ request }) {
     });
   } catch (err) {
     console.error("Erreur assign-recipe:", err);
-    return new Response("Erreur serveur", { status: 500 });
+    return new Response(JSON.stringify({ error: err.message }), { 
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 }

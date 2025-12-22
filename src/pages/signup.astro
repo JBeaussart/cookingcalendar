@@ -1,0 +1,144 @@
+---
+import Layout from "../layouts/Layout.astro";
+---
+
+<Layout title="Inscription">
+  <div class="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center px-4 py-12">
+    <div class="w-full max-w-md">
+      <div class="bg-white rounded-2xl shadow-xl p-8">
+        <div class="text-center mb-8">
+          <h1 class="text-3xl font-bold text-slate-900 mb-2">Inscription</h1>
+          <p class="text-slate-600">Créez votre compte gratuit</p>
+        </div>
+
+        <form id="signup-form" class="space-y-6">
+          <div>
+            <label for="email" class="block text-sm font-medium text-slate-700 mb-2">
+              Email
+            </label>
+            <input
+              type="email"
+              id="email"
+              name="email"
+              required
+              class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+              placeholder="votre@email.com"
+            />
+          </div>
+
+          <div>
+            <label for="password" class="block text-sm font-medium text-slate-700 mb-2">
+              Mot de passe
+            </label>
+            <input
+              type="password"
+              id="password"
+              name="password"
+              required
+              minlength="6"
+              class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+              placeholder="••••••••"
+            />
+            <p class="mt-1 text-xs text-slate-500">Minimum 6 caractères</p>
+          </div>
+
+          <div>
+            <label for="confirm-password" class="block text-sm font-medium text-slate-700 mb-2">
+              Confirmer le mot de passe
+            </label>
+            <input
+              type="password"
+              id="confirm-password"
+              name="confirm-password"
+              required
+              class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+              placeholder="••••••••"
+            />
+          </div>
+
+          <div id="error-message" class="hidden text-red-600 text-sm bg-red-50 p-3 rounded-lg"></div>
+          <div id="success-message" class="hidden text-green-600 text-sm bg-green-50 p-3 rounded-lg"></div>
+
+          <button
+            type="submit"
+            class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition shadow-lg hover:shadow-xl"
+          >
+            Créer mon compte
+          </button>
+        </form>
+
+        <div class="mt-6 text-center">
+          <p class="text-slate-600">
+            Déjà un compte ?{" "}
+            <a href="/login" class="text-blue-600 hover:text-blue-700 font-medium">
+              Se connecter
+            </a>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById("signup-form");
+    const errorMessage = document.getElementById("error-message");
+    const successMessage = document.getElementById("success-message");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      errorMessage.classList.add("hidden");
+      successMessage.classList.add("hidden");
+
+      const formData = new FormData(form);
+      const email = formData.get("email");
+      const password = formData.get("password");
+      const confirmPassword = formData.get("confirm-password");
+
+      // Vérifier que les mots de passe correspondent
+      if (password !== confirmPassword) {
+        errorMessage.textContent = "Les mots de passe ne correspondent pas";
+        errorMessage.classList.remove("hidden");
+        return;
+      }
+
+      // Vérifier la longueur du mot de passe
+      if (password.length < 6) {
+        errorMessage.textContent = "Le mot de passe doit contenir au moins 6 caractères";
+        errorMessage.classList.remove("hidden");
+        return;
+      }
+
+      try {
+        const response = await fetch("/api/auth/signup", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ email, password }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          errorMessage.textContent = data.error || "Erreur d'inscription";
+          errorMessage.classList.remove("hidden");
+          return;
+        }
+
+        // Afficher un message de succès
+        successMessage.textContent = "Compte créé avec succès ! Redirection...";
+        successMessage.classList.remove("hidden");
+
+        // Rediriger vers la page de connexion après 2 secondes
+        setTimeout(() => {
+          window.location.href = "/login";
+        }, 2000);
+      } catch (err) {
+        console.error("Erreur:", err);
+        errorMessage.textContent = "Une erreur est survenue. Veuillez réessayer.";
+        errorMessage.classList.remove("hidden");
+      }
+    });
+  </script>
+</Layout>
+

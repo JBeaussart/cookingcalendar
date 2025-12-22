@@ -1,5 +1,5 @@
 // src/pages/api/move-recipe.js
-import { supabase } from "../../supabase";
+import { getAuthenticatedSupabase } from "../../lib/auth";
 
 export async function POST({ request }) {
   try {
@@ -9,6 +9,19 @@ export async function POST({ request }) {
         JSON.stringify({ ok: false, error: "Invalid JSON payload" }),
         {
           status: 400,
+          headers: { "content-type": "application/json" },
+        },
+      );
+    }
+
+    // Récupérer un client Supabase authentifié
+    const { supabase: authSupabase, user } = await getAuthenticatedSupabase(request);
+
+    if (!authSupabase || !user) {
+      return new Response(
+        JSON.stringify({ ok: false, error: "Non authentifié" }),
+        {
+          status: 401,
           headers: { "content-type": "application/json" },
         },
       );
@@ -44,10 +57,11 @@ export async function POST({ request }) {
     }
 
     // Optional: ensure the source day currently holds the recipe we move
-    const { data: fromData } = await supabase
+    const { data: fromData } = await authSupabase
       .from('planning')
       .select('recipe_id')
       .eq('day', fromDay)
+      .eq('user_id', user.id)
       .single();
 
     const currentSourceId = fromData?.recipe_id || "";
@@ -65,20 +79,21 @@ export async function POST({ request }) {
     }
 
     // Assign target day to recipeId
-    await supabase
+    await authSupabase
       .from('planning')
-      .upsert({ day: toDay, recipe_id: recipeId }, { onConflict: 'day' });
+      .upsert({ day: toDay, recipe_id: recipeId, user_id: user.id }, { onConflict: 'day,user_id' });
 
     // If the target day already had a recipe, swap it back to the source day.
     if (replaceWith) {
-      await supabase
+      await authSupabase
         .from('planning')
-        .upsert({ day: fromDay, recipe_id: replaceWith }, { onConflict: 'day' });
+        .upsert({ day: fromDay, recipe_id: replaceWith, user_id: user.id }, { onConflict: 'day,user_id' });
     } else {
-      await supabase
+      await authSupabase
         .from('planning')
         .update({ recipe_id: null })
-        .eq('day', fromDay);
+        .eq('day', fromDay)
+        .eq('user_id', user.id);
     }
 
     return new Response(JSON.stringify({ ok: true }), {
