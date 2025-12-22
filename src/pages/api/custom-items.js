@@ -1,5 +1,5 @@
 // src/pages/api/custom-items.js
-import { supabase } from "../../supabase";
+import { getAuthenticatedSupabase } from "../../lib/auth";
 
 /**
  * GET  -> retourne { items }
@@ -8,18 +8,28 @@ import { supabase } from "../../supabase";
  * DELETE -> supprime un item (query: ?item=...&unit=...)
  */
 
-async function readItems() {
-  const { data } = await supabase
+async function readItems(authSupabase, userId) {
+  const { data } = await authSupabase
     .from('shopping_custom')
     .select('*')
+    .eq('user_id', userId)
     .order('created_at', { ascending: true });
 
   return data || [];
 }
 
-export async function GET() {
+export async function GET({ request }) {
   try {
-    const items = await readItems();
+    const { supabase: authSupabase, user } = await getAuthenticatedSupabase(request);
+
+    if (!authSupabase || !user) {
+      return new Response(JSON.stringify({ ok: false, error: "Non authentifié" }), {
+        status: 401,
+        headers: { "content-type": "application/json" },
+      });
+    }
+
+    const items = await readItems(authSupabase, user.id);
     return new Response(JSON.stringify({ ok: true, items }), {
       status: 200,
       headers: { "content-type": "application/json" },
@@ -37,6 +47,15 @@ export async function GET() {
 
 export async function POST({ request }) {
   try {
+    const { supabase: authSupabase, user } = await getAuthenticatedSupabase(request);
+
+    if (!authSupabase || !user) {
+      return new Response(JSON.stringify({ ok: false, error: "Non authentifié" }), {
+        status: 401,
+        headers: { "content-type": "application/json" },
+      });
+    }
+
     const body = await request.json().catch(() => ({}));
     const item = String(body.item || "").trim();
     const unit = String(body.unit || "").trim();
@@ -50,14 +69,15 @@ export async function POST({ request }) {
       });
     }
 
-    // Vérifier si l'item existe déjà
-    const { data: existing } = await supabase
+    // Vérifier si l'item existe déjà pour cet utilisateur
+    const { data: existing } = await authSupabase
       .from('shopping_custom')
       .select('*')
+      .eq('user_id', user.id)
       .ilike('item', item);
 
     const exists = existing?.find(it =>
-      it.item.toLowerCase() === item.toLowerCase()
+      it.item.toLowerCase() === item.toLowerCase() && it.user_id === user.id
     );
 
     if (exists) {
@@ -71,22 +91,24 @@ export async function POST({ request }) {
         newQuantity = nq;
       }
 
-      await supabase
+      await authSupabase
         .from('shopping_custom')
         .update({ quantity: newQuantity })
-        .eq('id', exists.id);
+        .eq('id', exists.id)
+        .eq('user_id', user.id);
     } else {
       // Créer un nouvel item
-      await supabase
+      await authSupabase
         .from('shopping_custom')
         .insert({
           item,
           checked: false,
+          user_id: user.id,
           ...(Number.isFinite(q) ? { quantity: q } : {}),
         });
     }
 
-    const items = await readItems();
+    const items = await readItems(authSupabase, user.id);
     return new Response(JSON.stringify({ ok: true, items }), {
       status: 200,
       headers: { "content-type": "application/json" },
@@ -104,6 +126,15 @@ export async function POST({ request }) {
 
 export async function PATCH({ request }) {
   try {
+    const { supabase: authSupabase, user } = await getAuthenticatedSupabase(request);
+
+    if (!authSupabase || !user) {
+      return new Response(JSON.stringify({ ok: false, error: "Non authentifié" }), {
+        status: 401,
+        headers: { "content-type": "application/json" },
+      });
+    }
+
     const body = await request.json().catch(() => ({}));
     const item = String(body.item || "").trim();
 
@@ -113,10 +144,11 @@ export async function PATCH({ request }) {
       });
     }
 
-    // Trouver l'item
-    const { data: existing } = await supabase
+    // Trouver l'item pour cet utilisateur
+    const { data: existing } = await authSupabase
       .from('shopping_custom')
       .select('*')
+      .eq('user_id', user.id)
       .ilike('item', item)
       .limit(1);
 
@@ -134,12 +166,13 @@ export async function PATCH({ request }) {
       if (!Number.isNaN(q)) updates.quantity = q;
     }
 
-    await supabase
+    await authSupabase
       .from('shopping_custom')
       .update(updates)
-      .eq('id', existing[0].id);
+      .eq('id', existing[0].id)
+      .eq('user_id', user.id);
 
-    const items = await readItems();
+    const items = await readItems(authSupabase, user.id);
     return new Response(JSON.stringify({ ok: true, items }), {
       status: 200,
       headers: { "content-type": "application/json" },
@@ -157,11 +190,23 @@ export async function PATCH({ request }) {
 
 export async function DELETE({ request }) {
   try {
+    const { supabase: authSupabase, user } = await getAuthenticatedSupabase(request);
+
+    if (!authSupabase || !user) {
+      return new Response(JSON.stringify({ ok: false, error: "Non authentifié" }), {
+        status: 401,
+        headers: { "content-type": "application/json" },
+      });
+    }
+
     const url = new URL(request.url);
     const deleteAll = url.searchParams.get("all");
 
     if (deleteAll) {
-      await supabase.from('shopping_custom').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await authSupabase
+        .from('shopping_custom')
+        .delete()
+        .eq('user_id', user.id);
       return new Response(JSON.stringify({ ok: true, items: [] }), {
         status: 200,
         headers: { "content-type": "application/json" },
@@ -176,12 +221,13 @@ export async function DELETE({ request }) {
       });
     }
 
-    await supabase
+    await authSupabase
       .from('shopping_custom')
       .delete()
+      .eq('user_id', user.id)
       .ilike('item', item);
 
-    const items = await readItems();
+    const items = await readItems(authSupabase, user.id);
     return new Response(JSON.stringify({ ok: true, items }), {
       status: 200,
       headers: { "content-type": "application/json" },

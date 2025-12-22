@@ -1,20 +1,31 @@
 // src/pages/api/save-shopping-totals.js
-import { supabase } from "../../supabase";
+import { getAuthenticatedSupabase } from "../../lib/auth";
 
 // GET -> renvoie les items existants (et crée le doc s'il n'existe pas)
-export async function GET() {
+export async function GET({ request }) {
   try {
-    const { data } = await supabase
+    // Récupérer un client Supabase authentifié
+    const { supabase: authSupabase, user } = await getAuthenticatedSupabase(request);
+
+    if (!authSupabase || !user) {
+      return new Response(JSON.stringify({ ok: false, error: "Non authentifié" }), {
+        status: 401,
+        headers: { "content-type": "application/json" },
+      });
+    }
+
+    const { data } = await authSupabase
       .from('shopping_totals')
       .select('data')
+      .eq('user_id', user.id)
       .limit(1)
       .single();
 
     if (!data) {
       // Créer un document initial
-      await supabase
+      await authSupabase
         .from('shopping_totals')
-        .insert({ data: { items: [] } });
+        .insert({ data: { items: [] }, user_id: user.id });
 
       return new Response(JSON.stringify({ ok: true, items: [] }), {
         status: 200,
@@ -42,6 +53,16 @@ export async function GET() {
 // POST -> sauvegarde les items fournis
 export async function POST({ request }) {
   try {
+    // Récupérer un client Supabase authentifié
+    const { supabase: authSupabase, user } = await getAuthenticatedSupabase(request);
+
+    if (!authSupabase || !user) {
+      return new Response(JSON.stringify({ ok: false, error: "Non authentifié" }), {
+        status: 401,
+        headers: { "content-type": "application/json" },
+      });
+    }
+
     const body = await request.json().catch(() => null);
     if (!body || !Array.isArray(body.items)) {
       return new Response(
@@ -74,21 +95,23 @@ export async function POST({ request }) {
     });
 
     // Récupérer l'ID du document existant ou créer
-    const { data: existing } = await supabase
+    const { data: existing } = await authSupabase
       .from('shopping_totals')
       .select('id')
+      .eq('user_id', user.id)
       .limit(1)
       .single();
 
     if (existing) {
-      await supabase
+      await authSupabase
         .from('shopping_totals')
         .update({ data: { items } })
-        .eq('id', existing.id);
+        .eq('id', existing.id)
+        .eq('user_id', user.id);
     } else {
-      await supabase
+      await authSupabase
         .from('shopping_totals')
-        .insert({ data: { items } });
+        .insert({ data: { items }, user_id: user.id });
     }
 
     return new Response(JSON.stringify({ ok: true, count: items.length }), {

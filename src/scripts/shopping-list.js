@@ -119,21 +119,20 @@ async function fetchComputed() {
 
 // --- Listeners ---
 
-function setupListeners() {
-    // 1. Listen to Shopping Totals (Checked State) - Poll for now since it's a single doc
-    async function fetchShoppingTotals() {
-        const { data } = await supabase
-            .from('shopping_totals')
-            .select('data')
-            .limit(1)
-            .single();
-
-        const rawItems = Array.isArray(data?.data?.items) ? data.data.items : [];
+// 1. Fetch Shopping Totals (Checked State) - Use API endpoint instead of direct Supabase
+async function fetchShoppingTotals() {
+    try {
+        const res = await fetch('/api/save-shopping-totals');
+        if (!res.ok) {
+            console.warn("Failed to fetch shopping totals:", res.status);
+            return;
+        }
+        const { items: rawItems } = await res.json();
 
         const newSavedState = new Map();
-        for (const s of rawItems) {
+        for (const s of rawItems || []) {
             const state = !!s.checked;
-            const entryKey = typeof s.entryKey === "string" && s.entryKey.trim() ? s.entryKey.trim() : "";
+            const entryKey = typeof s?.entryKey === "string" && s.entryKey.trim() ? s.entryKey.trim() : "";
 
             if (entryKey) {
                 newSavedState.set(entryKey, state);
@@ -147,28 +146,38 @@ function setupListeners() {
 
         savedState = newSavedState;
         updateAndRender();
+    } catch (e) {
+        console.error("Error fetching shopping totals:", e);
     }
+}
 
-    // 2. Listen to Custom Items
-    async function fetchCustomItems() {
-        const { data } = await supabase
-            .from('shopping_custom')
-            .select('*')
-            .order('created_at', { ascending: true });
+// 2. Fetch Custom Items - Use API endpoint instead of direct Supabase
+async function fetchCustomItems() {
+    try {
+        const res = await fetch('/api/custom-items');
+        if (!res.ok) {
+            console.warn("Failed to fetch custom items:", res.status);
+            return;
+        }
+        const { items: rawCustoms } = await res.json();
 
-        console.log("Custom items data:", data);
-        const rawCustoms = data || [];
-        console.log("Raw custom items:", rawCustoms);
-        customItems = rawCustoms.map(decorateCustomItem);
+        console.log("Custom items data:", rawCustoms);
+        customItems = (rawCustoms || []).map(decorateCustomItem);
         console.log("Decorated custom items:", customItems);
         updateAndRender();
+    } catch (e) {
+        console.error("Error fetching custom items:", e);
     }
+}
+
+function setupListeners() {
 
     // Initial fetch
     fetchShoppingTotals();
     fetchCustomItems();
 
     // Subscribe to changes using Supabase Realtime
+    // Note: RLS will automatically filter by user_id, so we don't need to specify it in the filter
     const shoppingTotalsChannel = supabase
         .channel('shopping_totals_changes')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'shopping_totals' }, () => {
@@ -506,6 +515,9 @@ btnCheckAll?.addEventListener("click", async () => {
 
         await Promise.all(reqs);
         status("✅ Tout coché");
+        // Rafraîchir les données pour mettre à jour l'affichage
+        await fetchShoppingTotals();
+        await fetchCustomItems();
     } catch (e) {
         console.error(e);
         status("❌ Erreur");
@@ -545,6 +557,9 @@ btnUncheckAll?.addEventListener("click", async () => {
 
         await Promise.all(reqs);
         status("✅ Tout décoché");
+        // Rafraîchir les données pour mettre à jour l'affichage
+        await fetchShoppingTotals();
+        await fetchCustomItems();
     } catch (e) {
         console.error(e);
         status("❌ Erreur");
