@@ -1,8 +1,18 @@
 // src/pages/api/add-recipe.js
-import { supabase } from "../../supabase";
+import { getAuthenticatedSupabase } from "../../lib/auth";
 
 export async function POST({ request }) {
   try {
+    // Récupérer un client Supabase authentifié
+    const { supabase: authSupabase, user } = await getAuthenticatedSupabase(request);
+
+    if (!authSupabase || !user) {
+      return new Response(JSON.stringify({ error: "Non authentifié" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
     const body = await request.json().catch(() => null);
     if (!body || typeof body !== "object") {
       return new Response("Corps JSON invalide", { status: 400 });
@@ -49,6 +59,7 @@ export async function POST({ request }) {
       .filter((s) => s.length > 0);
 
     const payload = {
+      user_id: user.id,
       title: String(title).trim(),
       image: image ? String(image).trim() : "",
       ingredients: cleanIngredients,
@@ -57,7 +68,7 @@ export async function POST({ request }) {
       salt: !!salt, // true = salé, false = sucré
     };
 
-    const { data, error } = await supabase
+    const { data, error } = await authSupabase
       .from('recipes')
       .insert(payload)
       .select('id')
@@ -65,7 +76,10 @@ export async function POST({ request }) {
 
     if (error) {
       console.error("❌ add-recipe error:", error);
-      return new Response("Erreur lors de l'ajout de la recette", { status: 500 });
+      return new Response(JSON.stringify({ error: error.message }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     return new Response(JSON.stringify({ ok: true, id: data.id }), {
@@ -74,6 +88,9 @@ export async function POST({ request }) {
     });
   } catch (err) {
     console.error("❌ add-recipe error:", err);
-    return new Response("Erreur serveur", { status: 500 });
+    return new Response(JSON.stringify({ error: err.message || "Erreur serveur" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 }
