@@ -3,12 +3,9 @@ import { supabase } from "../../supabase";
 
 export async function DELETE({ request }) {
   try {
-    const body = await request.json().catch(() => null);
-    if (!body || typeof body !== "object") {
-      return new Response("Corps JSON invalide", { status: 400 });
-    }
+    const url = new URL(request.url);
+    const id = url.searchParams.get("id");
 
-    const { id } = body;
     if (!id) {
       return new Response("Paramètre 'id' manquant.", { status: 400 });
     }
