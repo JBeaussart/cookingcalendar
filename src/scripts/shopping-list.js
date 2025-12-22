@@ -475,6 +475,9 @@ addForm.addEventListener("submit", async (e) => {
         fItem.value = "";
         fQty.value = "";
         status("✅ Ajouté");
+        
+        // Rafraîchir la liste pour afficher le nouvel élément immédiatement
+        await fetchCustomItems();
     } catch (e) {
         console.error(e);
         status("❌ Erreur");
