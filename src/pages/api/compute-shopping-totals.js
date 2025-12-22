@@ -1,22 +1,34 @@
 // src/pages/api/compute-shopping-totals.js
-import { supabase } from "../../supabase";
+import { getAuthenticatedSupabase } from "../../lib/auth";
 
 export async function GET({ request }) {
   try {
+    // Récupérer un client Supabase authentifié
+    const { supabase: authSupabase, user } = await getAuthenticatedSupabase(request);
+
+    if (!authSupabase || !user) {
+      return new Response(JSON.stringify({ error: "Non authentifié" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
     const url = new URL(request.url);
     const debug = url.searchParams.get("debug");
 
-    // 1. Charger le planning
-    const { data: planningData } = await supabase
+    // 1. Charger le planning de l'utilisateur
+    const { data: planningData } = await authSupabase
       .from('planning')
-      .select('day, recipe_id');
+      .select('day, recipe_id')
+      .eq('user_id', user.id);
 
     const planning = planningData || [];
 
-    // 1.b Charger la sélection Réception (aperitif/entree/plat/dessert)
-    const { data: receptionData } = await supabase
+    // 1.b Charger la sélection Réception de l'utilisateur (aperitif/entree/plat/dessert)
+    const { data: receptionData } = await authSupabase
       .from('reception')
       .select('data')
+      .eq('user_id', user.id)
       .limit(1)
       .single();
 
@@ -48,13 +60,14 @@ export async function GET({ request }) {
       if (id) recipeCount[id] = (recipeCount[id] || 0) + 1;
     }
 
-    // Charger les recettes uniques
+    // Charger les recettes uniques de l'utilisateur
     const uniqueRecipeIds = [...new Set(recipeIds)];
     if (uniqueRecipeIds.length > 0) {
-      const { data: recipesData } = await supabase
+      const { data: recipesData } = await authSupabase
         .from('recipes')
         .select('*')
-        .in('id', uniqueRecipeIds);
+        .in('id', uniqueRecipeIds)
+        .eq('user_id', user.id);
 
       if (recipesData) {
         loaded.push(...recipesData);

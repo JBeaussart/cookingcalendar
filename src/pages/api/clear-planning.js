@@ -1,5 +1,5 @@
 // src/pages/api/clear-planning.js
-import { supabase } from "../../supabase";
+import { getAuthenticatedSupabase } from "../../lib/auth";
 
 const days = [
   "lundi",
@@ -11,12 +11,23 @@ const days = [
   "dimanche",
 ];
 
-export async function POST() {
+export async function POST({ request }) {
   try {
-    // On vide tous les recipe_id
-    await supabase
+    // Récupérer un client Supabase authentifié
+    const { supabase: authSupabase, user } = await getAuthenticatedSupabase(request);
+
+    if (!authSupabase || !user) {
+      return new Response(JSON.stringify({ error: "Non authentifié" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    // On vide tous les recipe_id du planning de l'utilisateur
+    await authSupabase
       .from('planning')
       .update({ recipe_id: null })
+      .eq('user_id', user.id)
       .in('day', days);
 
     return new Response(null, {

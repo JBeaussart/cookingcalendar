@@ -1,6 +1,19 @@
 ---
 import Layout from "../layouts/Layout.astro";
+import { getServerSession, getAuthenticatedSupabase } from "../lib/auth";
 import { supabase } from "../supabase";
+
+// Vérifier si l'utilisateur est connecté
+const { user } = await getServerSession(Astro.request);
+
+// Si non connecté, rediriger vers la page d'accueil
+if (!user) {
+  return Astro.redirect("/", 302);
+}
+
+// Récupérer un client Supabase authentifié
+const { supabase: authSupabase } = await getAuthenticatedSupabase(Astro.request);
+const authenticatedSupabase = authSupabase || supabase;
 
 type SlotKey = "aperitif" | "entree" | "plat" | "dessert";
 
@@ -11,9 +24,10 @@ const SLOT_LABELS: Record<SlotKey, string> = {
   dessert: "Dessert",
 };
 
-const { data: receptionData } = await supabase
+const { data: receptionData } = await authenticatedSupabase
   .from("reception")
   .select("data")
+  .eq("user_id", user.id)
   .limit(1)
   .single();
 
@@ -22,10 +36,11 @@ const data = receptionData?.data || {};
 async function loadRecipe(id?: string | null) {
   if (!id) return null;
   try {
-    const { data: recipe, error } = await supabase
+    const { data: recipe, error } = await authenticatedSupabase
       .from("recipes")
       .select("*")
       .eq("id", id)
+      .eq("user_id", user.id) // S'assurer que l'utilisateur ne peut voir que ses propres recettes
       .single();
 
     return error || !recipe ? null : recipe;

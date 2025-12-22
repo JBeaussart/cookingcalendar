@@ -2,11 +2,26 @@
 // src/pages/recipes/index.astro
 import Layout from "../../layouts/Layout.astro";
 import Modal from "../../components/Modal.astro";
+import { getServerSession, getAuthenticatedSupabase } from "../../lib/auth";
 import { supabase } from "../../supabase";
 
-const { data: recipesData } = await supabase
+// Vérifier si l'utilisateur est connecté
+const { user } = await getServerSession(Astro.request);
+
+// Si non connecté, rediriger vers la page d'accueil
+if (!user) {
+  return Astro.redirect("/", 302);
+}
+
+// Récupérer un client Supabase authentifié
+const { supabase: authSupabase } = await getAuthenticatedSupabase(Astro.request);
+const authenticatedSupabase = authSupabase || supabase;
+
+// Récupérer les recettes de l'utilisateur
+const { data: recipesData } = await authenticatedSupabase
   .from("recipes")
   .select("*")
+  .eq("user_id", user.id)
   .order("title", { ascending: true });
 
 const recipes = recipesData || [];

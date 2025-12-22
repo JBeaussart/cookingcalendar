@@ -1,10 +1,20 @@
 // src/pages/api/assign-reception.js
-import { supabase } from "../../supabase";
+import { getAuthenticatedSupabase } from "../../lib/auth";
 
 const SLOTS = new Set(["aperitif", "entree", "plat", "dessert"]);
 
 export async function POST({ request }) {
   try {
+    // Récupérer un client Supabase authentifié
+    const { supabase: authSupabase, user } = await getAuthenticatedSupabase(request);
+
+    if (!authSupabase || !user) {
+      return new Response(JSON.stringify({ error: "Non authentifié" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
     const body = await request.json();
     const { slot, id } = body || {};
 
@@ -14,10 +24,11 @@ export async function POST({ request }) {
 
     const field = `${slot}Id`;
 
-    // Récupérer ou créer le document reception
-    const { data: existing } = await supabase
+    // Récupérer ou créer le document reception de l'utilisateur
+    const { data: existing } = await authSupabase
       .from('reception')
       .select('id, data')
+      .eq('user_id', user.id)
       .limit(1)
       .single();
 
@@ -25,14 +36,15 @@ export async function POST({ request }) {
     receptionData[field] = id || null;
 
     if (existing) {
-      await supabase
+      await authSupabase
         .from('reception')
         .update({ data: receptionData })
-        .eq('id', existing.id);
+        .eq('id', existing.id)
+        .eq('user_id', user.id);
     } else {
-      await supabase
+      await authSupabase
         .from('reception')
-        .insert({ data: receptionData });
+        .insert({ data: receptionData, user_id: user.id });
     }
 
     return new Response(JSON.stringify({ ok: true }), {
