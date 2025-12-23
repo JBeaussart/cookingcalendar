@@ -551,7 +551,7 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
         // Image container
         const imgWrap = document.createElement("div");
         imgWrap.className =
-          "relative h-32 overflow-hidden rounded-t-3xl bg-slate-100";
+          "relative h-24 sm:h-32 overflow-hidden rounded-t-3xl bg-slate-100";
         const img = document.createElement("img");
         img.loading = "lazy";
         img.decoding = "async";
@@ -567,11 +567,11 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
 
         // Content
         const body = document.createElement("div");
-        body.className = "p-3";
+        body.className = "p-2 sm:p-3";
 
         const title = document.createElement("h3");
         title.className =
-          "text-sm font-bold text-slate-900 line-clamp-2 mb-2 min-h-[2.5rem]";
+          "text-xs sm:text-sm font-bold text-slate-900 line-clamp-2 mb-1.5 sm:mb-2 min-h-[2rem] sm:min-h-[2.5rem]";
         title.textContent = r.title || "";
         body.appendChild(title);
 
