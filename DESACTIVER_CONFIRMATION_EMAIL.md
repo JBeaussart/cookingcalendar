@@ -40,3 +40,4 @@ Si vous voulez garder la confirmation d'email mais permettre l'utilisation immé
 - Les utilisateurs pourront utiliser l'application mais avec des limitations
 - Ils recevront un email pour confirmer leur compte
 
+

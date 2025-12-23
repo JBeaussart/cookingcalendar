@@ -45,7 +45,17 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
     <div class="w-full max-w-6xl mx-auto px-4 pt-12 pb-32">
       <!-- Header -->
       <div class="mb-8 text-center">
-        <h1 class="text-4xl font-bold text-slate-900 mb-2">Mes recettes</h1>
+        <div class="flex items-center justify-center gap-3 mb-2">
+          <h1 class="text-4xl font-bold text-slate-900">Mes recettes</h1>
+          {(userWithRole.role || userWithRole.user_role) !== "admin" && (userWithRole.role || userWithRole.user_role) !== "premium" && recipes.length === 20 && (
+            <span id="limitBadge" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              20/20 recettes – Limite atteinte
+            </span>
+          )}
+        </div>
         <p class="text-slate-600">Découvrez et gérez votre collection</p>
       </div>
 
@@ -143,10 +153,10 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
                 </svg>
                 Ajouter
               </button>
-              {(userWithRole.role || userWithRole.user_role) !== "admin" && (userWithRole.role || userWithRole.user_role) !== "premium" && (
+              {(userWithRole.role || userWithRole.user_role) !== "admin" && (userWithRole.role || userWithRole.user_role) !== "premium" && recipes.length < 20 && (
                 <div class="absolute top-full left-0 mt-2 whitespace-nowrap text-left">
                   <span id="recipeCounter" class="text-xs font-medium text-slate-500 block">
-                    {recipes.length}/20
+                    {recipes.length}/20 recettes
                   </span>
                   <span id="recipeWarningMessage" class="text-xs font-medium text-slate-500 block mt-0.5 hidden whitespace-nowrap">
                     Dernière recette disponible avec le plan gratuit
@@ -226,6 +236,49 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
           <span id="toast-message"></span>
         </div>
       </div>
+
+      <!-- Bannière limite atteinte (pour utilisateurs free avec 20 recettes) -->
+      {(userWithRole.role || userWithRole.user_role) !== "admin" && (userWithRole.role || userWithRole.user_role) !== "premium" && (
+        <div
+          id="limitBanner"
+          class={`mb-6 rounded-xl border border-blue-200 bg-blue-50 p-4 sm:p-5 shadow-sm transition-all duration-300 ${recipes.length === 20 ? '' : 'hidden'}`}
+          style="background-color: #E0F7FA; border-color: #B2EBF2;"
+        >
+          <div class="flex items-start justify-between gap-4">
+            <div class="flex-1">
+              <div class="flex items-center gap-2 mb-2">
+                <span class="text-2xl">🎉</span>
+                <h3 class="text-base sm:text-lg font-semibold text-slate-800">
+                  Bravo, vous avez atteint la limite de 20 recettes de votre plan gratuit !
+                </h3>
+              </div>
+              <p class="text-sm sm:text-base text-slate-700 mb-4">
+                Profitez de recettes illimitées avec le Premium et organisez tous vos repas facilement.
+              </p>
+              <a
+                href="/"
+                class="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold text-white transition-all duration-300 transform hover:scale-105 hover:shadow-lg"
+                style="background-color: #00ACC1;"
+              >
+                Découvrir le Premium
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+              </a>
+            </div>
+            <button
+              id="closeLimitBanner"
+              type="button"
+              class="flex-shrink-0 p-1.5 rounded-lg text-slate-500 hover:text-slate-700 hover:bg-blue-100 transition-colors"
+              aria-label="Fermer la bannière"
+            >
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
 
       <!-- Grid -->
       <div
@@ -414,12 +467,17 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
       const grid = document.getElementById("grid");
       const searchInput = document.getElementById("searchInput");
       
-      // Fonction pour mettre à jour le compteur de recettes (pour les utilisateurs free)
+      // Fonction pour mettre à jour le compteur sous le bouton "Ajouter" (pour < 20 recettes)
       function updateRecipeCounter() {
         const counter = document.getElementById("recipeCounter");
         const warningMessage = document.getElementById("recipeWarningMessage");
-        if (counter) {
-          counter.textContent = `${ALL.length}/20`;
+        
+        if (!counter) return;
+        
+        // Afficher/masquer le compteur selon le nombre de recettes
+        if (ALL.length < 20) {
+          counter.textContent = `${ALL.length}/20 recettes`;
+          counter.parentElement?.classList.remove("hidden");
           
           // Afficher ou masquer le message "Dernière recette disponible"
           if (warningMessage) {
@@ -429,11 +487,76 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
               warningMessage.classList.add("hidden");
             }
           }
+        } else {
+          // Masquer le compteur si on a 20 recettes ou plus
+          counter.parentElement?.classList.add("hidden");
         }
       }
       
-      // Mettre à jour le compteur au chargement
-      updateRecipeCounter();
+      // Fonction pour mettre à jour la bannière et le badge (pour les utilisateurs free avec 20 recettes)
+      function updateLimitBannerAndBadge() {
+        const limitBanner = document.getElementById("limitBanner");
+        const limitBadge = document.getElementById("limitBadge");
+        
+        // Si les éléments n'existent pas, l'utilisateur n'est pas free
+        if (!limitBanner && !limitBadge) return;
+        
+        // Afficher/masquer le badge selon le nombre de recettes
+        if (limitBadge) {
+          if (ALL.length === 20) {
+            limitBadge.classList.remove("hidden");
+          } else {
+            limitBadge.classList.add("hidden");
+          }
+        }
+        
+        // Afficher/masquer la bannière selon le nombre de recettes et si elle n'a pas été fermée
+        if (limitBanner) {
+          const bannerDismissed = localStorage.getItem('limitBannerDismissed') === 'true';
+          if (ALL.length === 20 && !bannerDismissed) {
+            limitBanner.classList.remove("hidden");
+          } else {
+            limitBanner.classList.add("hidden");
+          }
+        }
+      }
+      
+      // Fonction principale pour mettre à jour tous les éléments
+      function updateAllLimitElements() {
+        updateRecipeCounter();
+        updateLimitBannerAndBadge();
+      }
+      
+      // Gérer le bouton de fermeture de la bannière (une seule fois au chargement)
+      const closeBannerBtn = document.getElementById("closeLimitBanner");
+      if (closeBannerBtn) {
+        closeBannerBtn.addEventListener('click', () => {
+          const limitBanner = document.getElementById("limitBanner");
+          if (limitBanner) {
+            limitBanner.classList.add("hidden");
+            localStorage.setItem('limitBannerDismissed', 'true');
+          }
+        });
+      }
+      
+      // Gérer le clic sur le badge pour faire défiler vers la bannière ou le haut de la page
+      const limitBadge = document.getElementById("limitBadge");
+      if (limitBadge) {
+        limitBadge.style.cursor = 'pointer';
+        limitBadge.addEventListener('click', () => {
+          const limitBanner = document.getElementById("limitBanner");
+          if (limitBanner && !limitBanner.classList.contains('hidden')) {
+            // Si la bannière est visible, faire défiler vers elle
+            limitBanner.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          } else {
+            // Sinon, faire défiler vers le haut de la page
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }
+        });
+      }
+      
+      // Mettre à jour tous les éléments au chargement
+      updateAllLimitElements();
 
       // Debounce pour la recherche (optimisation performance)
       let searchTimeout;
@@ -1111,23 +1234,14 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
           addStatus.className = "rounded-xl border-2 border-green-200 bg-green-50 p-4 text-sm font-medium text-green-700 text-center";
           addStatus.classList.remove("hidden");
           
-          // Mettre à jour le compteur avant le rechargement
-          const counter = document.getElementById("recipeCounter");
-          const warningMessage = document.getElementById("recipeWarningMessage");
-          if (counter) {
-            // ALL contient toutes les recettes, on ajoute 1 pour la nouvelle
-            const currentCount = ALL.length;
-            const newCount = currentCount + 1;
-            counter.textContent = `${newCount}/20`;
-            
-            // Afficher ou masquer le message "Dernière recette disponible"
-            if (warningMessage) {
-              if (newCount === 19) {
-                warningMessage.classList.remove("hidden");
-              } else {
-                warningMessage.classList.add("hidden");
-              }
-            }
+          // Mettre à jour temporairement ALL.length pour mettre à jour tous les éléments
+          // (on recharge la page après, donc c'est juste pour l'affichage immédiat)
+          const responseData = await res.json();
+          if (responseData.ok) {
+            // Simuler l'ajout d'une recette pour mettre à jour l'affichage
+            ALL.push({ id: responseData.id });
+            // Mettre à jour le compteur, la bannière et le badge avant le rechargement
+            updateAllLimitElements();
           }
           
           setTimeout(() => window.location.reload(), 1500);
