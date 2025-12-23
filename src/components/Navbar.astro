@@ -113,37 +113,59 @@ const isRecipeDetailPage = currentPath.startsWith("/recipes/") && currentPath !=
 
 <!-- Mobile top bar with user icon (only if logged in, hidden on recipe detail page) -->
 {userWithRole && !isRecipeDetailPage && (
-  <div class="mobile-top-bar sm:hidden z-50 absolute top-2 right-4">
+  <div class="mobile-top-bar sm:hidden z-50 absolute top-3 right-4">
     <div class="relative">
         <button
           id="user-menu-button"
-          class={`w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold text-base shadow-lg transition-transform hover:scale-105 ${
-            (userWithRole.role || userWithRole.user_role) === 'admin' ? 'bg-purple-700' :
-            (userWithRole.role || userWithRole.user_role) === 'premium' ? 'bg-yellow-600' :
-            'bg-gray-700'
+          class={`group relative w-11 h-11 rounded-xl flex items-center justify-center bg-white shadow-md border-2 transition-all duration-200 hover:shadow-lg hover:scale-105 ${
+            (userWithRole.role || userWithRole.user_role) === 'admin' ? 'border-purple-500 text-purple-600' :
+            (userWithRole.role || userWithRole.user_role) === 'premium' ? 'border-yellow-500 text-yellow-600' :
+            'border-gray-400 text-gray-600'
           }`}
           aria-label="Menu utilisateur"
         >
-          {userWithRole.email ? userWithRole.email.charAt(0).toUpperCase() : 'U'}
+          <i class="fas fa-user text-lg"></i>
+          <!-- Badge de rôle -->
+          <span class={`absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-white ${
+            (userWithRole.role || userWithRole.user_role) === 'admin' ? 'bg-purple-500' :
+            (userWithRole.role || userWithRole.user_role) === 'premium' ? 'bg-yellow-500' :
+            'bg-gray-400'
+          }`}></span>
         </button>
         
         <!-- Menu déroulant -->
         <div
           id="user-menu-dropdown"
-          class="hidden absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg border border-gray-200 py-2 z-50"
+          class="hidden absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-200 py-2 z-50 overflow-hidden"
         >
-          <div class="px-4 py-3 border-b border-gray-200">
-            <p class="text-sm font-medium text-gray-900">{userWithRole.email}</p>
-            <p class="text-xs text-gray-500 mt-1">
-              {(userWithRole.role || userWithRole.user_role) === 'admin' ? 'Administrateur' : (userWithRole.role || userWithRole.user_role) === 'premium' ? 'Premium' : 'Gratuit'}
-            </p>
+          <div class="px-4 py-3 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
+            <div class="flex items-center gap-3">
+              <div class={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                (userWithRole.role || userWithRole.user_role) === 'admin' ? 'bg-purple-100 text-purple-600' :
+                (userWithRole.role || userWithRole.user_role) === 'premium' ? 'bg-yellow-100 text-yellow-600' :
+                'bg-gray-100 text-gray-600'
+              }`}>
+                <i class="fas fa-user text-sm"></i>
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-semibold text-gray-900 truncate">{userWithRole.email}</p>
+                <p class={`text-xs font-medium mt-0.5 ${
+                  (userWithRole.role || userWithRole.user_role) === 'admin' ? 'text-purple-600' :
+                  (userWithRole.role || userWithRole.user_role) === 'premium' ? 'text-yellow-600' :
+                  'text-gray-500'
+                }`}>
+                  {(userWithRole.role || userWithRole.user_role) === 'admin' ? 'Administrateur' : (userWithRole.role || userWithRole.user_role) === 'premium' ? 'Premium' : 'Gratuit'}
+                </p>
+              </div>
+            </div>
           </div>
-        <form method="post" action="/api/auth/logout" class="px-2 py-2">
+        <form method="post" action="/api/auth/logout" class="px-2 py-1.5">
           <button
             type="submit"
-            class="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md transition"
+            class="w-full text-left px-3 py-2.5 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-2 group"
           >
-            Déconnexion
+            <i class="fas fa-sign-out-alt text-xs opacity-70 group-hover:opacity-100 transition-opacity"></i>
+            <span>Déconnexion</span>
           </button>
         </form>
       </div>
