@@ -256,44 +256,49 @@ const DEFAULT_IMG = "/images/default-recipe.jpg";
                     />
                   </div>
 
-                  <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-2">Type de plat</label>
-                    <div class="relative">
-                      <select
-                        id="eSalt"
-                        class="w-full appearance-none rounded-xl border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-200 transition-all"
-                      >
-                        <option value="salty">🧂 Salé</option>
-                        <option value="sweet">🍰 Sucré</option>
-                      </select>
-                      <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-500">
-                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                        </svg>
+                  <div class="sm:col-span-2 flex flex-row items-end justify-between gap-4">
+                    <div>
+                      <label class="block text-sm font-bold text-slate-700 mb-2">Type de plat</label>
+                      <div class="flex items-center p-1 bg-slate-100 rounded-xl border border-slate-200 w-fit">
+                        <button
+                          type="button"
+                          id="eSaltSalty"
+                          data-value="salty"
+                          class="salt-type-btn px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-all shadow-sm bg-white text-blue-600"
+                        >
+                          🧂 Salé
+                        </button>
+                        <button
+                          type="button"
+                          id="eSaltSweet"
+                          data-value="sweet"
+                          class="salt-type-btn px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-all text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
+                        >
+                          🍰 Sucré
+                        </button>
                       </div>
                     </div>
-                  </div>
 
-                  {(userWithRole.role || userWithRole.user_role) === "admin" && (
-                    <div class="flex items-center justify-end pb-3">
-                      <label class="inline-flex items-center gap-3 cursor-pointer group">
-                        <span class="text-sm font-medium text-slate-700 group-hover:text-pink-600 transition-colors flex items-center gap-2">
-                          <i class="fa-solid fa-paw text-pink-400"></i>
-                          <span class="hidden sm:inline">Recette de maman</span>
-                          <span class="sm:hidden">Maman</span>
-                        </span>
-                        <!-- Toggle Switch -->
-                        <div id="eMamanToggle" class="relative inline-flex h-6 w-11 items-center rounded-full bg-slate-200 transition-colors duration-200 group-hover:bg-slate-300">
-                          <input
-                            id="eMaman"
-                            type="checkbox"
-                            class="sr-only"
-                          />
-                          <span class="absolute left-1 h-4 w-4 transform rounded-full bg-white transition-all duration-200 ease-in-out shadow-sm toggle-switch-handle"></span>
+                    {(userWithRole.role || userWithRole.user_role) === "admin" && (
+                      <div class="flex items-center pb-0">
+                        <div class="flex items-center p-1 bg-slate-100 rounded-xl border border-slate-200">
+                          <button
+                            type="button"
+                            id="eMamanBtn"
+                            class="maman-form-btn px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-all text-slate-500 hover:text-slate-700 hover:bg-slate-200/50 flex items-center justify-center"
+                          >
+                            <i class="fa-solid fa-paw text-pink-400"></i>
+                            <span class="sm:inline ml-1">Ninette</span>
+                          </button>
                         </div>
-                      </label>
-                    </div>
-                  )}
+                        <input
+                          id="eMaman"
+                          type="checkbox"
+                          class="sr-only"
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <!-- Ingredients -->
@@ -491,31 +496,51 @@ const DEFAULT_IMG = "/images/default-recipe.jpg";
         const eTitle = document.getElementById("eTitle");
         const eImage = document.getElementById("eImage");
         const eMaman = document.getElementById("eMaman");
-        const eMamanToggle = document.getElementById("eMamanToggle");
-        const eSalt = document.getElementById("eSalt");
+        const eMamanBtn = document.getElementById("eMamanBtn");
+        const eSaltSalty = document.getElementById("eSaltSalty");
+        const eSaltSweet = document.getElementById("eSaltSweet");
+        let currentEditSaltType = "salty"; // Valeur par défaut
         
-        // Gérer le toggle switch pour "Recette de maman"
-        if (eMaman && eMamanToggle) {
-          const handle = eMamanToggle.querySelector(".toggle-switch-handle");
-          const updateToggle = () => {
-            if (eMaman.checked) {
-              eMamanToggle.classList.remove("bg-slate-200");
-              eMamanToggle.classList.add("bg-pink-200");
-              handle?.classList.remove("translate-x-0");
-              handle?.classList.add("translate-x-5", "bg-pink-500");
+        // Gérer les boutons Type de plat
+        if (eSaltSalty && eSaltSweet) {
+          const updateSaltButtons = (value) => {
+            currentEditSaltType = value;
+            if (value === "salty") {
+              eSaltSalty.className = "salt-type-btn px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-all shadow-sm bg-white text-blue-600";
+              eSaltSweet.className = "salt-type-btn px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-all text-slate-500 hover:text-slate-700 hover:bg-slate-200/50";
             } else {
-              eMamanToggle.classList.remove("bg-pink-200");
-              eMamanToggle.classList.add("bg-slate-200");
-              handle?.classList.remove("translate-x-5", "bg-pink-500");
-              handle?.classList.add("translate-x-0");
+              eSaltSalty.className = "salt-type-btn px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-all text-slate-500 hover:text-slate-700 hover:bg-slate-200/50";
+              eSaltSweet.className = "salt-type-btn px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-all shadow-sm bg-white text-blue-600";
             }
           };
-          eMaman.addEventListener("change", updateToggle);
+          
+          eSaltSalty.addEventListener("click", () => updateSaltButtons("salty"));
+          eSaltSweet.addEventListener("click", () => updateSaltButtons("sweet"));
+          updateSaltButtons("salty"); // État initial
+        }
+        
+        // Gérer le bouton "Recette de maman"
+        if (eMaman && eMamanBtn) {
+          const updateButton = () => {
+            if (eMaman.checked) {
+              eMamanBtn.className = "maman-form-btn px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-all shadow-sm bg-white text-pink-600 flex items-center justify-center";
+            } else {
+              eMamanBtn.className = "maman-form-btn px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-all text-slate-500 hover:text-slate-700 hover:bg-slate-200/50 flex items-center justify-center";
+            }
+          };
+          
+          // Toggle au clic sur le bouton
+          eMamanBtn.addEventListener("click", () => {
+            eMaman.checked = !eMaman.checked;
+            updateButton();
+          });
+          
+          eMaman.addEventListener("change", updateButton);
           // Mettre à jour lors du chargement des données
           const originalLoadData = window.loadEditData;
           window.loadEditData = function() {
             if (originalLoadData) originalLoadData();
-            setTimeout(updateToggle, 100);
+            setTimeout(updateButton, 100);
           };
         }
         const ingList = document.getElementById("ingList");
@@ -626,24 +651,26 @@ const DEFAULT_IMG = "/images/default-recipe.jpg";
           eImage.value = d.getAttribute("data-image") || "";
           if (eMaman) {
             eMaman.checked = d.getAttribute("data-maman") === "true";
-            // Mettre à jour le toggle switch visuellement
-            if (eMamanToggle) {
-              const handle = eMamanToggle.querySelector(".toggle-switch-handle");
+            // Mettre à jour le bouton visuellement
+            if (eMamanBtn) {
               if (eMaman.checked) {
-                eMamanToggle.classList.remove("bg-slate-200");
-                eMamanToggle.classList.add("bg-pink-200");
-                handle?.classList.remove("translate-x-0");
-                handle?.classList.add("translate-x-5", "bg-pink-500");
+                eMamanBtn.className = "maman-form-btn px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-all shadow-sm bg-white text-pink-600 flex items-center justify-center";
               } else {
-                eMamanToggle.classList.remove("bg-pink-200");
-                eMamanToggle.classList.add("bg-slate-200");
-                handle?.classList.remove("translate-x-5", "bg-pink-500");
-                handle?.classList.add("translate-x-0");
+                eMamanBtn.className = "maman-form-btn px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-all text-slate-500 hover:text-slate-700 hover:bg-slate-200/50 flex items-center justify-center";
               }
             }
           }
-          eSalt.value =
-            d.getAttribute("data-salt") === "true" ? "salty" : "sweet";
+          const saltValue = d.getAttribute("data-salt") === "true" ? "salty" : "sweet";
+          currentEditSaltType = saltValue;
+          if (eSaltSalty && eSaltSweet) {
+            if (saltValue === "salty") {
+              eSaltSalty.className = "salt-type-btn px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-all shadow-sm bg-white text-blue-600";
+              eSaltSweet.className = "salt-type-btn px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-all text-slate-500 hover:text-slate-700 hover:bg-slate-200/50";
+            } else {
+              eSaltSalty.className = "salt-type-btn px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-all text-slate-500 hover:text-slate-700 hover:bg-slate-200/50";
+              eSaltSweet.className = "salt-type-btn px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-all shadow-sm bg-white text-blue-600";
+            }
+          }
 
           ingList.innerHTML = "";
           let ing = [];
@@ -715,7 +742,7 @@ const DEFAULT_IMG = "/images/default-recipe.jpg";
                 title: eTitle.value.trim(),
                 image: eImage.value.trim(),
                 maman: eMaman ? !!eMaman.checked : false, // Seulement si admin
-                salt: eSalt.value === "salty",
+                salt: currentEditSaltType === "salty",
                 ingredients,
                 steps,
               }),
