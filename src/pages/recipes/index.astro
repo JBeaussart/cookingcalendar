@@ -471,8 +471,56 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
         grid.innerHTML = "";
         if (!Array.isArray(list) || list.length === 0) {
           const empty = document.createElement("div");
-          empty.className = "col-span-full text-center text-gray-500";
-          empty.textContent = "Aucune recette ne correspond à votre recherche.";
+          empty.className = "col-span-full text-center py-12";
+          
+          // Si aucune recette n'existe du tout
+          if (ALL.length === 0) {
+            empty.innerHTML = `
+              <p class="text-lg text-slate-600 mb-6">La cuisine est encore vide, le chef n'est pas passé par là 😉</p>
+              <button
+                type="button"
+                id="emptyStateAddBtn"
+                class="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/30 transition-all hover:bg-blue-700 hover:shadow-xl hover:scale-105 active:scale-95"
+              >
+                <svg
+                  class="h-5 w-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2.5"
+                    d="M12 4v16m8-8H4"></path>
+                </svg>
+                Créer ma première recette
+              </button>
+            `;
+            
+            // Ajouter l'événement au bouton après l'insertion dans le DOM
+            setTimeout(() => {
+              const emptyStateBtn = document.getElementById("emptyStateAddBtn");
+              if (emptyStateBtn) {
+                emptyStateBtn.addEventListener("click", () => {
+                  // Réinitialiser le formulaire et ouvrir la modale
+                  addRecipeForm.reset();
+                  ingList.innerHTML = "";
+                  stepsList.innerHTML = "";
+                  addIngredientRow();
+                  addStepRowEl();
+                  openModal();
+                });
+              }
+            }, 0);
+          } else {
+            // Si c'est une recherche qui ne trouve rien
+            empty.innerHTML = `
+              <p class="text-lg text-slate-600 mb-2">On a fouillé partout… même sous la casserole.</p>
+              <p class="text-slate-500">Aucune recette trouvée !</p>
+            `;
+          }
+          
           grid.appendChild(empty);
           return;
         }
