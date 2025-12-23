@@ -29,7 +29,15 @@ export async function GET({ request }) {
       });
     }
 
-    const items = await readItems(authSupabase, user.id);
+    // Extraire l'ID utilisateur
+    const userId = user?.id || user?.user?.id;
+    if (!userId) {
+      return new Response(JSON.stringify({ ok: false, error: "ID utilisateur manquant" }), {
+        status: 401,
+        headers: { "content-type": "application/json" },
+      });
+    }
+    const items = await readItems(authSupabase, userId);
     return new Response(JSON.stringify({ ok: true, items }), {
       status: 200,
       headers: { "content-type": "application/json" },
@@ -56,6 +64,15 @@ export async function POST({ request }) {
       });
     }
 
+    // Extraire l'ID utilisateur
+    const userId = user?.id || user?.user?.id;
+    if (!userId) {
+      return new Response(JSON.stringify({ ok: false, error: "ID utilisateur manquant" }), {
+        status: 401,
+        headers: { "content-type": "application/json" },
+      });
+    }
+
     const body = await request.json().catch(() => ({}));
     const item = String(body.item || "").trim();
     const unit = String(body.unit || "").trim();
@@ -73,11 +90,11 @@ export async function POST({ request }) {
     const { data: existing } = await authSupabase
       .from('shopping_custom')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .ilike('item', item);
 
     const exists = existing?.find(it =>
-      it.item.toLowerCase() === item.toLowerCase() && it.user_id === user.id
+      it.item.toLowerCase() === item.toLowerCase() && it.user_id === userId
     );
 
     if (exists) {
@@ -95,7 +112,7 @@ export async function POST({ request }) {
         .from('shopping_custom')
         .update({ quantity: newQuantity })
         .eq('id', exists.id)
-        .eq('user_id', user.id);
+        .eq('user_id', userId);
     } else {
       // Créer un nouvel item
       await authSupabase
@@ -103,12 +120,12 @@ export async function POST({ request }) {
         .insert({
           item,
           checked: false,
-          user_id: user.id,
+          user_id: userId,
           ...(Number.isFinite(q) ? { quantity: q } : {}),
         });
     }
 
-    const items = await readItems(authSupabase, user.id);
+    const items = await readItems(authSupabase, userId);
     return new Response(JSON.stringify({ ok: true, items }), {
       status: 200,
       headers: { "content-type": "application/json" },
@@ -135,6 +152,15 @@ export async function PATCH({ request }) {
       });
     }
 
+    // Extraire l'ID utilisateur
+    const userId = user?.id || user?.user?.id;
+    if (!userId) {
+      return new Response(JSON.stringify({ ok: false, error: "ID utilisateur manquant" }), {
+        status: 401,
+        headers: { "content-type": "application/json" },
+      });
+    }
+
     const body = await request.json().catch(() => ({}));
     const item = String(body.item || "").trim();
 
@@ -148,7 +174,7 @@ export async function PATCH({ request }) {
     const { data: existing } = await authSupabase
       .from('shopping_custom')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .ilike('item', item)
       .limit(1);
 
@@ -170,9 +196,9 @@ export async function PATCH({ request }) {
       .from('shopping_custom')
       .update(updates)
       .eq('id', existing[0].id)
-      .eq('user_id', user.id);
+      .eq('user_id', userId);
 
-    const items = await readItems(authSupabase, user.id);
+    const items = await readItems(authSupabase, userId);
     return new Response(JSON.stringify({ ok: true, items }), {
       status: 200,
       headers: { "content-type": "application/json" },
@@ -199,6 +225,15 @@ export async function DELETE({ request }) {
       });
     }
 
+    // Extraire l'ID utilisateur
+    const userId = user?.id || user?.user?.id;
+    if (!userId) {
+      return new Response(JSON.stringify({ ok: false, error: "ID utilisateur manquant" }), {
+        status: 401,
+        headers: { "content-type": "application/json" },
+      });
+    }
+
     const url = new URL(request.url);
     const deleteAll = url.searchParams.get("all");
 
@@ -206,7 +241,7 @@ export async function DELETE({ request }) {
       await authSupabase
         .from('shopping_custom')
         .delete()
-        .eq('user_id', user.id);
+        .eq('user_id', userId);
       return new Response(JSON.stringify({ ok: true, items: [] }), {
         status: 200,
         headers: { "content-type": "application/json" },
@@ -224,10 +259,10 @@ export async function DELETE({ request }) {
     await authSupabase
       .from('shopping_custom')
       .delete()
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .ilike('item', item);
 
-    const items = await readItems(authSupabase, user.id);
+    const items = await readItems(authSupabase, userId);
     return new Response(JSON.stringify({ ok: true, items }), {
       status: 200,
       headers: { "content-type": "application/json" },

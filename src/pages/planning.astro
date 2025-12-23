@@ -12,9 +12,17 @@ if (!user) {
   return Astro.redirect("/", 302);
 }
 
+// Type assertion pour user
+type UserWithId = {
+  id: string;
+};
+const userWithId = user as UserWithId;
+const userId = userWithId.id;
+
 // Récupérer un client Supabase authentifié
 const { supabase: authSupabase } = await getAuthenticatedSupabase(Astro.request);
-const authenticatedSupabase = authSupabase || supabase;
+// Type assertion pour le client Supabase
+const authenticatedSupabase = (authSupabase || supabase) as typeof supabase;
 
 const days = [
   "lundi",
@@ -31,10 +39,14 @@ const days = [
 const { data: planningData } = await authenticatedSupabase
   .from("planning")
   .select("day, recipe_id")
-  .eq("user_id", user.id);
+  .eq("user_id", userId);
 
+type PlanningItem = {
+  day: string;
+  recipe_id: string | null;
+};
 const planningMap = new Map(
-  (planningData || []).map((p) => [p.day, p.recipe_id || ""]),
+  (planningData || []).map((p: PlanningItem) => [p.day, p.recipe_id || ""]),
 );
 
 // Charger les recettes référencées (une seule requête pour toutes)
@@ -46,7 +58,7 @@ if (recipeIds.length) {
     .from("recipes")
     .select("*")
     .in("id", recipeIds)
-    .eq("user_id", user.id);
+    .eq("user_id", userId);
 
   if (recipesData) {
     for (const recipe of recipesData) {
