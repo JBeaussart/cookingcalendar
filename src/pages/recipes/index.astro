@@ -39,78 +39,155 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
         <p class="text-slate-600">Découvrez et gérez votre collection</p>
       </div>
 
-      <!-- Filters and Add Button -->
+      <!-- Filters and Actions -->
       <div class="mb-8 flex flex-col gap-4">
-        <!-- Search and Add Button Row -->
-        <div class="flex flex-col sm:flex-row gap-3">
+        <!-- Search Bar - Full Width -->
+        <div class="relative">
           <input
             id="searchInput"
             type="text"
             placeholder="Rechercher une recette..."
-            class="flex-1 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
+            class="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 pl-11 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm transition-all"
           />
-          <button
-            id="openAddModal"
-            class="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/30 transition-all hover:bg-blue-700 hover:shadow-xl hover:scale-105 active:scale-95"
+          <svg
+            class="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
           >
-            <svg
-              class="h-5 w-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2.5"
-                d="M12 4v16m8-8H4"></path>
-            </svg>
-            Ajouter
-          </button>
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+            />
+          </svg>
         </div>
 
-        <!-- Filters Row -->
-        <div class="flex flex-wrap items-center gap-4">
-          <!-- Segmented Control for Salt/Sweet -->
-          <div
-            class="flex items-center p-1 bg-slate-100 rounded-xl border border-slate-200"
-            id="saltFilterContainer"
-          >
-            <button
-              type="button"
-              data-value="all"
-              class="filter-btn px-4 py-1.5 text-sm font-bold rounded-lg transition-all shadow-sm bg-white text-blue-600"
+        <!-- Actions Row: Filters + Buttons -->
+        <div class="flex flex-col lg:flex-row gap-4 lg:items-center lg:justify-between">
+          <!-- Filters -->
+          <div class="flex flex-wrap items-center gap-4">
+            <!-- Segmented Control for Salt/Sweet -->
+            <div
+              class="flex items-center p-1 bg-slate-100 rounded-xl border border-slate-200"
+              id="saltFilterContainer"
             >
-              Tous
-            </button>
-            <button
-              type="button"
-              data-value="salty"
-              class="filter-btn px-4 py-1.5 text-sm font-medium rounded-lg transition-all text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
+              <button
+                type="button"
+                data-value="all"
+                class="filter-btn px-4 py-1.5 text-sm font-bold rounded-lg transition-all shadow-sm bg-white text-blue-600"
+              >
+                Tous
+              </button>
+              <button
+                type="button"
+                data-value="salty"
+                class="filter-btn px-4 py-1.5 text-sm font-medium rounded-lg transition-all text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
+              >
+                Salé
+              </button>
+              <button
+                type="button"
+                data-value="sweet"
+                class="filter-btn px-4 py-1.5 text-sm font-medium rounded-lg transition-all text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
+              >
+                Sucré
+              </button>
+            </div>
+
+            <label
+              class="inline-flex items-center gap-2 select-none cursor-pointer"
             >
-              Salé
-            </button>
-            <button
-              type="button"
-              data-value="sweet"
-              class="filter-btn px-4 py-1.5 text-sm font-medium rounded-lg transition-all text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
-            >
-              Sucré
-            </button>
+              <input
+                id="mamanFilter"
+                type="checkbox"
+                class="h-5 w-5 rounded border-slate-300 text-blue-600 focus:ring-2 focus:ring-blue-500"
+              />
+              <span class="text-sm font-medium text-slate-700"
+                >Recettes de maman</span
+              >
+            </label>
           </div>
 
-          <label
-            class="inline-flex items-center gap-2 select-none cursor-pointer"
-          >
-            <input
-              id="mamanFilter"
-              type="checkbox"
-              class="h-5 w-5 rounded border-slate-300 text-blue-600 focus:ring-2 focus:ring-blue-500"
-            />
-            <span class="text-sm font-medium text-slate-700"
-              >Recettes de maman</span
+          <!-- Action Buttons -->
+          <div class="flex flex-row gap-3 items-center">
+            <button
+              id="openAddModal"
+              class="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 sm:px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/30 transition-all hover:bg-blue-700 hover:shadow-xl hover:scale-105 active:scale-95 flex-1 sm:flex-initial"
             >
-          </label>
+              <svg
+                class="h-5 w-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2.5"
+                  d="M12 4v16m8-8H4"></path>
+              </svg>
+              Ajouter
+            </button>
+            {recipes.length > 0 && (
+              <button
+                id="exportPdfBtn"
+                data-user-role={user.role || user.user_role || "free"}
+                class={`inline-flex items-center justify-center gap-2 rounded-xl px-4 sm:px-6 py-3 text-sm font-semibold shadow-lg transition-all relative group flex-1 sm:flex-initial ${
+                  (user.role || user.user_role) === "admin" || (user.role || user.user_role) === "premium"
+                    ? "bg-slate-700 text-white shadow-slate-700/30 hover:bg-slate-800 hover:shadow-xl hover:scale-105 active:scale-95"
+                    : "bg-slate-300 text-slate-500 opacity-50 cursor-not-allowed"
+                }`}
+              >
+                {(user.role || user.user_role) === "admin" || (user.role || user.user_role) === "premium" ? (
+                  <>
+                    <svg
+                      class="h-5 w-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+                      />
+                    </svg>
+                    <span class="hidden sm:inline">Télécharger en PDF</span>
+                    <span class="sm:hidden">PDF</span>
+                  </>
+                ) : (
+                  <>
+                    <svg
+                      class="h-5 w-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                      />
+                    </svg>
+                    <span class="hidden sm:inline">Télécharger en PDF</span>
+                    <span class="sm:hidden">PDF</span>
+                    <!-- Tooltip pour utilisateurs FREE -->
+                    <div
+                      class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-slate-900 text-white text-xs rounded-lg whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-300 z-50"
+                      style="transition-delay: 300ms;"
+                    >
+                      🔒 Export PDF accessible uniquement aux utilisateurs Premium
+                      <div class="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-slate-900"></div>
+                    </div>
+                  </>
+                )}
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -547,6 +624,66 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
       searchInput.addEventListener("input", debounceSearch(() => apply(), 300));
       mamanFilter.addEventListener("change", apply);
       apply();
+
+      // Gestion du bouton d'export PDF
+      const exportPdfBtn = document.getElementById("exportPdfBtn");
+      if (exportPdfBtn) {
+        const userRole = exportPdfBtn.dataset.userRole || "free";
+        const isPremiumOrAdmin = userRole === "admin" || userRole === "premium";
+
+        if (isPremiumOrAdmin) {
+          exportPdfBtn.addEventListener("click", async () => {
+            try {
+              exportPdfBtn.disabled = true;
+              exportPdfBtn.innerHTML = `
+                <svg class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Génération...
+              `;
+
+              const response = await fetch("/api/export-recipes-pdf", {
+                method: "GET",
+                credentials: "include",
+              });
+
+              if (!response.ok) {
+                if (response.status === 403) {
+                  alert("Export PDF réservé aux utilisateurs Premium");
+                } else {
+                  alert("Erreur lors de l'export PDF");
+                }
+                throw new Error("Export failed");
+              }
+
+              // Télécharger le PDF
+              const blob = await response.blob();
+              const url = window.URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = `mes-recettes-${new Date().toISOString().split("T")[0]}.pdf`;
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+              window.URL.revokeObjectURL(url);
+            } catch (error) {
+              console.error("Erreur export PDF:", error);
+            } finally {
+              exportPdfBtn.disabled = false;
+              exportPdfBtn.innerHTML = `
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
+                Télécharger en PDF
+              `;
+            }
+          });
+        } else {
+          // Désactiver le bouton pour les utilisateurs FREE
+          exportPdfBtn.disabled = true;
+        }
+      }
 
       // ----- (le reste de ta modale d’ajout inchangé) -----
       const addModal = document.getElementById("addModal");
