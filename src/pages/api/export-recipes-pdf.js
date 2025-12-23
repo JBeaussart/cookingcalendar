@@ -58,10 +58,23 @@ export async function GET({ request }) {
     }
 
     // Générer le PDF avec pdfkit
-    // Utiliser createRequire pour importer pdfkit (CommonJS)
-    const { createRequire } = await import("module");
-    const require = createRequire(import.meta.url);
-    const PDFDocument = require("pdfkit");
+    let PDFDocument;
+    try {
+      // Essayer d'abord avec createRequire (Node.js standard)
+      const { createRequire } = await import("module");
+      const require = createRequire(import.meta.url);
+      PDFDocument = require("pdfkit");
+    } catch (importError) {
+      console.error("Erreur import pdfkit avec createRequire:", importError);
+      // Fallback : essayer un import dynamique
+      try {
+        const pdfkitModule = await import("pdfkit");
+        PDFDocument = pdfkitModule.default || pdfkitModule;
+      } catch (dynamicError) {
+        console.error("Erreur import pdfkit dynamique:", dynamicError);
+        throw new Error(`Impossible d'importer pdfkit: ${importError.message}`);
+      }
+    }
 
     // Créer le document PDF
     const doc = new PDFDocument({
@@ -146,11 +159,34 @@ export async function GET({ request }) {
 
     // Attendre que le PDF soit complètement généré
     const pdfBuffer = await new Promise((resolve, reject) => {
+      let timeout;
+      
       doc.on("end", () => {
-        // Concaténer tous les chunks en un seul buffer
-        resolve(Buffer.concat(chunks));
+        clearTimeout(timeout);
+        try {
+          // Concaténer tous les chunks en un seul buffer
+          const buffer = Buffer.concat(chunks);
+          if (!buffer || buffer.length === 0) {
+            reject(new Error("Le buffer PDF est vide"));
+            return;
+          }
+          resolve(buffer);
+        } catch (bufferError) {
+          console.error("Erreur création buffer:", bufferError);
+          reject(new Error(`Erreur lors de la création du buffer: ${bufferError.message}`));
+        }
       });
-      doc.on("error", reject);
+      
+      doc.on("error", (error) => {
+        clearTimeout(timeout);
+        console.error("Erreur génération PDF:", error);
+        reject(error);
+      });
+      
+      // Timeout de sécurité (30 secondes)
+      timeout = setTimeout(() => {
+        reject(new Error("Timeout lors de la génération du PDF"));
+      }, 30000);
     });
 
     // Retourner le PDF
@@ -184,8 +220,12 @@ export async function GET({ request }) {
     });
   } catch (error) {
     console.error("Erreur export PDF:", error);
+    console.error("Stack trace:", error.stack);
     return new Response(
-      JSON.stringify({ error: "Erreur lors de la génération du PDF" }),
+      JSON.stringify({ 
+        error: "Erreur lors de la génération du PDF",
+        details: process.env.NODE_ENV === "development" ? error.message : undefined
+      }),
       {
         status: 500,
         headers: { "Content-Type": "application/json" },

@@ -724,14 +724,47 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
                   showToast("📱 Le PDF s'ouvrira dans l'application Fichiers ou Books", 3000);
                 }
                 
-                // Ouvrir directement l'URL de l'API dans un nouvel onglet
-                // Le navigateur mobile gérera le PDF nativement
-                const pdfUrl = "/api/export-recipes-pdf";
-                const newWindow = window.open(pdfUrl, "_blank", "noopener,noreferrer");
-                
-                if (!newWindow) {
-                  // Popup bloquée, afficher un message
-                  showToast("⚠️ Veuillez autoriser les popups pour télécharger le PDF", 4000);
+                // Vérifier d'abord que l'API fonctionne avec un fetch
+                // Cela permet de détecter les erreurs avant d'ouvrir la fenêtre
+                try {
+                  const testResponse = await fetch("/api/export-recipes-pdf", {
+                    method: "GET",
+                    credentials: "include",
+                  });
+                  
+                  if (!testResponse.ok) {
+                    const errorData = await testResponse.json().catch(() => ({}));
+                    if (testResponse.status === 403) {
+                      showToast("🔒 Export PDF réservé aux utilisateurs Premium", 4000);
+                    } else if (testResponse.status === 401) {
+                      showToast("🔐 Veuillez vous reconnecter", 4000);
+                    } else {
+                      const errorMsg = errorData.error || "Erreur lors de la génération du PDF";
+                      showToast(`❌ ${errorMsg}`, 4000);
+                    }
+                    return;
+                  }
+                  
+                  // Si la réponse est OK, ouvrir dans une nouvelle fenêtre
+                  const pdfUrl = "/api/export-recipes-pdf";
+                  const newWindow = window.open(pdfUrl, "_blank", "noopener,noreferrer");
+                  
+                  if (!newWindow) {
+                    // Popup bloquée, essayer avec un lien temporaire
+                    const a = document.createElement("a");
+                    a.href = pdfUrl;
+                    a.target = "_blank";
+                    a.rel = "noopener noreferrer";
+                    a.style.display = "none";
+                    document.body.appendChild(a);
+                    a.click();
+                    setTimeout(() => {
+                      document.body.removeChild(a);
+                    }, 200);
+                  }
+                } catch (error) {
+                  console.error("Erreur export PDF mobile:", error);
+                  showToast("❌ Erreur lors de l'export PDF", 4000);
                 }
                 return;
               }
