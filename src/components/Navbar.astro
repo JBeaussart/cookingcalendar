@@ -80,25 +80,61 @@ const filteredLinks = links.filter((link) => {
       <!-- Élément utilisateur -->
       <div class="flex items-center gap-3">
         {userWithRole ? (
-          <div class="flex items-center gap-3">
-            <div class="flex items-center gap-2">
-              <span class="text-sm text-gray-600 hidden md:inline">{userWithRole.email}</span>
-              <span class={`px-2 py-1 rounded-full text-xs font-semibold ${
-                (userWithRole.role || userWithRole.user_role) === 'admin' ? 'bg-purple-100 text-purple-700' :
-                (userWithRole.role || userWithRole.user_role) === 'premium' ? 'bg-yellow-100 text-yellow-700' :
-                'bg-gray-100 text-gray-700'
-              }`}>
-                {(userWithRole.role || userWithRole.user_role) === 'admin' ? 'Admin' : (userWithRole.role || userWithRole.user_role) === 'premium' ? 'Premium' : 'Free'}
-              </span>
-            </div>
-            <form method="post" action="/api/auth/logout" class="inline">
-              <button
-                type="submit"
-                class="px-3 py-1 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition"
+          <div class="relative">
+            <button
+              id="desktop-user-menu-button"
+              class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
+            >
+              <span class="text-sm font-medium text-gray-700">Mon compte</span>
+              <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            
+            <!-- Menu déroulant -->
+            <div
+              id="desktop-user-menu-dropdown"
+              class="hidden absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-gray-200 py-2 z-50 overflow-hidden"
+            >
+              <div class="px-4 py-3 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
+                <div class="flex items-center gap-3">
+                  <div class={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                    (userWithRole.role || userWithRole.user_role) === 'admin' ? 'bg-purple-100 text-purple-600' :
+                    (userWithRole.role || userWithRole.user_role) === 'premium' ? 'bg-yellow-100 text-yellow-600' :
+                    'bg-gray-100 text-gray-600'
+                  }`}>
+                    <i class="fas fa-user text-sm"></i>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm font-semibold text-gray-900 truncate">{userWithRole.email}</p>
+                    <p class={`text-xs font-medium mt-0.5 ${
+                      (userWithRole.role || userWithRole.user_role) === 'admin' ? 'text-purple-600' :
+                      (userWithRole.role || userWithRole.user_role) === 'premium' ? 'text-yellow-600' :
+                      'text-gray-500'
+                    }`}>
+                      {(userWithRole.role || userWithRole.user_role) === 'admin' ? 'Administrateur' : (userWithRole.role || userWithRole.user_role) === 'premium' ? 'Premium' : 'Gratuit'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              <a
+                href="/account"
+                class="block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
               >
-                Déconnexion
-              </button>
-            </form>
+                Informations personnelles
+              </a>
+              
+              <form method="post" action="/api/auth/logout" class="px-2 py-1.5">
+                <button
+                  type="submit"
+                  class="w-full text-left px-3 py-2.5 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-2 group"
+                >
+                  <i class="fas fa-sign-out-alt text-xs opacity-70 group-hover:opacity-100 transition-opacity"></i>
+                  <span>Déconnexion</span>
+                </button>
+              </form>
+            </div>
           </div>
         ) : (
           <div class="flex items-center gap-2">
@@ -169,6 +205,14 @@ const filteredLinks = links.filter((link) => {
               </div>
             </div>
           </div>
+          
+          <a
+            href="/account"
+            class="block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+          >
+            Informations personnelles
+          </a>
+          
         <form method="post" action="/api/auth/logout" class="px-2 py-1.5">
           <button
             type="submit"
@@ -311,6 +355,25 @@ const filteredLinks = links.filter((link) => {
         const target = e.target;
         if (target instanceof Node && !menuButton.contains(target) && !menuDropdown.contains(target)) {
           menuDropdown.classList.add('hidden');
+        }
+      });
+    }
+    
+    // Gestion du menu déroulant utilisateur desktop
+    const desktopMenuButton = document.getElementById('desktop-user-menu-button');
+    const desktopMenuDropdown = document.getElementById('desktop-user-menu-dropdown');
+    
+    if (desktopMenuButton && desktopMenuDropdown) {
+      desktopMenuButton.addEventListener('click', (e) => {
+        e.stopPropagation();
+        desktopMenuDropdown.classList.toggle('hidden');
+      });
+      
+      // Fermer le menu si on clique ailleurs
+      document.addEventListener('click', (e) => {
+        const target = e.target;
+        if (target instanceof Node && !desktopMenuButton.contains(target) && !desktopMenuDropdown.contains(target)) {
+          desktopMenuDropdown.classList.add('hidden');
         }
       });
     }
