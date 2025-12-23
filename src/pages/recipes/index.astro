@@ -2,7 +2,7 @@
 // src/pages/recipes/index.astro
 import Layout from "../../layouts/Layout.astro";
 import Modal from "../../components/Modal.astro";
-import { getServerSession, getAuthenticatedSupabase } from "../../lib/auth";
+import { getServerSession, getAuthenticatedSupabase, isAdmin } from "../../lib/auth";
 import { supabase } from "../../supabase";
 
 // Vérifier si l'utilisateur est connecté
@@ -76,38 +76,45 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
               <button
                 type="button"
                 data-value="all"
-                class="filter-btn px-4 py-1.5 text-sm font-bold rounded-lg transition-all shadow-sm bg-white text-blue-600"
+                class="filter-btn px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-all shadow-sm bg-white text-blue-600"
               >
                 Tous
               </button>
               <button
                 type="button"
                 data-value="salty"
-                class="filter-btn px-4 py-1.5 text-sm font-medium rounded-lg transition-all text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
+                class="filter-btn px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-all text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
               >
                 Salé
               </button>
               <button
                 type="button"
                 data-value="sweet"
-                class="filter-btn px-4 py-1.5 text-sm font-medium rounded-lg transition-all text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
+                class="filter-btn px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-all text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
               >
                 Sucré
               </button>
             </div>
 
-            <label
-              class="inline-flex items-center gap-2 select-none cursor-pointer"
-            >
-              <input
-                id="mamanFilter"
-                type="checkbox"
-                class="h-5 w-5 rounded border-slate-300 text-blue-600 focus:ring-2 focus:ring-blue-500"
-              />
-              <span class="text-sm font-medium text-slate-700"
-                >Recettes de maman</span
-              >
-            </label>
+            <!-- Toggle Switch for Maman (admin only) -->
+            {(user.role || user.user_role) === "admin" && (
+              <label class="inline-flex items-center gap-3 cursor-pointer group">
+                <span class="text-sm font-medium text-slate-700 group-hover:text-pink-600 transition-colors flex items-center gap-2">
+                  <i class="fa-solid fa-paw text-pink-400"></i>
+                  <span class="hidden sm:inline">Recettes de maman</span>
+                  <span class="sm:hidden">Maman</span>
+                </span>
+                <!-- Toggle Switch -->
+                <div id="mamanFilterToggle" class="relative inline-flex h-6 w-11 items-center rounded-full bg-slate-200 transition-colors duration-200 group-hover:bg-slate-300">
+                  <input
+                    id="mamanFilter"
+                    type="checkbox"
+                    class="sr-only"
+                  />
+                  <span class="absolute left-1 h-4 w-4 transform rounded-full bg-white transition-all duration-200 ease-in-out shadow-sm toggle-switch-handle"></span>
+                </div>
+              </label>
+            )}
           </div>
 
           <!-- Action Buttons -->
@@ -264,22 +271,26 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
           </div>
         </div>
 
-        <div class="flex items-end pb-3">
-          <label class="inline-flex items-center gap-3 cursor-pointer group">
-            <div class="relative flex items-center">
-              <input
-                id="rMaman"
-                type="checkbox"
-                class="peer h-6 w-6 rounded-lg border-slate-300 text-pink-500 focus:ring-pink-200 transition-all"
-              />
-            </div>
-            <span
-              class="text-sm font-medium text-slate-700 group-hover:text-pink-600 transition-colors"
-            >
-              <i class="fa-solid fa-paw mr-1 text-pink-400"></i> Recette de maman
-            </span>
-          </label>
-        </div>
+        {(user.role || user.user_role) === "admin" && (
+          <div class="flex items-center justify-end pb-3">
+            <label class="inline-flex items-center gap-3 cursor-pointer group">
+              <span class="text-sm font-medium text-slate-700 group-hover:text-pink-600 transition-colors flex items-center gap-2">
+                <i class="fa-solid fa-paw text-pink-400"></i>
+                <span class="hidden sm:inline">Recette de maman</span>
+                <span class="sm:hidden">Maman</span>
+              </span>
+              <!-- Toggle Switch -->
+              <div id="rMamanToggle" class="relative inline-flex h-6 w-11 items-center rounded-full bg-slate-200 transition-colors duration-200 group-hover:bg-slate-300">
+                <input
+                  id="rMaman"
+                  type="checkbox"
+                  class="sr-only"
+                />
+                <span class="absolute left-1 h-4 w-4 transform rounded-full bg-white transition-all duration-200 ease-in-out shadow-sm toggle-switch-handle"></span>
+              </div>
+            </label>
+          </div>
+        )}
       </div>
 
       <!-- Ingredients -->
@@ -377,7 +388,6 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
       // UI
       const grid = document.getElementById("grid");
       const searchInput = document.getElementById("searchInput");
-      const mamanFilter = document.getElementById("mamanFilter");
 
       // Debounce pour la recherche (optimisation performance)
       let searchTimeout;
@@ -391,6 +401,28 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
       // Filter Logic
       let currentSaltMode = "all";
       const filterBtns = document.querySelectorAll(".filter-btn");
+      const mamanFilter = document.getElementById("mamanFilter");
+      const mamanFilterToggle = document.getElementById("mamanFilterToggle");
+
+      // Gérer le toggle switch pour "Recettes de maman" (sera initialisé après la définition de apply())
+      let mamanFilterHandle = null;
+      let mamanFilterInitialized = false;
+      
+      if (mamanFilter && mamanFilterToggle) {
+        mamanFilterHandle = mamanFilterToggle.querySelector(".toggle-switch-handle");
+        // Initialiser l'état visuel sans appeler apply() (sera fait plus tard)
+        if (mamanFilter.checked) {
+          mamanFilterToggle.classList.remove("bg-slate-200");
+          mamanFilterToggle.classList.add("bg-pink-200");
+          mamanFilterHandle?.classList.remove("translate-x-0");
+          mamanFilterHandle?.classList.add("translate-x-5", "bg-pink-500");
+        } else {
+          mamanFilterToggle.classList.remove("bg-pink-200");
+          mamanFilterToggle.classList.add("bg-slate-200");
+          mamanFilterHandle?.classList.remove("translate-x-5", "bg-pink-500");
+          mamanFilterHandle?.classList.add("translate-x-0");
+        }
+      }
 
       filterBtns.forEach((btn) => {
         btn.addEventListener("click", () => {
@@ -399,11 +431,9 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
           // Update visual state
           filterBtns.forEach((b) => {
             if (b.dataset.value === currentSaltMode) {
-              b.className =
-                "filter-btn px-4 py-1.5 text-sm font-bold rounded-lg transition-all shadow-sm bg-white text-blue-600";
+              b.className = "filter-btn px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-all shadow-sm bg-white text-blue-600";
             } else {
-              b.className =
-                "filter-btn px-4 py-1.5 text-sm font-medium rounded-lg transition-all text-slate-500 hover:text-slate-700 hover:bg-slate-200/50";
+              b.className = "filter-btn px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-all text-slate-500 hover:text-slate-700 hover:bg-slate-200/50";
             }
           });
 
@@ -606,8 +636,8 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
 
       function apply() {
         const q = normalize(searchInput.value);
-        const mamanOnly = mamanFilter.checked;
         const mode = currentSaltMode;
+        const mamanOnly = mamanFilter ? mamanFilter.checked : false;
 
         // 🔎 Titre OU ingrédients
         let list = ALL.filter((r) => recipeMatchesQuery(r, q));
@@ -620,9 +650,28 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
         render(list);
       }
 
+      // Initialiser le toggle switch pour "Recettes de maman" maintenant que apply() est définie
+      if (mamanFilter && mamanFilterToggle && !mamanFilterInitialized) {
+        const updateToggle = () => {
+          if (mamanFilter.checked) {
+            mamanFilterToggle.classList.remove("bg-slate-200");
+            mamanFilterToggle.classList.add("bg-pink-200");
+            mamanFilterHandle?.classList.remove("translate-x-0");
+            mamanFilterHandle?.classList.add("translate-x-5", "bg-pink-500");
+          } else {
+            mamanFilterToggle.classList.remove("bg-pink-200");
+            mamanFilterToggle.classList.add("bg-slate-200");
+            mamanFilterHandle?.classList.remove("translate-x-5", "bg-pink-500");
+            mamanFilterHandle?.classList.add("translate-x-0");
+          }
+          apply();
+        };
+        mamanFilter.addEventListener("change", updateToggle);
+        mamanFilterInitialized = true;
+      }
+
       // Utiliser debounce pour la recherche (optimisation performance)
       searchInput.addEventListener("input", debounceSearch(() => apply(), 300));
-      mamanFilter.addEventListener("change", apply);
       apply();
 
       // Gestion du bouton d'export PDF
@@ -762,6 +811,17 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
         stepsList.innerHTML = "";
         addIngredientRow();
         addStepRowEl();
+        // Réinitialiser le toggle switch
+        if (rMaman && rMamanToggle) {
+          rMaman.checked = false;
+          const handle = rMamanToggle.querySelector(".toggle-switch-handle");
+          if (handle) {
+            rMamanToggle.classList.remove("bg-pink-200");
+            rMamanToggle.classList.add("bg-slate-200");
+            handle.classList.remove("translate-x-5", "bg-pink-500");
+            handle.classList.add("translate-x-0");
+          }
+        }
         openModal();
       });
       closeAddModal.addEventListener("click", closeModal);
@@ -776,8 +836,29 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
       const addRecipeForm = document.getElementById("addRecipeForm");
       const rTitle = document.getElementById("rTitle");
       const rImage = document.getElementById("rImage");
-      const rMaman = document.getElementById("rMaman");
+      const rMaman = document.getElementById("rMaman"); // Peut être null si non-admin
+      const rMamanToggle = document.getElementById("rMamanToggle");
       const rSalt = document.getElementById("rSalt");
+      
+      // Gérer le toggle switch pour "Recette de maman"
+      if (rMaman && rMamanToggle) {
+        const handle = rMamanToggle.querySelector(".toggle-switch-handle");
+        const updateToggle = () => {
+          if (rMaman.checked) {
+            rMamanToggle.classList.remove("bg-slate-200");
+            rMamanToggle.classList.add("bg-pink-200");
+            handle?.classList.remove("translate-x-0");
+            handle?.classList.add("translate-x-5", "bg-pink-500");
+          } else {
+            rMamanToggle.classList.remove("bg-pink-200");
+            rMamanToggle.classList.add("bg-slate-200");
+            handle?.classList.remove("translate-x-5", "bg-pink-500");
+            handle?.classList.add("translate-x-0");
+          }
+        };
+        rMaman.addEventListener("change", updateToggle);
+        updateToggle(); // État initial
+      }
       const ingList = document.getElementById("ingList");
       const addIngRow = document.getElementById("addIngRow");
       const stepsList = document.getElementById("stepsList");
@@ -901,10 +982,11 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
         );
         const steps = stepInputs.map((el) => el.value.trim()).filter(Boolean);
 
+        const rMaman = document.getElementById("rMaman");
         const payload = {
           title: rTitle.value.trim(),
           image: rImage.value.trim(),
-          maman: !!rMaman.checked,
+          maman: rMaman ? !!rMaman.checked : false, // Seulement si admin
           salt: rSalt.value === "salty",
           ingredients,
           steps,

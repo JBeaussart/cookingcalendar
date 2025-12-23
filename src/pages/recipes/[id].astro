@@ -2,7 +2,7 @@
 // src/pages/recipes/[id].astro
 import Layout from "../../layouts/Layout.astro";
 import Modal from "../../components/Modal.astro";
-import { getServerSession, getAuthenticatedSupabase } from "../../lib/auth";
+import { getServerSession, getAuthenticatedSupabase, isAdmin } from "../../lib/auth";
 import { supabase } from "../../supabase";
 
 // Vérifier si l'utilisateur est connecté
@@ -264,20 +264,26 @@ const DEFAULT_IMG = "/images/default-recipe.jpg";
                     </div>
                   </div>
 
-                  <div class="flex items-end pb-3">
-                    <label class="inline-flex items-center gap-3 cursor-pointer group">
-                      <div class="relative flex items-center">
-                        <input
-                          id="eMaman"
-                          type="checkbox"
-                          class="peer h-6 w-6 rounded-lg border-slate-300 text-pink-500 focus:ring-pink-200 transition-all"
-                        />
-                      </div>
-                      <span class="text-sm font-medium text-slate-700 group-hover:text-pink-600 transition-colors">
-                        <i class="fa-solid fa-paw mr-1 text-pink-400"></i> Recette de maman
-                      </span>
-                    </label>
-                  </div>
+                  {(user.role || user.user_role) === "admin" && (
+                    <div class="flex items-center justify-end pb-3">
+                      <label class="inline-flex items-center gap-3 cursor-pointer group">
+                        <span class="text-sm font-medium text-slate-700 group-hover:text-pink-600 transition-colors flex items-center gap-2">
+                          <i class="fa-solid fa-paw text-pink-400"></i>
+                          <span class="hidden sm:inline">Recette de maman</span>
+                          <span class="sm:hidden">Maman</span>
+                        </span>
+                        <!-- Toggle Switch -->
+                        <div id="eMamanToggle" class="relative inline-flex h-6 w-11 items-center rounded-full bg-slate-200 transition-colors duration-200 group-hover:bg-slate-300">
+                          <input
+                            id="eMaman"
+                            type="checkbox"
+                            class="sr-only"
+                          />
+                          <span class="absolute left-1 h-4 w-4 transform rounded-full bg-white transition-all duration-200 ease-in-out shadow-sm toggle-switch-handle"></span>
+                        </div>
+                      </label>
+                    </div>
+                  )}
                 </div>
 
                 <!-- Ingredients -->
@@ -475,7 +481,33 @@ const DEFAULT_IMG = "/images/default-recipe.jpg";
         const eTitle = document.getElementById("eTitle");
         const eImage = document.getElementById("eImage");
         const eMaman = document.getElementById("eMaman");
+        const eMamanToggle = document.getElementById("eMamanToggle");
         const eSalt = document.getElementById("eSalt");
+        
+        // Gérer le toggle switch pour "Recette de maman"
+        if (eMaman && eMamanToggle) {
+          const handle = eMamanToggle.querySelector(".toggle-switch-handle");
+          const updateToggle = () => {
+            if (eMaman.checked) {
+              eMamanToggle.classList.remove("bg-slate-200");
+              eMamanToggle.classList.add("bg-pink-200");
+              handle?.classList.remove("translate-x-0");
+              handle?.classList.add("translate-x-5", "bg-pink-500");
+            } else {
+              eMamanToggle.classList.remove("bg-pink-200");
+              eMamanToggle.classList.add("bg-slate-200");
+              handle?.classList.remove("translate-x-5", "bg-pink-500");
+              handle?.classList.add("translate-x-0");
+            }
+          };
+          eMaman.addEventListener("change", updateToggle);
+          // Mettre à jour lors du chargement des données
+          const originalLoadData = window.loadEditData;
+          window.loadEditData = function() {
+            if (originalLoadData) originalLoadData();
+            setTimeout(updateToggle, 100);
+          };
+        }
         const ingList = document.getElementById("ingList");
         const addIngRow = document.getElementById("addIngRow");
         const stepsList = document.getElementById("stepsList");
@@ -582,7 +614,24 @@ const DEFAULT_IMG = "/images/default-recipe.jpg";
           if (!d) return;
           eTitle.value = d.getAttribute("data-title") || "";
           eImage.value = d.getAttribute("data-image") || "";
-          eMaman.checked = d.getAttribute("data-maman") === "true";
+          if (eMaman) {
+            eMaman.checked = d.getAttribute("data-maman") === "true";
+            // Mettre à jour le toggle switch visuellement
+            if (eMamanToggle) {
+              const handle = eMamanToggle.querySelector(".toggle-switch-handle");
+              if (eMaman.checked) {
+                eMamanToggle.classList.remove("bg-slate-200");
+                eMamanToggle.classList.add("bg-pink-200");
+                handle?.classList.remove("translate-x-0");
+                handle?.classList.add("translate-x-5", "bg-pink-500");
+              } else {
+                eMamanToggle.classList.remove("bg-pink-200");
+                eMamanToggle.classList.add("bg-slate-200");
+                handle?.classList.remove("translate-x-5", "bg-pink-500");
+                handle?.classList.add("translate-x-0");
+              }
+            }
+          }
           eSalt.value =
             d.getAttribute("data-salt") === "true" ? "salty" : "sweet";
 
@@ -655,7 +704,7 @@ const DEFAULT_IMG = "/images/default-recipe.jpg";
                 id: recipeId,
                 title: eTitle.value.trim(),
                 image: eImage.value.trim(),
-                maman: !!eMaman.checked,
+                maman: eMaman ? !!eMaman.checked : false, // Seulement si admin
                 salt: eSalt.value === "salty",
                 ingredients,
                 steps,

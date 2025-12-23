@@ -1,5 +1,5 @@
 // src/pages/api/update-recipe.js
-import { getAuthenticatedSupabase } from "../../lib/auth";
+import { getAuthenticatedSupabase, isAdmin } from "../../lib/auth";
 
 export async function PATCH({ request }) {
   try {
@@ -54,12 +54,16 @@ export async function PATCH({ request }) {
       .map((s) => String(s || "").trim())
       .filter((s) => s.length > 0);
 
+    // Seuls les admins peuvent définir maman à true
+    const isUserAdmin = isAdmin(user);
+    const mamanValue = isUserAdmin ? !!maman : false;
+
     const payload = {
       title: String(title).trim(),
       image: image ? String(image).trim() : "",
       ingredients: cleanIngredients,
       steps: cleanSteps,
-      maman: !!maman,
+      maman: mamanValue,
       salt: !!salt, // true = salé, false = sucré
     };
 
