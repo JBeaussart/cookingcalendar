@@ -154,11 +154,16 @@ export async function GET({ request }) {
     });
 
     // Retourner le PDF
+    const filename = `mes-recettes-${new Date().toISOString().split("T")[0]}.pdf`;
     return new Response(pdfBuffer, {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="mes-recettes-${new Date().toISOString().split("T")[0]}.pdf"`,
+        "Content-Disposition": `attachment; filename="${filename}"; filename*=UTF-8''${encodeURIComponent(filename)}`,
+        "Content-Length": pdfBuffer.length.toString(),
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        "Pragma": "no-cache",
+        "Expires": "0",
       },
     });
   } catch (error) {

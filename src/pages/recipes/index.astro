@@ -660,13 +660,49 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
               // Télécharger le PDF
               const blob = await response.blob();
               const url = window.URL.createObjectURL(blob);
-              const a = document.createElement("a");
-              a.href = url;
-              a.download = `mes-recettes-${new Date().toISOString().split("T")[0]}.pdf`;
-              document.body.appendChild(a);
-              a.click();
-              document.body.removeChild(a);
-              window.URL.revokeObjectURL(url);
+              const filename = `mes-recettes-${new Date().toISOString().split("T")[0]}.pdf`;
+              
+              // Détecter si on est sur mobile/iOS
+              const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+              const isAndroid = /Android/.test(navigator.userAgent);
+              const isMobile = isIOS || isAndroid;
+              
+              if (isMobile) {
+                // Sur mobile, utiliser window.open() qui fonctionne mieux
+                // Le navigateur mobile ouvrira le PDF et l'utilisateur pourra le télécharger via le menu
+                const newWindow = window.open(url, '_blank');
+                if (newWindow) {
+                  // Succès : le PDF s'ouvre dans un nouvel onglet
+                  setTimeout(() => {
+                    window.URL.revokeObjectURL(url);
+                  }, 1000);
+                } else {
+                  // Popup bloquée, utiliser la méthode alternative
+                  const a = document.createElement("a");
+                  a.href = url;
+                  a.download = filename;
+                  a.target = "_blank";
+                  a.style.display = "none";
+                  document.body.appendChild(a);
+                  a.click();
+                  setTimeout(() => {
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                  }, 200);
+                }
+              } else {
+                // Sur desktop, utiliser la méthode classique
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = filename;
+                a.style.display = "none";
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(() => {
+                  document.body.removeChild(a);
+                  window.URL.revokeObjectURL(url);
+                }, 200);
+              }
             } catch (error) {
               console.error("Erreur export PDF:", error);
             } finally {
