@@ -35,6 +35,9 @@ const isActive = (href: string) => {
   if (href === "/planning") return currentPath === "/planning";
   return currentPath === href || currentPath.startsWith(`${href}/`);
 };
+
+// Vérifier si on est sur une page de détail de recette
+const isRecipeDetailPage = currentPath.startsWith("/recipes/") && currentPath !== "/recipes";
 ---
 
 <!-- Desktop navigation (top bar) -->
@@ -108,9 +111,9 @@ const isActive = (href: string) => {
   </div>
 </nav>
 
-<!-- Mobile top bar with user icon (only if logged in) -->
-{userWithRole && (
-  <div class="mobile-top-bar sm:hidden z-50 absolute top-4 right-4">
+<!-- Mobile top bar with user icon (only if logged in, hidden on recipe detail page) -->
+{userWithRole && !isRecipeDetailPage && (
+  <div class="mobile-top-bar sm:hidden z-50 absolute top-2 right-4">
     <div class="relative">
         <button
           id="user-menu-button"
