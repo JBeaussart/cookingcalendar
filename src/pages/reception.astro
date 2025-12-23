@@ -64,7 +64,7 @@ const current = {
 ---
 
 <Layout title="Reception">
-  <div class="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+  <div class="min-h-screen bg-gradient-to-br from-orange-50/30 via-amber-50/20 to-slate-50">
     <div class="mx-auto max-w-3xl px-4 py-12">
       <!-- Header -->
       <div class="mb-8 text-center">
@@ -111,7 +111,7 @@ const current = {
                       <div class="absolute bottom-0 left-0 right-0 p-3">
                         <a
                           href={`/recipes/${r.id}`}
-                          class="block text-base font-bold text-white drop-shadow-lg hover:text-blue-200 transition line-clamp-2"
+                          class="block text-base font-bold text-white drop-shadow-lg hover:text-orange-200 transition line-clamp-2"
                         >
                           {r.title}
                         </a>
@@ -122,7 +122,7 @@ const current = {
                     <div class="flex items-center justify-between border-t border-slate-100 bg-slate-50/50 px-3 py-2">
                       <a
                         href={`/recipes/${r.id}`}
-                        class="flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-blue-600 transition"
+                        class="flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-orange-600 transition"
                       >
                         <svg
                           class="h-4 w-4"
@@ -206,7 +206,7 @@ const current = {
 
                         {/* Centered Add Icon */}
                         <div class="absolute inset-0 flex items-center justify-center">
-                          <div class="flex h-12 w-12 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg shadow-blue-600/30 transition-all hover:bg-blue-700 hover:scale-110">
+                          <div class="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg shadow-orange-500/30 transition-all hover:from-orange-600 hover:to-amber-600 hover:scale-110">
                             <svg
                               class="h-6 w-6"
                               fill="none"
