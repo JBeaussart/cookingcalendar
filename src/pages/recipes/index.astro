@@ -50,7 +50,7 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
       </div>
 
       <!-- Filters and Actions -->
-      <div class="mb-8 flex flex-col gap-4">
+      <div class="mb-8 flex flex-col gap-4 pb-12 sm:pb-8">
         <!-- Search Bar - Full Width -->
         <div class="relative">
           <input
@@ -124,24 +124,36 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
 
           <!-- Action Buttons -->
           <div class="flex flex-row gap-3 items-center flex-shrink-0">
-            <button
-              id="openAddModal"
-              class="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 px-4 sm:px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-500/30 transition-all hover:from-orange-600 hover:to-amber-600 hover:shadow-xl hover:shadow-orange-500/40 hover:scale-105 active:scale-95 flex-1 sm:flex-initial"
-            >
-              <svg
-                class="h-5 w-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+            <div class="relative">
+              <button
+                id="openAddModal"
+                class="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 px-4 sm:px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-500/30 transition-all hover:from-orange-600 hover:to-amber-600 hover:shadow-xl hover:shadow-orange-500/40 hover:scale-105 active:scale-95 flex-1 sm:flex-initial"
               >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2.5"
-                  d="M12 4v16m8-8H4"></path>
-              </svg>
-              Ajouter
-            </button>
+                <svg
+                  class="h-5 w-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2.5"
+                    d="M12 4v16m8-8H4"></path>
+                </svg>
+                Ajouter
+              </button>
+              {(userWithRole.role || userWithRole.user_role) !== "admin" && (userWithRole.role || userWithRole.user_role) !== "premium" && (
+                <div class="absolute top-full left-0 mt-2 whitespace-nowrap text-left">
+                  <span id="recipeCounter" class="text-xs font-medium text-slate-500 block">
+                    {recipes.length}/20
+                  </span>
+                  <span id="recipeWarningMessage" class="text-xs font-medium text-slate-500 block mt-0.5 hidden whitespace-nowrap">
+                    Dernière recette disponible avec le plan gratuit
+                  </span>
+                </div>
+              )}
+            </div>
             {recipes.length > 0 && (
               <button
                 id="exportPdfBtn"
@@ -230,6 +242,14 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
   <!-- Modale d’ajout -->
   <Modal id="addModal" title="Ajouter une recette">
     <form id="addRecipeForm" class="space-y-6">
+      <!-- Message de statut en haut du formulaire -->
+      <div
+        id="addStatus"
+        class="hidden rounded-xl border-2 p-4 text-sm font-medium text-center"
+        role="alert"
+      >
+      </div>
+      
       <!-- General Info -->
       <div class="grid gap-6 sm:grid-cols-2">
         <div class="sm:col-span-2">
@@ -371,12 +391,6 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
           <span>Enregistrer la recette</span>
         </button>
       </div>
-
-      <p
-        id="addStatus"
-        class="text-center text-sm font-medium text-slate-500 mt-2"
-      >
-      </p>
     </form>
   </Modal>
 
@@ -399,6 +413,27 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
       // UI
       const grid = document.getElementById("grid");
       const searchInput = document.getElementById("searchInput");
+      
+      // Fonction pour mettre à jour le compteur de recettes (pour les utilisateurs free)
+      function updateRecipeCounter() {
+        const counter = document.getElementById("recipeCounter");
+        const warningMessage = document.getElementById("recipeWarningMessage");
+        if (counter) {
+          counter.textContent = `${ALL.length}/20`;
+          
+          // Afficher ou masquer le message "Dernière recette disponible"
+          if (warningMessage) {
+            if (ALL.length === 19) {
+              warningMessage.classList.remove("hidden");
+            } else {
+              warningMessage.classList.add("hidden");
+            }
+          }
+        }
+      }
+      
+      // Mettre à jour le compteur au chargement
+      updateRecipeCounter();
 
       // Debounce pour la recherche (optimisation performance)
       let searchTimeout;
@@ -843,7 +878,11 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
       }
       function closeModal() {
         addModal.classList.add("hidden");
-        addStatus.textContent = "";
+        const addStatus = document.getElementById("addStatus");
+        if (addStatus) {
+          addStatus.textContent = "";
+          addStatus.classList.add("hidden");
+        }
         unlockBodyScroll();
       }
 
@@ -853,6 +892,12 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
         stepsList.innerHTML = "";
         addIngredientRow();
         addStepRowEl();
+        // Réinitialiser le message de statut
+        const addStatus = document.getElementById("addStatus");
+        if (addStatus) {
+          addStatus.textContent = "";
+          addStatus.classList.add("hidden");
+        }
         // Réinitialiser le bouton Maman
         if (rMaman && rMamanBtn) {
           rMaman.checked = false;
@@ -1016,7 +1061,8 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
         e.preventDefault();
         const addStatus = document.getElementById("addStatus");
         addStatus.textContent = "Enregistrement…";
-        addStatus.className = "text-center text-sm font-medium text-slate-500 mt-2";
+        addStatus.className = "rounded-xl border-2 border-blue-200 bg-blue-50 p-4 text-sm font-medium text-blue-700 text-center";
+        addStatus.classList.remove("hidden");
 
         const ingRows = Array.from(ingList.querySelectorAll(".ingredient-row"));
         const ingredients = ingRows
@@ -1061,13 +1107,46 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
             throw new Error(errorData.error || `Erreur HTTP ${res.status}`);
           }
           
-          addStatus.textContent = "✅ Recette ajoutée";
-          addStatus.className = "text-center text-sm font-medium text-green-600 mt-2";
-          setTimeout(() => window.location.reload(), 400);
+          addStatus.textContent = "✅ Recette ajoutée avec succès !";
+          addStatus.className = "rounded-xl border-2 border-green-200 bg-green-50 p-4 text-sm font-medium text-green-700 text-center";
+          addStatus.classList.remove("hidden");
+          
+          // Mettre à jour le compteur avant le rechargement
+          const counter = document.getElementById("recipeCounter");
+          const warningMessage = document.getElementById("recipeWarningMessage");
+          if (counter) {
+            // ALL contient toutes les recettes, on ajoute 1 pour la nouvelle
+            const currentCount = ALL.length;
+            const newCount = currentCount + 1;
+            counter.textContent = `${newCount}/20`;
+            
+            // Afficher ou masquer le message "Dernière recette disponible"
+            if (warningMessage) {
+              if (newCount === 19) {
+                warningMessage.classList.remove("hidden");
+              } else {
+                warningMessage.classList.add("hidden");
+              }
+            }
+          }
+          
+          setTimeout(() => window.location.reload(), 1500);
         } catch (err) {
           console.error(err);
-          addStatus.textContent = err.message || "❌ Erreur lors de l'ajout";
-          addStatus.className = "text-center text-sm font-medium text-red-600 mt-2";
+          const errorMessage = err.message || "❌ Erreur lors de l'ajout";
+          
+          // Afficher le message d'erreur en haut du formulaire
+          addStatus.textContent = errorMessage;
+          addStatus.className = "rounded-xl border-2 border-red-300 bg-red-50 p-4 text-sm font-medium text-red-700 text-center";
+          addStatus.classList.remove("hidden");
+          
+          // Utiliser aussi le toast pour les erreurs importantes (comme la limite atteinte)
+          if (errorMessage.includes("limite") || errorMessage.includes("Limite")) {
+            showToast(errorMessage, 6000);
+          }
+          
+          // Faire défiler vers le haut pour voir le message
+          addStatus.scrollIntoView({ behavior: "smooth", block: "nearest" });
         }
       });
     });
