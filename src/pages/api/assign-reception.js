@@ -15,6 +15,15 @@ export async function POST({ request }) {
       });
     }
 
+    // Vérifier que l'utilisateur est admin ou premium
+    const userRole = user.role || user.user_role;
+    if (userRole !== "admin" && userRole !== "premium") {
+      return new Response(JSON.stringify({ error: "Accès réservé aux utilisateurs Premium" }), {
+        status: 403,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
     const body = await request.json();
     const { slot, id } = body || {};
 

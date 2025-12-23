@@ -11,6 +11,20 @@ if (!user) {
   return Astro.redirect("/", 302);
 }
 
+// Vérifier le rôle de l'utilisateur (admin ou premium uniquement)
+type UserWithRole = {
+  id: string;
+  role?: string;
+  user_role?: string;
+};
+const userWithRole = user as UserWithRole;
+const userRole = userWithRole.role || userWithRole.user_role;
+
+// Si l'utilisateur n'est ni admin ni premium, rediriger vers le planning
+if (userRole !== "admin" && userRole !== "premium") {
+  return Astro.redirect("/planning", 302);
+}
+
 // Récupérer un client Supabase authentifié
 const { supabase: authSupabase } = await getAuthenticatedSupabase(Astro.request);
 const authenticatedSupabase = authSupabase || supabase;

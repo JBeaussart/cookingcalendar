@@ -38,6 +38,16 @@ const isActive = (href: string) => {
 
 // Vérifier si on est sur une page de détail de recette
 const isRecipeDetailPage = currentPath.startsWith("/recipes/") && currentPath !== "/recipes";
+
+// Filtrer les liens selon le rôle de l'utilisateur (Réception uniquement pour admin/premium)
+const userRole = (userWithRole?.role || userWithRole?.user_role);
+const filteredLinks = links.filter((link) => {
+  // Si c'est le lien Réception, vérifier que l'utilisateur est admin ou premium
+  if (link.href === "/reception") {
+    return userRole === "admin" || userRole === "premium";
+  }
+  return true;
+});
 ---
 
 <!-- Desktop navigation (top bar) -->
@@ -49,7 +59,7 @@ const isRecipeDetailPage = currentPath.startsWith("/recipes/") && currentPath !=
       <!-- Liens de navigation -->
       {user && (
         <ul class="flex flex-wrap justify-center gap-2 md:gap-6">
-          {links.map((link) => (
+          {filteredLinks.map((link) => (
             <li class="min-w-0">
               <a
                 href={link.href}
@@ -181,7 +191,7 @@ const isRecipeDetailPage = currentPath.startsWith("/recipes/") && currentPath !=
     {user ? (
       <>
         {
-          links.map((link) => {
+          filteredLinks.map((link) => {
             const active = isActive(link.href);
             return (
               <li class="flex-1">
