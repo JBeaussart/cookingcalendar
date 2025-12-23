@@ -53,3 +53,4 @@ CREATE POLICY "Admins can manage all shopping_totals" ON shopping_totals
 CREATE POLICY "Admins can manage all shopping_custom" ON shopping_custom
   FOR ALL USING (public.is_admin(auth.uid()));
 
+

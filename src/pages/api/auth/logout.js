@@ -6,14 +6,13 @@ export async function POST({ request }) {
     // Déconnecter l'utilisateur
     await supabase.auth.signOut();
 
-    // Supprimer les cookies
-    const response = new Response(
-      JSON.stringify({ message: "Déconnexion réussie" }),
-      {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      }
-    );
+    // Supprimer les cookies et rediriger vers la landing page
+    const response = new Response(null, {
+      status: 302,
+      headers: {
+        Location: "/",
+      },
+    });
 
     response.headers.append(
       "Set-Cookie",
@@ -27,13 +26,14 @@ export async function POST({ request }) {
     return response;
   } catch (err) {
     console.error("Erreur logout:", err);
-    return new Response(
-      JSON.stringify({ error: "Erreur serveur" }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      }
-    );
+    // En cas d'erreur, rediriger quand même vers la landing page
+    return new Response(null, {
+      status: 302,
+      headers: {
+        Location: "/",
+      },
+    });
   }
 }
+
 

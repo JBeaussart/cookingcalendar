@@ -15,10 +15,15 @@ export async function POST({ request }) {
       );
     }
 
-    // Créer l'utilisateur
+    // Créer l'utilisateur sans confirmation d'email
+    // emailRedirectTo: null désactive l'envoi d'email de confirmation
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        emailRedirectTo: null,
+        // Ne pas envoyer d'email de confirmation
+      },
     });
 
     if (error) {
@@ -43,14 +48,20 @@ export async function POST({ request }) {
 
     // Si on a une session, on peut stocker les tokens
     if (data.session) {
-      const maxAge = 60 * 60 * 24 * 7; // 7 jours
+      // Durée de vie des cookies : 30 jours (au lieu de 7)
+      const maxAge = 60 * 60 * 24 * 30; // 30 jours
+      
+      // Déterminer si on est en HTTPS (production)
+      const isSecure = import.meta.env.PROD || import.meta.env.PUBLIC_SUPABASE_URL?.startsWith('https://');
+      const secureFlag = isSecure ? '; Secure' : '';
+
       response.headers.append(
         "Set-Cookie",
-        `sb-access-token=${data.session.access_token}; Path=/; Max-Age=${maxAge}; HttpOnly; SameSite=Lax`
+        `sb-access-token=${data.session.access_token}; Path=/; Max-Age=${maxAge}; HttpOnly; SameSite=Lax${secureFlag}`
       );
       response.headers.append(
         "Set-Cookie",
-        `sb-refresh-token=${data.session.refresh_token}; Path=/; Max-Age=${maxAge}; HttpOnly; SameSite=Lax`
+        `sb-refresh-token=${data.session.refresh_token}; Path=/; Max-Age=${maxAge}; HttpOnly; SameSite=Lax${secureFlag}`
       );
     }
 
@@ -66,4 +77,5 @@ export async function POST({ request }) {
     );
   }
 }
+
 

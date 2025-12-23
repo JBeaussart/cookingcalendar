@@ -20,6 +20,68 @@ const { title = "Planificateur de repas" } = Astro.props;
   </body>
 </html>
 
+<script>
+  // Script pour rafraîchir automatiquement la session
+  // Vérifie la session toutes les 30 minutes et la rafraîchit si nécessaire
+  (function() {
+    // Vérifier la session au chargement de la page
+    async function refreshSession() {
+      try {
+        const response = await fetch('/api/auth/refresh', {
+          method: 'POST',
+          credentials: 'include', // Important pour envoyer les cookies
+        });
+
+        if (!response.ok) {
+          // Si la session est invalide, rediriger vers la page de connexion
+          if (response.status === 401) {
+            // Ne pas rediriger si on est déjà sur la page de login/signup
+            if (!window.location.pathname.includes('/login') && 
+                !window.location.pathname.includes('/signup')) {
+              window.location.href = '/login';
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Erreur lors du rafraîchissement de la session:', error);
+      }
+    }
+
+    // Rafraîchir la session au chargement
+    refreshSession();
+
+    // Rafraîchir la session toutes les 30 minutes (1800000 ms)
+    // et aussi 5 minutes avant l'expiration du token (généralement 1h)
+    setInterval(refreshSession, 30 * 60 * 1000); // 30 minutes
+
+    // Rafraîchir la session quand l'utilisateur revient sur la page (après inactivité)
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) {
+        refreshSession();
+      }
+    });
+
+    // Rafraîchir la session quand l'utilisateur interagit avec la page après une période d'inactivité
+    let lastActivity = Date.now();
+    const activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
+    
+    activityEvents.forEach(event => {
+      document.addEventListener(event, () => {
+        lastActivity = Date.now();
+      }, { passive: true });
+    });
+
+    // Vérifier l'activité toutes les 5 minutes et rafraîchir si nécessaire
+    setInterval(() => {
+      const timeSinceActivity = Date.now() - lastActivity;
+      // Si l'utilisateur a été actif dans les 10 dernières minutes, rafraîchir
+      if (timeSinceActivity < 10 * 60 * 1000) {
+        refreshSession();
+      }
+    }, 5 * 60 * 1000); // Vérifier toutes les 5 minutes
+  })();
+</script>
+
 <style>
   html,
   body {

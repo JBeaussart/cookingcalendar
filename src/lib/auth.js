@@ -3,44 +3,103 @@ import { createClient } from '@supabase/supabase-js';
 
 /**
  * Récupère la session utilisateur depuis les cookies
+ * Rafraîchit automatiquement les tokens expirés si un refresh token est disponible
  * @param {Request} request - La requête HTTP
- * @returns {Promise<{user: object | null, session: object | null}>}
+ * @returns {Promise<{user: object | null, session: object | null, supabase: object | null, refreshed: boolean, newTokens: object | null}>}
  */
 export async function getServerSession(request) {
   try {
     // Récupérer le token depuis les cookies
     const cookies = request.headers.get("cookie") || "";
-    const accessToken = extractTokenFromCookies(cookies, "sb-access-token");
-    const refreshToken = extractTokenFromCookies(cookies, "sb-refresh-token");
+    let accessToken = extractTokenFromCookies(cookies, "sb-access-token");
+    let refreshToken = extractTokenFromCookies(cookies, "sb-refresh-token");
 
-    if (!accessToken) {
-      return { user: null, session: null, supabase: null };
+    if (!accessToken && !refreshToken) {
+      return { user: null, session: null, supabase: null, refreshed: false, newTokens: null };
     }
 
-    // Créer un client Supabase avec le token
     const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
     const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
 
     if (!supabaseUrl || !supabaseAnonKey) {
-      return { user: null, session: null, supabase: null };
+      return { user: null, session: null, supabase: null, refreshed: false, newTokens: null };
     }
 
-    const client = createClient(supabaseUrl, supabaseAnonKey, {
-      global: {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
+    // Créer un client Supabase de base (sans token pour le refresh)
+    const baseClient = createClient(supabaseUrl, supabaseAnonKey);
+
+    let client;
+    let user;
+    let userError = null;
+    let tokensRefreshed = false;
+    let newTokens = null;
+
+    // Si on a un access token, essayer de l'utiliser
+    if (accessToken) {
+      client = createClient(supabaseUrl, supabaseAnonKey, {
+        global: {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
         },
-      },
-    });
+      });
 
-    // Vérifier la session
-    const {
-      data: { user },
-      error: userError,
-    } = await client.auth.getUser(accessToken);
+      // Vérifier la session
+      const result = await client.auth.getUser(accessToken);
+      user = result.data?.user;
+      userError = result.error;
+    }
 
+    // Si le token est expiré ou invalide, essayer de rafraîchir avec le refresh token
     if (userError || !user) {
-      return { user: null, session: null, supabase: null };
+      if (refreshToken) {
+        try {
+          // Rafraîchir la session avec le refresh token
+          const { data: refreshData, error: refreshError } = await baseClient.auth.refreshSession({
+            refresh_token: refreshToken,
+          });
+
+          if (!refreshError && refreshData?.session) {
+            // Mettre à jour les tokens
+            accessToken = refreshData.session.access_token;
+            refreshToken = refreshData.session.refresh_token;
+            tokensRefreshed = true;
+            newTokens = {
+              access_token: accessToken,
+              refresh_token: refreshToken,
+            };
+
+            // Créer un nouveau client avec le token rafraîchi
+            client = createClient(supabaseUrl, supabaseAnonKey, {
+              global: {
+                headers: {
+                  Authorization: `Bearer ${accessToken}`,
+                },
+              },
+            });
+
+            // Vérifier la session avec le nouveau token
+            const result = await client.auth.getUser(accessToken);
+            user = result.data?.user;
+            userError = result.error;
+          } else {
+            // Le refresh token est aussi expiré, déconnexion nécessaire
+            console.error("Refresh token expired or invalid:", refreshError);
+            return { user: null, session: null, supabase: null, refreshed: false, newTokens: null };
+          }
+        } catch (refreshErr) {
+          console.error("Error refreshing session:", refreshErr);
+          return { user: null, session: null, supabase: null, refreshed: false, newTokens: null };
+        }
+      } else {
+        // Pas de refresh token disponible
+        return { user: null, session: null, supabase: null, refreshed: false, newTokens: null };
+      }
+    }
+
+    // Si toujours pas d'utilisateur après refresh, retourner null
+    if (!user) {
+      return { user: null, session: null, supabase: null, refreshed: false, newTokens: null };
     }
 
     // Récupérer le profil utilisateur avec le rôle
@@ -62,10 +121,12 @@ export async function getServerSession(request) {
       },
       session: { access_token: accessToken, refresh_token: refreshToken },
       supabase: client, // Retourner le client pour réutilisation
+      refreshed: tokensRefreshed, // Indiquer si les tokens ont été rafraîchis
+      newTokens: newTokens, // Nouveaux tokens à mettre à jour dans les cookies
     };
   } catch (error) {
     console.error("Error getting server session:", error);
-    return { user: null, session: null, supabase: null };
+    return { user: null, session: null, supabase: null, refreshed: false, newTokens: null };
   }
 }
 
@@ -75,6 +136,36 @@ export async function getServerSession(request) {
 function extractTokenFromCookies(cookies, name) {
   const match = cookies.match(new RegExp(`(^| )${name}=([^;]+)`));
   return match ? decodeURIComponent(match[2]) : null;
+}
+
+/**
+ * Met à jour les cookies de session dans une réponse
+ * @param {Response} response - La réponse HTTP
+ * @param {object} tokens - Les nouveaux tokens { access_token, refresh_token }
+ * @returns {Response} La réponse avec les cookies mis à jour
+ */
+export function setSessionCookies(response, tokens) {
+  if (!tokens || !tokens.access_token || !tokens.refresh_token) {
+    return response;
+  }
+
+  // Durée de vie des cookies : 30 jours (au lieu de 7)
+  const maxAge = 60 * 60 * 24 * 30; // 30 jours
+  
+  // Déterminer si on est en HTTPS (production)
+  const isSecure = import.meta.env.PROD || import.meta.env.PUBLIC_SUPABASE_URL?.startsWith('https://');
+  const secureFlag = isSecure ? '; Secure' : '';
+
+  response.headers.append(
+    "Set-Cookie",
+    `sb-access-token=${tokens.access_token}; Path=/; Max-Age=${maxAge}; HttpOnly; SameSite=Lax${secureFlag}`
+  );
+  response.headers.append(
+    "Set-Cookie",
+    `sb-refresh-token=${tokens.refresh_token}; Path=/; Max-Age=${maxAge}; HttpOnly; SameSite=Lax${secureFlag}`
+  );
+
+  return response;
 }
 
 /**
