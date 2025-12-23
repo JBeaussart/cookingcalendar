@@ -58,6 +58,33 @@ export async function POST({ request }) {
       .map((s) => String(s || "").trim())
       .filter((s) => s.length > 0);
 
+    // Vérifier la limite de recettes pour les utilisateurs free (20 max)
+    const userRole = user.role || user.user_role;
+    if (userRole !== "admin" && userRole !== "premium") {
+      // Compter les recettes existantes de l'utilisateur
+      const { count, error: countError } = await authSupabase
+        .from('recipes')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id);
+
+      if (countError) {
+        console.error("❌ Error counting recipes:", countError);
+        return new Response(JSON.stringify({ error: "Erreur lors de la vérification" }), {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      if (count >= 20) {
+        return new Response(JSON.stringify({ 
+          error: "Limite atteinte : vous avez atteint la limite de 20 recettes. Passez à Premium pour créer des recettes illimitées." 
+        }), {
+          status: 403,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+    }
+
     // Seuls les admins peuvent définir maman à true
     const isUserAdmin = isAdmin(user);
     const mamanValue = isUserAdmin ? !!maman : false;

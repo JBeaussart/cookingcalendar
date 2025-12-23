@@ -1016,6 +1016,7 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
         e.preventDefault();
         const addStatus = document.getElementById("addStatus");
         addStatus.textContent = "Enregistrement…";
+        addStatus.className = "text-center text-sm font-medium text-slate-500 mt-2";
 
         const ingRows = Array.from(ingList.querySelectorAll(".ingredient-row"));
         const ingredients = ingRows
@@ -1054,12 +1055,19 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),
           });
-          if (!res.ok) throw new Error("HTTP " + res.status);
+          
+          if (!res.ok) {
+            const errorData = await res.json().catch(() => ({ error: "Erreur inconnue" }));
+            throw new Error(errorData.error || `Erreur HTTP ${res.status}`);
+          }
+          
           addStatus.textContent = "✅ Recette ajoutée";
+          addStatus.className = "text-center text-sm font-medium text-green-600 mt-2";
           setTimeout(() => window.location.reload(), 400);
         } catch (err) {
           console.error(err);
-          addStatus.textContent = "❌ Erreur lors de l'ajout";
+          addStatus.textContent = err.message || "❌ Erreur lors de l'ajout";
+          addStatus.className = "text-center text-sm font-medium text-red-600 mt-2";
         }
       });
     });
