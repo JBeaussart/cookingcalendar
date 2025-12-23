@@ -60,7 +60,7 @@ const DEFAULT_IMG = "/images/default-recipe.jpg";
               <div class="mb-6 flex items-center justify-between">
                 <a
                   href="/recipes"
-                  class="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-medium text-slate-600 shadow-sm ring-1 ring-slate-200 transition hover:bg-orange-50 hover:text-orange-600"
+                  class="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-medium text-slate-600 shadow-sm ring-1 ring-slate-200 transition hover:bg-orange-50 hover:text-orange-300"
                 >
                   <svg
                     class="h-4 w-4"
@@ -81,7 +81,7 @@ const DEFAULT_IMG = "/images/default-recipe.jpg";
                 <div class="flex items-center gap-2">
                   <button
                     id="openEdit"
-                    class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-white text-slate-600 shadow-sm ring-1 ring-slate-200 transition hover:bg-orange-50 hover:text-orange-600"
+                    class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-white text-slate-600 shadow-sm ring-1 ring-slate-200 transition hover:bg-orange-50 hover:text-orange-300"
                     title="Modifier"
                   >
                     <svg
@@ -143,7 +143,7 @@ const DEFAULT_IMG = "/images/default-recipe.jpg";
                       </span>
                     )}
                     <span
-                      class={`inline-flex items-center rounded-full px-3 py-1 text-xs font-bold text-white shadow-sm backdrop-blur-sm ${recipe.salt ? "bg-orange-500/90" : "bg-amber-500/90"}`}
+                      class={`inline-flex items-center rounded-full px-3 py-1 text-xs font-bold text-white shadow-sm backdrop-blur-sm ${recipe.salt ? "bg-orange-300/90" : "bg-amber-500/90"}`}
                     >
                       {recipe.salt ? "Salé" : "Sucré"}
                     </span>
@@ -241,7 +241,7 @@ const DEFAULT_IMG = "/images/default-recipe.jpg";
                     <input
                       id="eTitle"
                       type="text"
-                      class="w-full rounded-xl border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:border-orange-500 focus:bg-white focus:ring-2 focus:ring-orange-200 transition-all"
+                      class="w-full rounded-xl border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:border-orange-300 focus:bg-white focus:ring-2 focus:ring-orange-200 transition-all"
                       required
                     />
                   </div>
@@ -252,7 +252,7 @@ const DEFAULT_IMG = "/images/default-recipe.jpg";
                       id="eImage"
                       type="url"
                       placeholder="https://exemple.com/image.jpg"
-                      class="w-full rounded-xl border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:border-orange-500 focus:bg-white focus:ring-2 focus:ring-orange-200 transition-all"
+                      class="w-full rounded-xl border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:border-orange-300 focus:bg-white focus:ring-2 focus:ring-orange-200 transition-all"
                     />
                   </div>
 
@@ -264,7 +264,7 @@ const DEFAULT_IMG = "/images/default-recipe.jpg";
                           type="button"
                           id="eSaltSalty"
                           data-value="salty"
-                          class="salt-type-btn px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-all shadow-sm bg-white text-orange-600"
+                          class="salt-type-btn px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-all shadow-sm bg-white text-orange-300"
                         >
                           🧂 Salé
                         </button>
@@ -311,7 +311,7 @@ const DEFAULT_IMG = "/images/default-recipe.jpg";
                     <button
                       type="button"
                       id="addIngRow"
-                      class="text-xs font-bold text-orange-600 hover:text-orange-700 hover:bg-orange-50 px-3 py-1.5 rounded-lg transition-colors"
+                      class="text-xs font-bold text-orange-300 hover:text-orange-300 hover:bg-orange-50 px-3 py-1.5 rounded-lg transition-colors"
                     >
                       + Ajouter
                     </button>
@@ -329,7 +329,7 @@ const DEFAULT_IMG = "/images/default-recipe.jpg";
                     <button
                       type="button"
                       id="addStepRow"
-                      class="text-xs font-bold text-orange-600 hover:text-orange-700 hover:bg-orange-50 px-3 py-1.5 rounded-lg transition-colors"
+                      class="text-xs font-bold text-orange-300 hover:text-orange-300 hover:bg-orange-50 px-3 py-1.5 rounded-lg transition-colors"
                     >
                       + Ajouter
                     </button>
@@ -361,7 +361,7 @@ const DEFAULT_IMG = "/images/default-recipe.jpg";
                     </button>
                     <button
                       type="submit"
-                      class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-orange-500/20 hover:from-orange-600 hover:to-amber-600 hover:shadow-xl hover:scale-105 active:scale-95 transition-all"
+                      class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-orange-300 to-amber-500 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-orange-300/20 hover:from-orange-300 hover:to-amber-600 hover:shadow-xl hover:scale-105 active:scale-95 transition-all"
                     >
                       Enregistrer
                     </button>
@@ -396,7 +396,7 @@ const DEFAULT_IMG = "/images/default-recipe.jpg";
               </p>
               <a
                 href="/recipes"
-                class="mt-6 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-orange-500/30 transition hover:from-orange-600 hover:to-amber-600 hover:scale-105"
+                class="mt-6 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-orange-300 to-amber-500 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-orange-300/30 transition hover:from-orange-300 hover:to-amber-600 hover:scale-105"
               >
                 Retour aux recettes
               </a>
@@ -557,7 +557,7 @@ const DEFAULT_IMG = "/images/default-recipe.jpg";
           <input 
             type="text" 
             placeholder="Ingrédient" 
-            class="w-full rounded-lg border-slate-200 bg-white px-3 py-2 text-sm focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all" 
+            class="w-full rounded-lg border-slate-200 bg-white px-3 py-2 text-sm focus:border-orange-300 focus:ring-2 focus:ring-orange-200 transition-all" 
             value="${values.item || ""}" 
             required
           >
@@ -601,7 +601,7 @@ const DEFAULT_IMG = "/images/default-recipe.jpg";
           </div>
           <textarea 
             placeholder="Décrivez l’étape de préparation..." 
-            class="flex-1 rounded-lg border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:bg-white focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all resize-y min-h-[80px]"
+            class="flex-1 rounded-lg border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:bg-white focus:border-orange-300 focus:ring-2 focus:ring-orange-200 transition-all resize-y min-h-[80px]"
           >${value}</textarea>
           <button 
             type="button" 

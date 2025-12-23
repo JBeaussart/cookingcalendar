@@ -67,7 +67,7 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
             id="searchInput"
             type="text"
             placeholder="Rechercher une recette ou un ingrédient"
-            class="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 pl-11 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 shadow-sm transition-all"
+            class="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 pl-11 text-sm focus:outline-none focus:ring-2 focus:ring-orange-300 focus:border-orange-300 shadow-sm transition-all"
           />
           <svg
             class="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400"
@@ -96,14 +96,14 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
               <button
                 type="button"
                 data-value="all"
-                class="filter-btn px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-all shadow-sm bg-white text-orange-600"
+                class="filter-btn px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-all shadow-sm bg-white text-orange-300"
               >
                 Tous
               </button>
               <button
                 type="button"
                 data-value="salty"
-                class="filter-btn px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-all text-slate-500 hover:text-orange-600 hover:bg-orange-50"
+                class="filter-btn px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-all text-slate-500 hover:text-orange-300 hover:bg-orange-50"
               >
                 Salé
               </button>
@@ -137,7 +137,7 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
             <div class="relative">
               <button
                 id="openAddModal"
-                class="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 px-4 sm:px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-500/30 transition-all hover:from-orange-600 hover:to-amber-600 hover:shadow-xl hover:shadow-orange-500/40 hover:scale-105 active:scale-95 flex-1 sm:flex-initial"
+                class="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-orange-300 to-amber-500 px-4 sm:px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-300/30 transition-all hover:from-orange-300 hover:to-amber-600 hover:shadow-xl hover:shadow-orange-300/40 hover:scale-105 active:scale-95 flex-1 sm:flex-initial"
               >
                 <svg
                   class="h-5 w-5"
@@ -340,7 +340,7 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
                 type="button"
                 id="rSaltSalty"
                 data-value="salty"
-                class="salt-type-btn px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-all shadow-sm bg-white text-orange-600"
+                class="salt-type-btn px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-all shadow-sm bg-white text-orange-300"
               >
                 🧂 Salé
               </button>
@@ -392,7 +392,7 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
           <button
             type="button"
             id="addIngRow"
-            class="text-xs font-bold text-orange-600 hover:text-orange-700 hover:bg-orange-50 px-3 py-1.5 rounded-lg transition-colors"
+            class="text-xs font-bold text-orange-300 hover:text-orange-300 hover:bg-orange-50 px-3 py-1.5 rounded-lg transition-colors"
           >
             + Ajouter
           </button>
@@ -415,7 +415,7 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
           <button
             type="button"
             id="addStepRow"
-            class="text-xs font-bold text-orange-600 hover:text-orange-700 hover:bg-orange-50 px-3 py-1.5 rounded-lg transition-colors"
+            class="text-xs font-bold text-orange-300 hover:text-orange-300 hover:bg-orange-50 px-3 py-1.5 rounded-lg transition-colors"
           >
             + Ajouter
           </button>
@@ -439,7 +439,7 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
         </button>
         <button
           type="submit"
-          class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-orange-500/20 hover:from-orange-600 hover:to-amber-600 hover:shadow-xl hover:scale-105 active:scale-95 transition-all"
+          class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-orange-300 to-amber-500 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-orange-300/20 hover:from-orange-300 hover:to-amber-600 hover:shadow-xl hover:scale-105 active:scale-95 transition-all"
         >
           <span>Enregistrer la recette</span>
         </button>
@@ -597,7 +597,7 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
                 return;
               }
               if (b.dataset.value === currentSaltMode) {
-                b.className = "filter-btn px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-all shadow-sm bg-white text-orange-600";
+                b.className = "filter-btn px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-all shadow-sm bg-white text-orange-300";
               } else {
                 b.className = "filter-btn px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-all text-slate-500 hover:text-slate-700 hover:bg-slate-200/50";
               }
@@ -663,7 +663,7 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
           const addBtn = document.createElement("button");
           addBtn.type = "button";
           addBtn.className =
-            "absolute right-2 top-2 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/95 backdrop-blur-sm text-orange-600 shadow-lg transition-all hover:bg-orange-600 hover:text-white hover:scale-110";
+            "absolute right-2 top-2 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/95 backdrop-blur-sm text-orange-300 shadow-lg transition-all hover:bg-orange-300 hover:text-white hover:scale-110";
           addBtn.title = dayParam
             ? `Ajouter au ${dayParam}`
             : `Choisir pour ${slotParam}`;
@@ -754,7 +754,7 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
               <button
                 type="button"
                 id="emptyStateAddBtn"
-                class="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-500/30 transition-all hover:from-orange-600 hover:to-amber-600 hover:shadow-xl hover:scale-105 active:scale-95"
+                class="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-orange-300 to-amber-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-300/30 transition-all hover:from-orange-300 hover:to-amber-600 hover:shadow-xl hover:scale-105 active:scale-95"
               >
                 <svg
                   class="h-5 w-5"
@@ -1051,10 +1051,10 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
         const updateSaltButtons = (value) => {
           currentSaltType = value;
           if (value === "salty") {
-            rSaltSalty.className = "salt-type-btn px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-all shadow-sm bg-white text-orange-600";
+            rSaltSalty.className = "salt-type-btn px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-all shadow-sm bg-white text-orange-300";
             rSaltSweet.className = "salt-type-btn px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-all text-slate-500 hover:text-amber-600 hover:bg-amber-50";
           } else {
-            rSaltSalty.className = "salt-type-btn px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-all text-slate-500 hover:text-orange-600 hover:bg-orange-50";
+            rSaltSalty.className = "salt-type-btn px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-all text-slate-500 hover:text-orange-300 hover:bg-orange-50";
             rSaltSweet.className = "salt-type-btn px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-all shadow-sm bg-white text-amber-600";
           }
         };
