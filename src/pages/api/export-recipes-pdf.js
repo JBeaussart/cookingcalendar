@@ -155,16 +155,32 @@ export async function GET({ request }) {
 
     // Retourner le PDF
     const filename = `mes-recettes-${new Date().toISOString().split("T")[0]}.pdf`;
+    
+    // Détecter si la requête vient d'un mobile pour adapter les headers
+    const userAgent = request.headers.get("user-agent") || "";
+    const isMobile = /Mobile|Android|iPhone|iPad|iPod/i.test(userAgent);
+    const isIOS = /iPhone|iPad|iPod/i.test(userAgent);
+    
+    // Headers optimisés pour mobile
+    const headers = {
+      "Content-Type": "application/pdf",
+      "Content-Length": pdfBuffer.length.toString(),
+      "Cache-Control": "no-cache, no-store, must-revalidate",
+      "Pragma": "no-cache",
+      "Expires": "0",
+    };
+    
+    // Sur iOS, utiliser "inline" pour que Safari ouvre le PDF dans Books/Fichiers
+    // Sur Android, "attachment" déclenche le téléchargement
+    if (isIOS) {
+      headers["Content-Disposition"] = `inline; filename="${filename}"; filename*=UTF-8''${encodeURIComponent(filename)}`;
+    } else {
+      headers["Content-Disposition"] = `attachment; filename="${filename}"; filename*=UTF-8''${encodeURIComponent(filename)}`;
+    }
+    
     return new Response(pdfBuffer, {
       status: 200,
-      headers: {
-        "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="${filename}"; filename*=UTF-8''${encodeURIComponent(filename)}`,
-        "Content-Length": pdfBuffer.length.toString(),
-        "Cache-Control": "no-cache, no-store, must-revalidate",
-        "Pragma": "no-cache",
-        "Expires": "0",
-      },
+      headers,
     });
   } catch (error) {
     console.error("Erreur export PDF:", error);
