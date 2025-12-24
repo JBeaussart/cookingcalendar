@@ -24,14 +24,13 @@ const isActive = (href: string) =>
       <li>
         <a
           href="/planning"
-          class={`flex items-center gap-2 text-sm font-medium px-3 py-2 rounded-lg ${
+          class={`text-sm font-medium px-3 py-2 rounded-lg ${
             isActive("/planning")
               ? "bg-sage-100 text-sage-700"
               : "text-gray-700 hover:bg-gray-100"
           }`}
         >
-          🗓️
-          <span>Planning</span>
+          Planning
         </a>
       </li>
 
@@ -39,14 +38,13 @@ const isActive = (href: string) =>
       <li>
         <a
           href="/recipes"
-          class={`flex items-center gap-2 text-sm font-medium px-3 py-2 rounded-lg ${
+          class={`text-sm font-medium px-3 py-2 rounded-lg ${
             isActive("/recipes")
               ? "bg-sage-100 text-sage-700"
               : "text-gray-700 hover:bg-gray-100"
           }`}
         >
-          📖
-          <span>Recettes</span>
+          Recettes
         </a>
       </li>
 
@@ -54,14 +52,13 @@ const isActive = (href: string) =>
       <li>
         <a
           href="/shoppingList"
-          class={`flex items-center gap-2 text-sm font-medium px-3 py-2 rounded-lg ${
+          class={`text-sm font-medium px-3 py-2 rounded-lg ${
             isActive("/shoppingList")
               ? "bg-sage-100 text-sage-700"
               : "text-gray-700 hover:bg-gray-100"
           }`}
         >
-          🛒
-          <span>Courses</span>
+          Courses
         </a>
       </li>
 
@@ -70,14 +67,13 @@ const isActive = (href: string) =>
         <li>
           <a
             href="/reception"
-            class={`flex items-center gap-2 text-sm font-medium px-3 py-2 rounded-lg ${
+            class={`text-sm font-medium px-3 py-2 rounded-lg ${
               isActive("/reception")
                 ? "bg-sage-100 text-sage-700"
                 : "text-gray-700 hover:bg-gray-100"
             }`}
           >
-            🎉
-            <span>Réception</span>
+            Réception
           </a>
         </li>
       )}
@@ -240,6 +236,76 @@ const isActive = (href: string) =>
   </ul>
 </nav>
 
+<!-- ================= MOBILE TOP (ACCOUNT) ================= -->
+{userWithRole && (
+  <div class="sm:hidden fixed top-3 right-3 z-50">
+    <button
+      id="mobile-user-button"
+      class="w-11 h-11 rounded-xl bg-white border border-gray-300 shadow flex items-center justify-center"
+    >
+      <svg
+        class="w-6 h-6 text-gray-700"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+        <circle cx="12" cy="7" r="4" />
+      </svg>
+    </button>
+
+    <div
+      id="mobile-user-dropdown"
+      class="hidden absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden"
+    >
+      {isFreeUser && (
+        <a
+          href="/premium"
+          class="block px-4 py-3 text-sm text-sage-700 bg-sage-50"
+        >
+          Passer à Premium
+        </a>
+      )}
+
+      <a href="/account" class="block px-4 py-2 text-sm hover:bg-gray-50">
+        Mon profil
+      </a>
+
+      <form method="post" action="/api/auth/logout">
+        <button
+          type="submit"
+          class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+        >
+          Déconnexion
+        </button>
+      </form>
+    </div>
+  </div>
+)}
+
+<script>
+  const toggle = (btn: HTMLElement | null, menu: HTMLElement | null) => {
+    if (!btn || !menu) return;
+    btn.addEventListener("click", (e: MouseEvent) => {
+      e.stopPropagation();
+      menu.classList.toggle("hidden");
+    });
+    document.addEventListener("click", () => menu.classList.add("hidden"));
+  };
+
+  toggle(
+    document.getElementById("desktop-user-menu-button"),
+    document.getElementById("desktop-user-menu-dropdown")
+  );
+
+  toggle(
+    document.getElementById("mobile-user-button"),
+    document.getElementById("mobile-user-dropdown")
+  );
+</script>
 
 <style>
   @media (max-width: 639px) {
