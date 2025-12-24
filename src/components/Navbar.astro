@@ -212,9 +212,9 @@ const isActive = (href: string) =>
 </nav>
 
 <script>
-  const toggle = (btn, menu) => {
+  const toggle = (btn: HTMLElement | null, menu: HTMLElement | null) => {
     if (!btn || !menu) return;
-    btn.addEventListener("click", (e) => {
+    btn.addEventListener("click", (e: MouseEvent) => {
       e.stopPropagation();
       menu.classList.toggle("hidden");
     });
