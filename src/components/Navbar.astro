@@ -48,6 +48,9 @@ const filteredLinks = links.filter((link) => {
   }
   return true;
 });
+
+// Vérifier si l'utilisateur est gratuit (ni admin ni premium)
+const isFreeUser = userWithRole && userRole !== "admin" && userRole !== "premium";
 ---
 
 <!-- Desktop navigation (top bar) -->
@@ -55,15 +58,15 @@ const filteredLinks = links.filter((link) => {
   class="desktop-nav bg-white border-b border-gray-200 shadow-md hidden sm:block sticky top-0 z-50"
 >
   <div class="w-full px-8 py-3">
-    <div class="flex items-center justify-center gap-8">
+    <div class="flex items-center justify-center gap-12">
       <!-- Liens de navigation -->
       {user && (
-        <ul class="flex flex-wrap justify-center gap-2 md:gap-6">
+        <ul class="flex flex-wrap justify-center gap-4 md:gap-8">
           {filteredLinks.map((link) => (
             <li class="min-w-0">
               <a
                 href={link.href}
-                class={`block py-1 px-2 text-sm md:text-base md:px-4 rounded-md font-medium text-center truncate
+                class={`block py-2 px-4 text-sm md:text-base md:px-6 rounded-md font-medium text-center truncate
                         ${
                           isActive(link.href)
                             ? "bg-gradient-to-r from-orange-300 to-amber-500 text-white"
@@ -78,18 +81,27 @@ const filteredLinks = links.filter((link) => {
       )}
       
       <!-- Élément utilisateur -->
-      <div class="flex items-center gap-3">
+      <div class="flex items-center gap-4">
         {userWithRole ? (
-          <div class="relative">
-            <button
-              id="desktop-user-menu-button"
-              class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
-            >
-              <span class="text-sm font-medium text-gray-700">Mon compte</span>
-              <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
+          <>
+            {isFreeUser && (
+              <a
+                href="/premium"
+                class="px-4 py-2 rounded-lg bg-gradient-to-r from-yellow-400 to-yellow-600 text-white text-sm font-medium hover:from-yellow-500 hover:to-yellow-700 transition-colors shadow-md hover:shadow-lg"
+              >
+                👑 Version Premium
+              </a>
+            )}
+            <div class="relative">
+              <button
+                id="desktop-user-menu-button"
+                class="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                <span class="text-sm font-medium text-gray-700">Mon compte</span>
+                <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
             
             <!-- Menu déroulant -->
             <div
@@ -136,17 +148,18 @@ const filteredLinks = links.filter((link) => {
               </form>
             </div>
           </div>
+          </>
         ) : (
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-3">
             <a
               href="/login"
-              class="px-3 py-1 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition"
+              class="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition"
             >
               Connexion
             </a>
             <a
               href="/signup"
-              class="px-3 py-1 text-sm bg-gradient-to-r from-orange-300 to-amber-500 text-white rounded-md hover:from-orange-300 hover:to-amber-600 transition"
+              class="px-4 py-2 text-sm bg-gradient-to-r from-orange-300 to-amber-500 text-white rounded-md hover:from-orange-300 hover:to-amber-600 transition"
             >
               Inscription
             </a>
@@ -205,6 +218,15 @@ const filteredLinks = links.filter((link) => {
               </div>
             </div>
           </div>
+          
+          {isFreeUser && (
+            <a
+              href="/premium"
+              class="block px-4 py-2.5 text-sm text-yellow-700 bg-yellow-50 hover:bg-yellow-100 transition-colors font-medium"
+            >
+              👑 Version Premium
+            </a>
+          )}
           
           <a
             href="/account"
