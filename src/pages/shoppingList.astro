@@ -13,48 +13,6 @@ import Layout from "../layouts/Layout.astro";
 
       <!-- Actions & Add Form -->
       <div class="mb-8 space-y-6">
-        <!-- Bulk Actions -->
-        <div class="flex justify-center gap-3">
-          <button
-            id="btnCheckAll"
-            type="button"
-            class="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm ring-1 ring-slate-200 transition hover:bg-orange-50 hover:text-orange-300 active:scale-95"
-          >
-            <svg
-              class="h-4 w-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M5 13l4 4L19 7"></path>
-            </svg>
-            Tout cocher
-          </button>
-          <button
-            id="btnUncheckAll"
-            type="button"
-            class="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm ring-1 ring-slate-200 transition hover:bg-orange-50 hover:text-orange-300 active:scale-95"
-          >
-            <svg
-              class="h-4 w-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M6 18L18 6M6 6l12 12"></path>
-            </svg>
-            Tout décocher
-          </button>
-        </div>
-
         <!-- Add Form -->
         <form id="addForm" class="flex flex-col sm:flex-row gap-3">
           <div class="relative flex-1">
@@ -96,6 +54,69 @@ import Layout from "../layouts/Layout.astro";
             Ajouter
           </button>
         </form>
+
+        <!-- View Toggle & Bulk Actions -->
+        <div class="flex flex-row justify-center items-center gap-3 overflow-x-auto">
+          <button
+            id="btnCheckAll"
+            type="button"
+            class="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm ring-1 ring-slate-200 transition hover:bg-orange-50 hover:text-orange-300 active:scale-95 whitespace-nowrap"
+          >
+            <svg
+              class="h-4 w-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M5 13l4 4L19 7"></path>
+            </svg>
+            Tout cocher
+          </button>
+          <button
+            id="btnUncheckAll"
+            type="button"
+            class="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm ring-1 ring-slate-200 transition hover:bg-orange-50 hover:text-orange-300 active:scale-95 whitespace-nowrap"
+          >
+            <svg
+              class="h-4 w-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+            Tout décocher
+          </button>
+          <button
+            id="btnToggleView"
+            type="button"
+            class="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-orange-300 to-amber-500 w-10 h-10 text-sm font-medium text-white shadow-sm ring-1 ring-orange-200 transition hover:from-orange-300 hover:to-amber-600 active:scale-95"
+            title="Vue condensée"
+          >
+            <svg
+              id="viewIcon"
+              class="h-5 w-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M4 6h16M4 12h16M4 18h16"></path>
+            </svg>
+            <span id="viewLabel" class="sr-only">Vue condensée</span>
+          </button>
+        </div>
       </div>
 
       <!-- List Container -->

@@ -19,6 +19,9 @@ let customItems = []; // From Supabase listener (manual items)
 // Merged list for display
 let items = [];
 
+// View mode: 'normal' (by recipe) or 'condensed' (aggregated)
+let viewMode = 'condensed';
+
 const SECTION_FALLBACK = "Autres recettes";
 const SECTION_CUSTOM = "Divers";
 
@@ -57,7 +60,7 @@ function makeEntryKey(entry, ref) {
 
 // --- Core Logic ---
 
-// Expand the computed items (ingredients) into individual rows per recipe
+// Expand the computed items (ingredients) into individual rows per recipe occurrence
 function expandComputedEntry(entry) {
     const baseKey = makeKey(entry);
     const totalQuantity = Number.isFinite(entry.quantity) ? entry.quantity : undefined;
@@ -65,30 +68,138 @@ function expandComputedEntry(entry) {
     const rawRefs = Array.isArray(entry.recipes) ? entry.recipes : [];
     const refs = rawRefs.length
         ? rawRefs
-        : [{ id: null, title: entry.primaryRecipe || SECTION_FALLBACK, quantity: totalQuantity }];
+        : [{ id: null, title: entry.primaryRecipe || SECTION_FALLBACK, quantity: totalQuantity, occurrences: 1 }];
 
-    return refs.map((ref) => {
+    // Expand each recipe reference by its number of occurrences
+    const expanded = [];
+    refs.forEach((ref) => {
         const label = normalizeTitle(ref?.title);
-        const entryKey = makeEntryKey(entry, { id: ref?.id, title: label });
+        const occurrences = Number.isFinite(ref?.occurrences) && ref.occurrences > 0 ? ref.occurrences : 1;
+        
+        // Calculate quantity per occurrence
+        // The API returns the total quantity (sum of all occurrences), so we divide by occurrences
+        let refQuantity;
+        if (Number.isFinite(ref?.quantity) && occurrences > 0) {
+            refQuantity = ref.quantity / occurrences;
+        } else if (Number.isFinite(ref?.quantity)) {
+            refQuantity = ref.quantity;
+        } else {
+            refQuantity = totalQuantity;
+        }
+        
+        // Create one entry per occurrence
+        for (let i = 0; i < occurrences; i++) {
+            // Create a unique entryKey for each occurrence
+            const occurrenceKey = `${ref?.id || label}_${i}`;
+            const entryKey = makeEntryKey(entry, { id: occurrenceKey, title: label });
 
-        // Check if this specific entry is checked in our saved state
-        // Fallback to base key if needed (backward compatibility)
-        const isChecked = savedState.get(entryKey) ?? savedState.get(baseKey) ?? false;
+            // Check if this specific entry is checked in our saved state
+            // Fallback to base key if needed (backward compatibility)
+            const isChecked = savedState.get(entryKey) ?? savedState.get(baseKey) ?? false;
 
-        return {
-            source: "computed",
-            item: entry.item,
-            unit: entry.unit,
-            quantity: Number.isFinite(ref?.quantity) ? ref.quantity : totalQuantity,
-            checked: isChecked,
-            sectionKey: makeSectionKey(label),
-            sectionLabel: label,
-            baseKey,
-            baseQuantity: totalQuantity,
-            entryKey,
-            recipeId: typeof ref?.id === "string" && ref.id.trim() ? ref.id.trim() : null,
-        };
-    }).sort((a, b) => a.sectionLabel.localeCompare(b.sectionLabel, "fr"));
+            // Create unique section key and label for each occurrence
+            // This ensures each occurrence appears as a separate section in normal view
+            const sectionLabel = occurrences > 1 ? `${label} (${i + 1})` : label;
+            const sectionKey = occurrences > 1 
+                ? `${makeSectionKey(label)}_${i}` 
+                : makeSectionKey(label);
+
+            expanded.push({
+                source: "computed",
+                item: entry.item,
+                unit: entry.unit,
+                quantity: refQuantity, // Quantity per occurrence
+                checked: isChecked,
+                sectionKey: sectionKey,
+                sectionLabel: sectionLabel,
+                baseKey,
+                baseQuantity: totalQuantity,
+                entryKey,
+                recipeId: typeof ref?.id === "string" && ref.id.trim() ? ref.id.trim() : null,
+                occurrenceIndex: i, // Track which occurrence this is
+            });
+        }
+    });
+
+    return expanded.sort((a, b) => {
+        // Sort by section label first
+        const sectionCmp = a.sectionLabel.localeCompare(b.sectionLabel, "fr");
+        if (sectionCmp !== 0) return sectionCmp;
+        // Then by occurrence index to keep them in order
+        return (a.occurrenceIndex || 0) - (b.occurrenceIndex || 0);
+    });
+}
+
+// Aggregate items by name and unit (for condensed view)
+function aggregateItems(itemList) {
+    const aggregated = new Map();
+    const checkedCounts = new Map(); // Track how many items are checked per aggregated key
+    
+    itemList.forEach((item) => {
+        // Skip custom items in aggregation, they stay as-is
+        if (item.source === "custom") {
+            const key = `custom:${item.item}`;
+            if (!aggregated.has(key)) {
+                aggregated.set(key, {
+                    ...item,
+                    aggregated: false,
+                });
+            }
+            return;
+        }
+        
+        // For computed items, aggregate by item name and unit
+        const key = `${String(item.item || "").trim().toLowerCase()}|||${String(item.unit || "").trim().toLowerCase()}`;
+        
+        if (aggregated.has(key)) {
+            const existing = aggregated.get(key);
+            // Sum quantities only if both are defined
+            const qty1 = Number.isFinite(existing.quantity) ? existing.quantity : undefined;
+            const qty2 = Number.isFinite(item.quantity) ? item.quantity : undefined;
+            
+            if (Number.isFinite(qty1) && Number.isFinite(qty2)) {
+                existing.quantity = qty1 + qty2;
+            } else if (Number.isFinite(qty2)) {
+                existing.quantity = qty2;
+            } else if (Number.isFinite(qty1)) {
+                existing.quantity = qty1;
+            } else {
+                // Neither has a quantity, keep it undefined
+                existing.quantity = undefined;
+            }
+            
+            // Increment total count
+            existing._count = (existing._count || 1) + 1;
+            // Track checked count
+            const count = checkedCounts.get(key) || 0;
+            checkedCounts.set(key, count + (item.checked ? 1 : 0));
+            // Combine section labels
+            if (existing.sectionLabel !== item.sectionLabel) {
+                existing.sectionLabel = "Toutes recettes";
+            }
+        } else {
+            aggregated.set(key, {
+                ...item,
+                aggregated: true,
+                sectionLabel: "Toutes recettes",
+                sectionKey: "0:all",
+                _count: 1, // Track total count of items for this aggregated entry
+            });
+            checkedCounts.set(key, item.checked ? 1 : 0);
+        }
+    });
+    
+    // Update checked state: checked only if ALL items are checked
+    aggregated.forEach((item, key) => {
+        if (item.aggregated) {
+            const checkedCount = checkedCounts.get(key) || 0;
+            const totalCount = item._count || 1;
+            item.checked = checkedCount === totalCount;
+            delete item._count; // Clean up temporary property
+        }
+    });
+    
+    return Array.from(aggregated.values());
 }
 
 // Merge all sources and render
@@ -97,9 +208,16 @@ function updateAndRender() {
     const expandedComputed = computedBase.flatMap(expandComputedEntry);
 
     // 2. Combine with custom items
-    items = [...expandedComputed, ...customItems];
+    const allItems = [...expandedComputed, ...customItems];
 
-    // 3. Render
+    // 3. Apply view mode
+    if (viewMode === 'condensed') {
+        items = aggregateItems(allItems);
+    } else {
+        items = allItems;
+    }
+
+    // 4. Render
     render();
 }
 
@@ -303,7 +421,7 @@ function render() {
             listEl.appendChild(header);
         }
 
-        const hasQty = typeof row.quantity === "number" && !isNaN(row.quantity);
+        const hasQty = typeof row.quantity === "number" && !isNaN(row.quantity) && row.quantity !== 0;
         const txt = hasQty
             ? `${row.item} : ${row.quantity}${row.unit ? " " + row.unit : ""}`
             : row.item;
@@ -382,25 +500,51 @@ function render() {
                         body: JSON.stringify({ item: row.item, checked: cb.checked }),
                     });
                 } else {
-                    // For computed items, we need to save the state of ALL computed items
-                    // We update our local 'items' array first to reflect the change
-                    const updatedItems = items
-                        .filter(it => it.source === "computed")
-                        .map(it => {
-                            if (it.entryKey === row.entryKey) {
+                    // For computed items
+                    if (viewMode === 'condensed' && row.aggregated) {
+                        // In condensed view, update all items with the same name and unit
+                        const itemKey = `${String(row.item || "").trim().toLowerCase()}|||${String(row.unit || "").trim().toLowerCase()}`;
+                        
+                        // Get all original computed items (before aggregation)
+                        const expandedComputed = computedBase.flatMap(expandComputedEntry);
+                        
+                        // Update all matching items
+                        const updatedItems = expandedComputed.map(it => {
+                            const itKey = `${String(it.item || "").trim().toLowerCase()}|||${String(it.unit || "").trim().toLowerCase()}`;
+                            if (itKey === itemKey) {
                                 return { ...it, checked: cb.checked };
                             }
                             return it;
                         });
 
-                    // Prepare payload for API
-                    const payload = serializeComputedItems(updatedItems);
+                        // Prepare payload for API
+                        const payload = serializeComputedItems(updatedItems);
 
-                    await fetch("/api/save-shopping-totals", {
-                        method: "POST",
-                        headers: { "content-type": "application/json" },
-                        body: JSON.stringify({ items: payload }),
-                    });
+                        await fetch("/api/save-shopping-totals", {
+                            method: "POST",
+                            headers: { "content-type": "application/json" },
+                            body: JSON.stringify({ items: payload }),
+                        });
+                    } else {
+                        // Normal view: update only the specific item
+                        const updatedItems = items
+                            .filter(it => it.source === "computed")
+                            .map(it => {
+                                if (it.entryKey === row.entryKey) {
+                                    return { ...it, checked: cb.checked };
+                                }
+                                return it;
+                            });
+
+                        // Prepare payload for API
+                        const payload = serializeComputedItems(updatedItems);
+
+                        await fetch("/api/save-shopping-totals", {
+                            method: "POST",
+                            headers: { "content-type": "application/json" },
+                            body: JSON.stringify({ items: payload }),
+                        });
+                    }
                 }
                 status("✅ Sauvegardé");
             } catch (e) {
@@ -484,7 +628,8 @@ addForm.addEventListener("submit", async (e) => {
     }
 });
 
-btnCheckAll?.addEventListener("click", async () => {
+// Helper function to handle check all
+async function handleCheckAll() {
     if (!items.length) return;
     status("Traitement...");
 
@@ -525,9 +670,10 @@ btnCheckAll?.addEventListener("click", async () => {
         console.error(e);
         status("❌ Erreur");
     }
-});
+}
 
-btnUncheckAll?.addEventListener("click", async () => {
+// Helper function to handle uncheck all
+async function handleUncheckAll() {
     if (!items.length) return;
     status("Traitement...");
 
@@ -567,8 +713,40 @@ btnUncheckAll?.addEventListener("click", async () => {
         console.error(e);
         status("❌ Erreur");
     }
+}
+
+// Attach event listeners
+btnCheckAll?.addEventListener("click", handleCheckAll);
+btnUncheckAll?.addEventListener("click", handleUncheckAll);
+
+// Toggle view mode
+const btnToggleView = document.getElementById("btnToggleView");
+const viewIcon = document.getElementById("viewIcon");
+const viewLabel = document.getElementById("viewLabel");
+
+function updateViewButton() {
+    if (!btnToggleView || !viewIcon || !viewLabel) return;
+    
+    if (viewMode === 'condensed') {
+        btnToggleView.title = "Vue par recettes";
+        viewLabel.textContent = "Vue par recettes";
+        // Icon for list view (normal)
+        viewIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>';
+    } else {
+        btnToggleView.title = "Vue condensée";
+        viewLabel.textContent = "Vue condensée";
+        // Icon for condensed view
+        viewIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path>';
+    }
+}
+
+btnToggleView?.addEventListener("click", () => {
+    viewMode = viewMode === 'normal' ? 'condensed' : 'normal';
+    updateViewButton();
+    updateAndRender();
 });
 
 // Start
+updateViewButton();
 setupListeners();
 fetchComputed(); // Initial fetch
