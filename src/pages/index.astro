@@ -13,12 +13,12 @@ if (user) {
 ---
 
 <LandingLayout title="Cooking Calendar - Planifiez vos repas">
-  <div class="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-rose-50 relative overflow-hidden">
+  <div class="min-h-screen bg-gradient-to-br from-sage-50 via-sage-50 to-slate-50 relative overflow-hidden">
     <!-- Éléments décoratifs de fond -->
     <div class="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-      <div class="absolute top-20 left-10 w-72 h-72 bg-orange-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob"></div>
-      <div class="absolute top-40 right-10 w-72 h-72 bg-amber-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob animation-delay-2000"></div>
-      <div class="absolute -bottom-8 left-1/2 w-72 h-72 bg-rose-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob animation-delay-4000"></div>
+      <div class="absolute top-20 left-10 w-72 h-72 bg-sage-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob"></div>
+      <div class="absolute top-40 right-10 w-72 h-72 bg-sage-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob animation-delay-2000"></div>
+      <div class="absolute -bottom-8 left-1/2 w-72 h-72 bg-slate-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob animation-delay-4000"></div>
     </div>
 
     <!-- Hero Section -->
@@ -26,7 +26,7 @@ if (user) {
       <div class="text-center">
         <h1 class="text-5xl md:text-6xl font-bold text-gray-900 mb-6 animate-fade-in">
           Planifiez vos repas
-          <span class="block text-transparent bg-clip-text bg-gradient-to-r from-orange-300 via-amber-500 to-rose-500">en toute simplicité</span>
+          <span class="block text-transparent bg-clip-text bg-gradient-to-r from-sage-300 via-sage-500 to-slate-600">en toute simplicité</span>
         </h1>
         <p class="text-xl text-gray-700 mb-8 max-w-2xl mx-auto leading-relaxed">
           Organisez votre semaine culinaire, gérez vos recettes et générez automatiquement votre liste de courses. 
@@ -35,7 +35,7 @@ if (user) {
         <div class="flex flex-col sm:flex-row gap-4 justify-center">
           <a
             href="/signup"
-            class="group inline-flex items-center justify-center px-8 py-4 bg-gradient-to-r from-orange-300 to-amber-500 text-white text-lg font-semibold rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-105 hover:-translate-y-1 relative overflow-hidden"
+            class="group inline-flex items-center justify-center px-8 py-4 bg-gradient-to-r from-sage-300 to-sage-500 text-white text-lg font-semibold rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-105 hover:-translate-y-1 relative overflow-hidden"
           >
             <span class="relative z-10 flex items-center gap-2">
               Créer un compte gratuit
@@ -43,11 +43,11 @@ if (user) {
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
               </svg>
             </span>
-            <div class="absolute inset-0 bg-gradient-to-r from-orange-300 to-amber-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <div class="absolute inset-0 bg-gradient-to-r from-sage-300 to-sage-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
           </a>
           <a
             href="/login"
-            class="group inline-flex items-center justify-center px-8 py-4 bg-white text-orange-300 text-lg font-semibold rounded-xl border-2 border-orange-200 hover:bg-orange-50 transition-all duration-300 transform hover:scale-105 hover:shadow-lg"
+            class="group inline-flex items-center justify-center px-8 py-4 bg-white text-sage-300 text-lg font-semibold rounded-xl border-2 border-sage-200 hover:bg-sage-50 transition-all duration-300 transform hover:scale-105 hover:shadow-lg"
           >
             Se connecter
           </a>
@@ -59,13 +59,13 @@ if (user) {
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 relative z-10">
       <div class="grid md:grid-cols-3 gap-8">
         <!-- Feature 1 -->
-        <div class="group bg-white p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-transparent hover:border-orange-200 cursor-pointer">
-          <div class="w-16 h-16 bg-gradient-to-br from-orange-100 to-amber-100 rounded-2xl flex items-center justify-center mb-4 transform group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
-            <svg class="w-8 h-8 text-orange-300 transform group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="group bg-white p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-transparent hover:border-sage-200 cursor-pointer">
+          <div class="w-16 h-16 bg-gradient-to-br from-sage-100 to-sage-100 rounded-2xl flex items-center justify-center mb-4 transform group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
+            <svg class="w-8 h-8 text-sage-300 transform group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
           </div>
-          <h3 class="text-xl font-bold text-gray-900 mb-2 group-hover:text-orange-300 transition-colors">Planning hebdomadaire</h3>
+          <h3 class="text-xl font-bold text-gray-900 mb-2 group-hover:text-sage-300 transition-colors">Planning hebdomadaire</h3>
           <p class="text-gray-600 leading-relaxed">
             Organisez vos repas de la semaine en un clin d'œil. Glissez-déposez vos recettes sur les jours qui vous conviennent.
           </p>
@@ -85,13 +85,13 @@ if (user) {
         </div>
 
         <!-- Feature 3 -->
-        <div class="group bg-white p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-transparent hover:border-emerald-200 cursor-pointer">
-          <div class="w-16 h-16 bg-gradient-to-br from-emerald-100 to-teal-100 rounded-2xl flex items-center justify-center mb-4 transform group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
-            <svg class="w-8 h-8 text-emerald-600 transform group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="group bg-white p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-transparent hover:border-sage-200 cursor-pointer">
+          <div class="w-16 h-16 bg-gradient-to-br from-sage-100 to-teal-100 rounded-2xl flex items-center justify-center mb-4 transform group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
+            <svg class="w-8 h-8 text-sage-600 transform group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
             </svg>
           </div>
-          <h3 class="text-xl font-bold text-gray-900 mb-2 group-hover:text-emerald-600 transition-colors">Liste de courses automatique</h3>
+          <h3 class="text-xl font-bold text-gray-900 mb-2 group-hover:text-sage-600 transition-colors">Liste de courses automatique</h3>
           <p class="text-gray-600 leading-relaxed">
             Générez automatiquement votre liste de courses à partir de votre planning. Plus besoin de réfléchir à ce qu'il faut acheter !
           </p>
@@ -108,10 +108,10 @@ if (user) {
 
       <div class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
         <!-- Free Plan -->
-        <div class="group bg-white p-8 rounded-2xl shadow-lg border-2 border-gray-200 hover:border-orange-200 transition-all duration-300 transform hover:scale-105 hover:shadow-2xl">
+        <div class="group bg-white p-8 rounded-2xl shadow-lg border-2 border-gray-200 hover:border-sage-200 transition-all duration-300 transform hover:scale-105 hover:shadow-2xl">
           <div class="text-center mb-6">
-            <h3 class="text-2xl font-bold text-gray-900 mb-2 group-hover:text-orange-300 transition-colors">Gratuit</h3>
-            <div class="text-4xl font-bold text-gray-900 mb-1 group-hover:text-orange-300 transition-colors">0€</div>
+            <h3 class="text-2xl font-bold text-gray-900 mb-2 group-hover:text-sage-300 transition-colors">Gratuit</h3>
+            <div class="text-4xl font-bold text-gray-900 mb-1 group-hover:text-sage-300 transition-colors">0€</div>
             <p class="text-gray-600 text-sm">par mois</p>
           </div>
           <ul class="space-y-3 mb-8">
@@ -136,7 +136,7 @@ if (user) {
           </ul>
           <a
             href="/signup"
-            class="group/btn block w-full text-center px-6 py-3 bg-gray-100 text-gray-900 font-semibold rounded-lg hover:bg-gradient-to-r hover:from-orange-300 hover:to-amber-500 hover:text-white transition-all duration-300 transform hover:scale-105 hover:shadow-lg"
+            class="group/btn block w-full text-center px-6 py-3 bg-gray-100 text-gray-900 font-semibold rounded-lg hover:bg-gradient-to-r hover:from-sage-300 hover:to-sage-500 hover:text-white transition-all duration-300 transform hover:scale-105 hover:shadow-lg"
           >
             <span class="flex items-center justify-center gap-2">
               Commencer gratuitement
@@ -148,16 +148,16 @@ if (user) {
         </div>
 
         <!-- Premium Plan -->
-        <div class="group relative bg-gradient-to-br from-orange-300 to-amber-500 p-8 rounded-2xl shadow-2xl transform scale-105 hover:scale-110 transition-all duration-300 border-2 border-orange-200">
+        <div class="group relative bg-gradient-to-br from-sage-300 to-sage-500 p-8 rounded-2xl shadow-2xl transform scale-105 hover:scale-110 transition-all duration-300 border-2 border-sage-200">
           <div class="absolute -top-4 left-1/2 transform -translate-x-1/2">
-            <div class="bg-gradient-to-r from-yellow-400 to-amber-400 text-orange-900 text-xs font-bold px-4 py-1 rounded-full shadow-lg animate-pulse">
+            <div class="bg-gradient-to-r from-yellow-400 to-sage-400 text-sage-900 text-xs font-bold px-4 py-1 rounded-full shadow-lg animate-pulse">
               ⭐ POPULAIRE
             </div>
           </div>
           <div class="text-center mb-6">
             <h3 class="text-2xl font-bold text-white mb-2">Premium</h3>
             <div class="text-4xl font-bold text-white mb-1">2,99€</div>
-            <p class="text-orange-100 text-sm">par mois</p>
+            <p class="text-sage-100 text-sm">par mois</p>
           </div>
           <ul class="space-y-3 mb-8">
             <li class="flex items-center text-white">
@@ -193,7 +193,7 @@ if (user) {
           </ul>
           <a
             href="/signup"
-            class="group/btn block w-full text-center px-6 py-3 bg-white text-orange-300 font-semibold rounded-lg hover:bg-gray-50 transition-all duration-300 transform hover:scale-105 shadow-xl hover:shadow-2xl"
+            class="group/btn block w-full text-center px-6 py-3 bg-white text-sage-300 font-semibold rounded-lg hover:bg-gray-50 transition-all duration-300 transform hover:scale-105 shadow-xl hover:shadow-2xl"
           >
             <span class="flex items-center justify-center gap-2">
               Passer au Premium
@@ -208,7 +208,7 @@ if (user) {
 
     <!-- CTA Section -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 relative z-10">
-      <div class="bg-gradient-to-r from-orange-300 via-amber-500 to-rose-500 rounded-3xl p-12 text-center text-white relative overflow-hidden group hover:shadow-2xl transition-shadow duration-300">
+      <div class="bg-gradient-to-r from-sage-300 via-sage-500 to-slate-600 rounded-3xl p-12 text-center text-white relative overflow-hidden group hover:shadow-2xl transition-shadow duration-300">
         <!-- Effet de brillance au survol -->
         <div class="absolute inset-0 opacity-0 group-hover:opacity-20 transition-opacity duration-500">
           <div class="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-transparent via-white to-transparent transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
@@ -220,7 +220,7 @@ if (user) {
           </p>
           <a
             href="/signup"
-            class="group/cta inline-flex items-center justify-center px-8 py-4 bg-white text-orange-300 text-lg font-semibold rounded-xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-110 hover:-translate-y-1"
+            class="group/cta inline-flex items-center justify-center px-8 py-4 bg-white text-sage-300 text-lg font-semibold rounded-xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-110 hover:-translate-y-1"
           >
             <span class="flex items-center gap-2">
               Créer mon compte gratuit
