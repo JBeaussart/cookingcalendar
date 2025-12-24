@@ -1,21 +1,14 @@
 ---
-// src/pages/premium.astro
 import Layout from "../layouts/Layout.astro";
-import { getServerSession, getAuthenticatedSupabase } from "../lib/auth";
-import { supabase } from "../supabase";
+import { getServerSession } from "../lib/auth";
 
-// Vérifier si l'utilisateur est connecté
 const { user } = await getServerSession(Astro.request);
 
-// Si non connecté, rediriger vers la page de connexion
 if (!user) {
   return Astro.redirect("/login", 302);
 }
 
-// Type assertion pour user
 type UserWithRole = {
-  id: string;
-  email?: string;
   role?: string;
   user_role?: string;
 };
@@ -23,173 +16,147 @@ type UserWithRole = {
 const userWithRole = user as UserWithRole;
 const userRole = userWithRole.role || userWithRole.user_role;
 
-// Si l'utilisateur est déjà premium ou admin, rediriger vers le compte
 if (userRole === "premium" || userRole === "admin") {
   return Astro.redirect("/account", 302);
 }
 ---
 
-<Layout title="Version Premium">
-  <div class="min-h-screen bg-gradient-to-br from-yellow-50/50 via-sage-50/30 to-sage-50/50 pb-20">
-    <div class="max-w-6xl mx-auto px-4 py-8 sm:py-12">
-      <!-- En-tête -->
-      <div class="text-center mb-12">
-        <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-r from-yellow-400 to-yellow-600 mb-6 shadow-lg">
-          <span class="text-4xl">👑</span>
+<Layout title="Passer à Premium">
+  <div class="min-h-screen bg-sage-50 py-12 sm:py-16">
+    <div class="max-w-5xl mx-auto px-4">
+
+      <!-- ================= HERO ================= -->
+      <section class="text-center mb-10 sm:mb-12">
+        <div class="inline-flex items-center justify-center w-14 h-14 rounded-full bg-sage-100 mb-4">
+          <span class="text-3xl">⭐</span>
         </div>
-        <h1 class="text-4xl sm:text-5xl font-bold text-slate-900 mb-4">
-          Passez à la Version Premium
+
+        <h1 class="text-3xl sm:text-4xl font-bold text-gray-900 mb-3">
+          Passez à la version Premium
         </h1>
-        <p class="text-xl text-slate-600 max-w-2xl mx-auto">
-          Débloquez toutes les fonctionnalités avancées et profitez d'une expérience de planification culinaire optimale
+
+        <p class="text-lg text-gray-600 max-w-2xl mx-auto">
+          Continuez à organiser vos repas sans limite  
+          et gagnez encore plus de temps au quotidien.
         </p>
-      </div>
+      </section>
 
-      <!-- Comparaison des versions -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
-        <!-- Version Gratuite -->
-        <div class="bg-white rounded-2xl shadow-lg p-8 border-2 border-gray-200">
-          <div class="text-center mb-6">
-            <h2 class="text-2xl font-bold text-slate-900 mb-2">Version Gratuite</h2>
-            <p class="text-4xl font-bold text-slate-700 mb-1">Gratuit</p>
-          </div>
-          <ul class="space-y-4 mb-8">
-            <li class="flex items-start gap-3">
-              <svg class="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-              </svg>
-              <span class="text-slate-700">Planning de repas</span>
-            </li>
-            <li class="flex items-start gap-3">
-              <svg class="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-              </svg>
-              <span class="text-slate-700">Liste de courses automatique</span>
-            </li>
-            <li class="flex items-start gap-3">
-              <svg class="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-              <span class="text-slate-500 line-through">Recettes illimitées</span>
-            </li>
-            <li class="flex items-start gap-3">
-              <svg class="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-              <span class="text-slate-500 line-through">Menu de réception</span>
-            </li>
-            <li class="flex items-start gap-3">
-              <svg class="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-              <span class="text-slate-500 line-through">Export PDF avancé</span>
-            </li>
-            <li class="flex items-start gap-3">
-              <svg class="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-              <span class="text-slate-500 line-through">Support prioritaire</span>
-            </li>
-          </ul>
+      <!-- ================= BÉNÉFICES ================= -->
+
+      <!-- Desktop -->
+      <section class="hidden md:grid grid-cols-3 gap-6 mb-12">
+
+        <div class="bg-white p-6 rounded-2xl border border-sage-100 text-center">
+          <span class="text-3xl">📖</span>
+          <h3 class="font-semibold mt-3 mb-1">
+            Recettes illimitées
+          </h3>
+          <p class="text-sm text-gray-600">
+            Gardez toutes vos recettes sans jamais en supprimer.
+          </p>
         </div>
 
-        <!-- Version Premium -->
-        <div class="bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-2xl shadow-2xl p-8 border-4 border-yellow-300 relative transform scale-105 md:scale-100">
-          <div class="absolute -top-4 left-1/2 transform -translate-x-1/2">
-            <span class="bg-yellow-500 text-white px-4 py-1 rounded-full text-sm font-bold shadow-lg">
-              POPULAIRE
-            </span>
-          </div>
-          <div class="text-center mb-6">
-            <h2 class="text-2xl font-bold text-white mb-2">Version Premium</h2>
-            <p class="text-4xl font-bold text-white mb-1">2,99€ <span class="text-2xl">/ mois</span></p>
-          </div>
-          <ul class="space-y-4 mb-8">
-            <li class="flex items-start gap-3">
-              <svg class="w-5 h-5 text-white mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-              </svg>
-              <span class="text-white font-medium">Tout de la version gratuite</span>
-            </li>
-            <li class="flex items-start gap-3">
-              <svg class="w-5 h-5 text-white mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-              </svg>
-              <span class="text-white font-medium">Recettes illimitées</span>
-            </li>
-            <li class="flex items-start gap-3">
-              <svg class="w-5 h-5 text-white mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-              </svg>
-              <span class="text-white font-medium">Menu de réception personnalisé</span>
-            </li>
-            <li class="flex items-start gap-3">
-              <svg class="w-5 h-5 text-white mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-              </svg>
-              <span class="text-white font-medium">Export PDF des recettes</span>
-            </li>
-            <li class="flex items-start gap-3">
-              <svg class="w-5 h-5 text-white mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-              </svg>
-              <span class="text-white font-medium">Support prioritaire</span>
-            </li>
-            <li class="flex items-start gap-3">
-              <svg class="w-5 h-5 text-white mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-              </svg>
-              <span class="text-white font-medium">Nouvelles fonctionnalités en avant-première</span>
-            </li>
-          </ul>
-          <button
-            id="upgrade-button"
-            class="w-full bg-white text-yellow-600 py-4 rounded-xl font-bold text-lg hover:bg-yellow-50 transition-colors shadow-lg hover:shadow-xl transform hover:scale-105 transition-all"
-          >
-            Passer à Premium
-          </button>
+        <div class="bg-white p-6 rounded-2xl border border-sage-100 text-center">
+          <span class="text-3xl">🎉</span>
+          <h3 class="font-semibold mt-3 mb-1">
+            Repas de réception
+          </h3>
+          <p class="text-sm text-gray-600">
+            Anniversaires, repas de famille, invitations.
+          </p>
         </div>
-      </div>
 
-      <!-- Fonctionnalités détaillées -->
-      <div class="bg-white rounded-2xl shadow-xl p-8 mb-8">
-        <h2 class="text-3xl font-bold text-slate-900 mb-8 text-center">
-          Découvrez les avantages Premium
-        </h2>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div class="text-center">
-            <div class="w-16 h-16 rounded-full bg-yellow-100 text-yellow-600 flex items-center justify-center mx-auto mb-4">
-              <i class="fas fa-utensils text-2xl"></i>
-            </div>
-            <h3 class="text-xl font-bold text-slate-900 mb-2">Menu de Réception</h3>
-            <p class="text-slate-600">
-              Créez des menus élégants pour vos événements avec sélection d'apéritif, entrée, plat et dessert
-            </p>
-          </div>
-          <div class="text-center">
-            <div class="w-16 h-16 rounded-full bg-yellow-100 text-yellow-600 flex items-center justify-center mx-auto mb-4">
-              <i class="fas fa-file-pdf text-2xl"></i>
-            </div>
-            <h3 class="text-xl font-bold text-slate-900 mb-2">Export PDF Avancé</h3>
-            <p class="text-slate-600">
-              Exportez vos recettes et menus en PDF haute qualité avec images pour partager ou imprimer
-            </p>
-          </div>
-          <div class="text-center">
-            <div class="w-16 h-16 rounded-full bg-yellow-100 text-yellow-600 flex items-center justify-center mx-auto mb-4">
-              <i class="fas fa-headset text-2xl"></i>
-            </div>
-            <h3 class="text-xl font-bold text-slate-900 mb-2">Support Prioritaire</h3>
-            <p class="text-slate-600">
-              Bénéficiez d'un support client en priorité pour toutes vos questions et demandes
+        <div class="bg-white p-6 rounded-2xl border border-sage-100 text-center">
+          <span class="text-3xl">📄</span>
+          <h3 class="font-semibold mt-3 mb-1">
+            Export PDF
+          </h3>
+          <p class="text-sm text-gray-600">
+            Imprimez ou partagez vos recettes facilement.
+          </p>
+        </div>
+
+      </section>
+
+      <!-- Mobile -->
+      <section class="md:hidden space-y-3 mb-8">
+
+        <div class="bg-white p-4 rounded-xl border border-sage-100 flex gap-3">
+          <span class="text-2xl">📖</span>
+          <div>
+            <p class="font-medium">Recettes illimitées</p>
+            <p class="text-sm text-gray-600">
+              Plus jamais besoin de supprimer une recette.
             </p>
           </div>
         </div>
-      </div>
 
-      <!-- Messages d'erreur/succès -->
+        <div class="bg-white p-4 rounded-xl border border-sage-100 flex gap-3">
+          <span class="text-2xl">🎉</span>
+          <div>
+            <p class="font-medium">Repas de réception</p>
+            <p class="text-sm text-gray-600">
+              Repas de famille, anniversaires, invités.
+            </p>
+          </div>
+        </div>
+
+        <div class="bg-white p-4 rounded-xl border border-sage-100 flex gap-3">
+          <span class="text-2xl">📄</span>
+          <div>
+            <p class="font-medium">Export PDF</p>
+            <p class="text-sm text-gray-600">
+              Imprimez ou partagez vos recettes.
+            </p>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ================= CARTE PREMIUM ================= -->
+      <section class="bg-white rounded-3xl shadow-lg border border-sage-200 p-6 sm:p-8 mb-10 max-w-md mx-auto">
+
+        <div class="text-center mb-6">
+          <span class="inline-block bg-sage-100 text-sage-700 text-xs font-semibold px-4 py-1 rounded-full mb-3">
+            Le plus choisi par les familles
+          </span>
+
+          <h2 class="text-2xl font-bold mb-2">
+            Premium
+          </h2>
+
+          <div class="text-5xl font-bold text-gray-900 mb-1">
+            2,99 €
+          </div>
+          <p class="text-sm text-gray-500">
+            par mois · sans engagement
+          </p>
+        </div>
+
+        <ul class="space-y-2 text-sm text-gray-700 mb-6 max-w-sm mx-auto">
+          <li>✔ Tout le plan gratuit</li>
+          <li>✔ Recettes illimitées</li>
+          <li>✔ Menus de réception</li>
+          <li>✔ Export PDF</li>
+          <li>✔ Support prioritaire</li>
+        </ul>
+
+        <button
+          id="upgrade-button"
+          class="w-full py-4 bg-sage-600 text-white text-lg font-semibold rounded-xl shadow-md active:scale-[0.98] transition"
+        >
+          Passer à Premium
+        </button>
+
+        <p class="text-center text-sm text-gray-500 mt-4">
+          Paiement sécurisé · Sans engagement · Annulation à tout moment
+        </p>
+      </section>
+
+      <!-- ================= FEEDBACK ================= -->
       <div id="error-message" class="hidden bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4"></div>
       <div id="success-message" class="hidden bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-4"></div>
+
     </div>
   </div>
 </Layout>
@@ -201,38 +168,26 @@ if (userRole === "premium" || userRole === "admin") {
 
   if (upgradeButton && errorDiv && successDiv) {
     upgradeButton.addEventListener("click", async () => {
-      // Masquer les messages précédents
       errorDiv.classList.add("hidden");
       successDiv.classList.add("hidden");
 
-      // Désactiver le bouton pendant la requête
       upgradeButton.disabled = true;
       const originalText = upgradeButton.textContent;
-      upgradeButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Traitement...';
+      upgradeButton.textContent = "Activation en cours…";
 
       try {
-        const response = await fetch("/api/upgrade-premium", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        });
+        const res = await fetch("/api/upgrade-premium", { method: "POST" });
+        const data = await res.json();
 
-        const data = await response.json();
-
-        if (!response.ok) {
-          errorDiv.textContent = data.error || "Une erreur est survenue lors de l'upgrade";
+        if (!res.ok) {
+          errorDiv.textContent = data.error || "Une erreur est survenue.";
           errorDiv.classList.remove("hidden");
         } else {
-          successDiv.textContent = data.message || "Félicitations ! Vous êtes maintenant Premium !";
+          successDiv.textContent = "Bienvenue dans Premium 🎉";
           successDiv.classList.remove("hidden");
-          
-          // Rediriger vers la page de compte après 2 secondes
-          setTimeout(() => {
-            window.location.href = "/account";
-          }, 2000);
+          setTimeout(() => window.location.href = "/account", 1600);
         }
-      } catch (error) {
+      } catch {
         errorDiv.textContent = "Une erreur est survenue. Veuillez réessayer.";
         errorDiv.classList.remove("hidden");
       } finally {
@@ -244,4 +199,3 @@ if (userRole === "premium" || userRole === "admin") {
     });
   }
 </script>
-
