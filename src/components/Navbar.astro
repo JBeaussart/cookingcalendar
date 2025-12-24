@@ -5,425 +5,235 @@ import { getServerSession } from "../lib/auth";
 const currentPath = Astro.url.pathname;
 const { user } = await getServerSession(Astro.request);
 
-// Type assertion pour éviter les erreurs TypeScript
 const userWithRole = user as { email?: string; role?: string; user_role?: string } | null;
-
-const links = [
-  {
-    href: "/planning",
-    label: "Planning",
-    icon: `<path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3M3 9h18M5 21h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2z" />`,
-  },
-  {
-    href: "/recipes",
-    label: "Recettes",
-    icon: `<path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />`,
-  },
-  {
-    href: "/shoppingList",
-    label: "Courses",
-    icon: `<path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 0 0-16.536-1.84M7.5 14.25 5.106 5.272M6 20.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm12.75 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />`,
-  },
-  {
-    href: "/reception",
-    label: "Réception",
-    icon: `<path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" />`,
-  },
-];
-
-const isActive = (href: string) => {
-  if (href === "/planning") return currentPath === "/planning";
-  return currentPath === href || currentPath.startsWith(`${href}/`);
-};
-
-// Vérifier si on est sur une page de détail de recette
-const isRecipeDetailPage = currentPath.startsWith("/recipes/") && currentPath !== "/recipes";
-
-// Filtrer les liens selon le rôle de l'utilisateur (Réception uniquement pour admin/premium)
-const userRole = (userWithRole?.role || userWithRole?.user_role);
-const filteredLinks = links.filter((link) => {
-  // Si c'est le lien Réception, vérifier que l'utilisateur est admin ou premium
-  if (link.href === "/reception") {
-    return userRole === "admin" || userRole === "premium";
-  }
-  return true;
-});
-
-// Vérifier si l'utilisateur est gratuit (ni admin ni premium)
+const userRole = userWithRole?.role || userWithRole?.user_role;
 const isFreeUser = userWithRole && userRole !== "admin" && userRole !== "premium";
+
+const isActive = (href: string) =>
+  currentPath === href || currentPath.startsWith(`${href}/`);
 ---
 
-<!-- Desktop navigation (top bar) -->
-<nav
-  class="desktop-nav bg-white border-b border-gray-200 shadow-md hidden sm:block sticky top-0 z-50"
->
-  <div class="w-full px-8 py-3">
-    <div class="flex items-center justify-center gap-12">
-      <!-- Liens de navigation -->
-      {user && (
-        <ul class="flex flex-wrap justify-center gap-4 md:gap-8">
-          {filteredLinks.map((link) => (
-            <li class="min-w-0">
-              <a
-                href={link.href}
-                class={`block py-2 px-4 text-sm md:text-base md:px-6 rounded-md font-medium text-center truncate
-                        ${
-                          isActive(link.href)
-                            ? "bg-gradient-to-r from-sage-300 to-sage-500 text-white"
-                            : "text-gray-900 dark:text-gray-900 hover:bg-gray-100 dark:hover:bg-gray-100"
-                        }`}
-              >
-                {link.label}
-              </a>
-            </li>
-          ))}
-        </ul>
+<!-- ================= DESKTOP NAV ================= -->
+<nav class="hidden sm:block sticky top-0 z-50 bg-white border-b border-gray-200">
+  <div class="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+
+    <!-- Left navigation -->
+    <ul class="flex items-center gap-4">
+      <li>
+        <a
+          href="/planning"
+          class={`text-sm font-medium px-3 py-2 rounded-lg ${
+            isActive("/planning")
+              ? "bg-sage-100 text-sage-700"
+              : "text-gray-700 hover:bg-gray-100"
+          }`}
+        >
+          Planning
+        </a>
+      </li>
+
+      <li>
+        <a
+          href="/recipes"
+          class={`text-sm font-medium px-3 py-2 rounded-lg ${
+            isActive("/recipes")
+              ? "bg-sage-100 text-sage-700"
+              : "text-gray-700 hover:bg-gray-100"
+          }`}
+        >
+          Recettes
+        </a>
+      </li>
+
+      <li>
+        <a
+          href="/shoppingList"
+          class={`text-sm font-medium px-3 py-2 rounded-lg ${
+            isActive("/shoppingList")
+              ? "bg-sage-100 text-sage-700"
+              : "text-gray-700 hover:bg-gray-100"
+          }`}
+        >
+          Courses
+        </a>
+      </li>
+
+      {(userRole === "premium" || userRole === "admin") && (
+        <li>
+          <a
+            href="/reception"
+            class={`text-sm font-medium px-3 py-2 rounded-lg ${
+              isActive("/reception")
+                ? "bg-sage-100 text-sage-700"
+                : "text-gray-700 hover:bg-gray-100"
+            }`}
+          >
+            Réception
+          </a>
+        </li>
       )}
-      
-      <!-- Élément utilisateur -->
-      <div class="flex items-center gap-4">
-        {userWithRole ? (
-          <>
-            {isFreeUser && (
-              <a
-                href="/premium"
-                class="px-4 py-2 rounded-lg bg-gradient-to-r from-yellow-400 to-yellow-600 text-white text-sm font-medium hover:from-yellow-500 hover:to-yellow-700 transition-colors shadow-md hover:shadow-lg"
-              >
-                👑 Version Premium
-              </a>
-            )}
-            <div class="relative">
-              <button
-                id="desktop-user-menu-button"
-                class="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors"
-              >
-                <span class="text-sm font-medium text-gray-700">Mon compte</span>
-                <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-            
-            <!-- Menu déroulant -->
-            <div
-              id="desktop-user-menu-dropdown"
-              class="hidden absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-gray-200 py-2 z-50 overflow-hidden"
-            >
-              <div class="px-4 py-3 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
-                <div class="flex items-center gap-3">
-                  <div class={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                    (userWithRole.role || userWithRole.user_role) === 'admin' ? 'bg-purple-100 text-purple-600' :
-                    (userWithRole.role || userWithRole.user_role) === 'premium' ? 'bg-yellow-100 text-yellow-600' :
-                    'bg-gray-100 text-gray-600'
-                  }`}>
-                    <i class="fas fa-user text-sm"></i>
-                  </div>
-                  <div class="flex-1 min-w-0">
-                    <p class="text-sm font-semibold text-gray-900 truncate">{userWithRole.email}</p>
-                    <p class={`text-xs font-medium mt-0.5 ${
-                      (userWithRole.role || userWithRole.user_role) === 'admin' ? 'text-purple-600' :
-                      (userWithRole.role || userWithRole.user_role) === 'premium' ? 'text-yellow-600' :
-                      'text-gray-500'
-                    }`}>
-                      {(userWithRole.role || userWithRole.user_role) === 'admin' ? 'Administrateur' : (userWithRole.role || userWithRole.user_role) === 'premium' ? 'Premium' : 'Gratuit'}
-                    </p>
-                  </div>
-                </div>
-              </div>
-              
-              <a
-                href="/account"
-                class="block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-              >
-                Informations personnelles
-              </a>
-              
-              <form method="post" action="/api/auth/logout" class="px-2 py-1.5">
-                <button
-                  type="submit"
-                  class="w-full text-left px-3 py-2.5 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-2 group"
-                >
-                  <i class="fas fa-sign-out-alt text-xs opacity-70 group-hover:opacity-100 transition-opacity"></i>
-                  <span>Déconnexion</span>
-                </button>
-              </form>
+    </ul>
+
+    <!-- Right actions -->
+    <div class="flex items-center gap-3">
+      {isFreeUser && (
+        <a
+          href="/premium"
+          class="px-4 py-2 rounded-lg text-sm font-medium bg-sage-100 text-sage-700 hover:bg-sage-200 transition"
+        >
+          Passer à Premium
+        </a>
+      )}
+
+      {userWithRole && (
+        <div class="relative">
+          <button
+            id="desktop-user-menu-button"
+            class="px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100"
+          >
+            Mon compte
+          </button>
+
+          <div
+            id="desktop-user-menu-dropdown"
+            class="hidden absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden"
+          >
+            <div class="px-4 py-3 border-b text-sm text-gray-600">
+              {userWithRole.email}
             </div>
-          </div>
-          </>
-        ) : (
-          <div class="flex items-center gap-3">
-            <a
-              href="/login"
-              class="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition"
-            >
-              Connexion
+
+            <a href="/account" class="block px-4 py-2 text-sm hover:bg-gray-50">
+              Mon profil
             </a>
-            <a
-              href="/signup"
-              class="px-4 py-2 text-sm bg-gradient-to-r from-sage-300 to-sage-500 text-white rounded-md hover:from-sage-300 hover:to-sage-600 transition"
-            >
-              Inscription
-            </a>
+
+            <form method="post" action="/api/auth/logout">
+              <button
+                type="submit"
+                class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+              >
+                Déconnexion
+              </button>
+            </form>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   </div>
 </nav>
 
-<!-- Mobile top bar with user icon (only if logged in, hidden on recipe detail page) -->
-{userWithRole && !isRecipeDetailPage && (
-  <div class="mobile-top-bar sm:hidden z-50 absolute top-3 right-4">
-    <div class="relative">
+<!-- ================= MOBILE TOP (ACCOUNT) ================= -->
+{userWithRole && (
+  <div class="sm:hidden fixed top-3 right-3 z-50">
+    <button
+      id="mobile-user-button"
+      class="w-11 h-11 rounded-xl bg-white border border-gray-300 shadow flex items-center justify-center"
+    >
+      👤
+    </button>
+
+    <div
+      id="mobile-user-dropdown"
+      class="hidden absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden"
+    >
+      {isFreeUser && (
+        <a
+          href="/premium"
+          class="block px-4 py-3 text-sm text-sage-700 bg-sage-50"
+        >
+          Passer à Premium
+        </a>
+      )}
+
+      <a href="/account" class="block px-4 py-2 text-sm hover:bg-gray-50">
+        Mon profil
+      </a>
+
+      <form method="post" action="/api/auth/logout">
         <button
-          id="user-menu-button"
-          class={`group relative w-11 h-11 rounded-xl flex items-center justify-center bg-white shadow-md border-2 transition-all duration-200 hover:shadow-lg hover:scale-105 ${
-            (userWithRole.role || userWithRole.user_role) === 'admin' ? 'border-purple-500 text-purple-600' :
-            (userWithRole.role || userWithRole.user_role) === 'premium' ? 'border-yellow-500 text-yellow-600' :
-            'border-gray-400 text-gray-600'
-          }`}
-          aria-label="Menu utilisateur"
+          type="submit"
+          class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
         >
-          <i class="fas fa-user text-lg"></i>
-          <!-- Badge de rôle -->
-          <span class={`absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-white ${
-            (userWithRole.role || userWithRole.user_role) === 'admin' ? 'bg-purple-500' :
-            (userWithRole.role || userWithRole.user_role) === 'premium' ? 'bg-yellow-500' :
-            'bg-gray-400'
-          }`}></span>
+          Déconnexion
         </button>
-        
-        <!-- Menu déroulant -->
-        <div
-          id="user-menu-dropdown"
-          class="hidden absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-200 py-2 z-50 overflow-hidden"
-        >
-          <div class="px-4 py-3 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
-            <div class="flex items-center gap-3">
-              <div class={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                (userWithRole.role || userWithRole.user_role) === 'admin' ? 'bg-purple-100 text-purple-600' :
-                (userWithRole.role || userWithRole.user_role) === 'premium' ? 'bg-yellow-100 text-yellow-600' :
-                'bg-gray-100 text-gray-600'
-              }`}>
-                <i class="fas fa-user text-sm"></i>
-              </div>
-              <div class="flex-1 min-w-0">
-                <p class="text-sm font-semibold text-gray-900 truncate">{userWithRole.email}</p>
-                <p class={`text-xs font-medium mt-0.5 ${
-                  (userWithRole.role || userWithRole.user_role) === 'admin' ? 'text-purple-600' :
-                  (userWithRole.role || userWithRole.user_role) === 'premium' ? 'text-yellow-600' :
-                  'text-gray-500'
-                }`}>
-                  {(userWithRole.role || userWithRole.user_role) === 'admin' ? 'Administrateur' : (userWithRole.role || userWithRole.user_role) === 'premium' ? 'Premium' : 'Gratuit'}
-                </p>
-              </div>
-            </div>
-          </div>
-          
-          {isFreeUser && (
-            <a
-              href="/premium"
-              class="block px-4 py-2.5 text-sm text-yellow-700 bg-yellow-50 hover:bg-yellow-100 transition-colors font-medium"
-            >
-              👑 Version Premium
-            </a>
-          )}
-          
-          <a
-            href="/account"
-            class="block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-          >
-            Informations personnelles
-          </a>
-          
-        <form method="post" action="/api/auth/logout" class="px-2 py-1.5">
-          <button
-            type="submit"
-            class="w-full text-left px-3 py-2.5 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-2 group"
-          >
-            <i class="fas fa-sign-out-alt text-xs opacity-70 group-hover:opacity-100 transition-opacity"></i>
-            <span>Déconnexion</span>
-          </button>
-        </form>
-      </div>
+      </form>
     </div>
   </div>
 )}
 
-<!-- Mobile navigation (bottom tab bar) -->
-<nav
-  class="mobile-nav sm:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-40"
->
-  <ul class="flex justify-around items-center h-16">
-    {user ? (
-      <>
-        {
-          filteredLinks.map((link) => {
-            const active = isActive(link.href);
-            return (
-              <li class="flex-1">
-                <a
-                  href={link.href}
-                  class={`flex flex-col items-center justify-center h-full gap-1 transition-all duration-200 ${
-                    active ? "text-sage-300" : "text-gray-600 hover:text-sage-300"
-                  }`}
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width={active ? "2.5" : "2"}
-                    class={`transition-all duration-200 ${active ? "h-6 w-6" : "h-5 w-5"}`}
-                    set:html={link.icon}
-                  />
-                  <span
-                    class={`text-[10px] font-medium transition-all duration-200 ${active ? "scale-105" : ""}`}
-                  >
-                    {link.label}
-                  </span>
-                </a>
-              </li>
-            );
-          })
-        }
-      </>
-    ) : (
-      <>
-        <li class="flex-1">
-          <a
-            href="/"
-            class="flex flex-col items-center justify-center h-full gap-1 text-gray-600 hover:text-sage-300 transition-all duration-200"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              class="h-5 w-5"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25"
-              />
-            </svg>
-            <span class="text-[10px] font-medium">Accueil</span>
-          </a>
-        </li>
-        <li class="flex-1">
-          <a
-            href="/login"
-            class="flex flex-col items-center justify-center h-full gap-1 text-gray-600 hover:text-sage-300 transition-all duration-200"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              class="h-5 w-5"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"
-              />
-            </svg>
-            <span class="text-[10px] font-medium">Login</span>
-          </a>
-        </li>
-        <li class="flex-1">
-          <a
-            href="/signup"
-            class="flex flex-col items-center justify-center h-full gap-1 text-sage-300 hover:text-sage-300 transition-all duration-200"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              class="h-5 w-5"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M18 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zM3 19.235v-.11a6.375 6.375 0 0112.75 0v.109A12.318 12.318 0 019.374 21c-2.331 0-4.512-.645-6.374-1.766z"
-              />
-            </svg>
-            <span class="text-[10px] font-medium">Signup</span>
-          </a>
-        </li>
-      </>
-    )}
+<!-- ================= MOBILE BOTTOM NAV ================= -->
+<nav class="sm:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-40">
+  <ul class="flex justify-around h-16">
+
+    <!-- Planning -->
+    <li class="flex-1">
+      <a href="/planning" class={`flex flex-col items-center justify-center h-full text-xs ${
+        isActive("/planning") ? "text-sage-600" : "text-gray-500"
+      }`}>
+        <svg class="w-5 h-5 mb-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M8 7V3m8 4V3M3 9h18M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        </svg>        
+        Planning
+      </a>
+    </li>
+
+    <!-- Recettes -->
+    <li class="flex-1">
+      <a href="/recipes" class={`flex flex-col items-center justify-center h-full text-xs ${
+        isActive("/recipes") ? "text-sage-600" : "text-gray-500"
+      }`}>
+        <svg class="w-5 h-5 mb-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M12 6c-1.5-1-3.5-1.5-5.5-1.5S3 5 3 6.5v11
+               c0-1.5 2-2.5 4.5-2.5s4 .5 5.5 1.5
+               c1.5-1 3.5-1.5 5.5-1.5s4.5 1 4.5 2.5v-11
+               c0-1.5-2-2.5-4.5-2.5S13.5 5 12 6z" />
+        </svg>        
+        Recettes
+      </a>
+    </li>
+
+    <!-- Courses -->
+    <li class="flex-1">
+      <a href="/shoppingList" class={`flex flex-col items-center justify-center h-full text-xs ${
+        isActive("/shoppingList") ? "text-sage-600" : "text-gray-500"
+      }`}>
+        <svg class="w-5 h-5 mb-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M3 3h2l.4 2M7 13h10l4-8H5.4
+               M7 13L5.4 5M7 13l-2 9m12-9l2 9
+               M9 21a1 1 0 100-2 1 1 0 000 2zm8 0a1 1 0 100-2 1 1 0 000 2z" />
+        </svg>        
+        Courses
+      </a>
+    </li>
+
   </ul>
 </nav>
 
 <script>
-  // Gestion du menu déroulant utilisateur mobile
-  if (typeof document !== 'undefined') {
-    const menuButton = document.getElementById('user-menu-button');
-    const menuDropdown = document.getElementById('user-menu-dropdown');
-    
-    if (menuButton && menuDropdown) {
-      menuButton.addEventListener('click', (e) => {
-        e.stopPropagation();
-        menuDropdown.classList.toggle('hidden');
-      });
-      
-      // Fermer le menu si on clique ailleurs
-      document.addEventListener('click', (e) => {
-        const target = e.target;
-        if (target instanceof Node && !menuButton.contains(target) && !menuDropdown.contains(target)) {
-          menuDropdown.classList.add('hidden');
-        }
-      });
-    }
-    
-    // Gestion du menu déroulant utilisateur desktop
-    const desktopMenuButton = document.getElementById('desktop-user-menu-button');
-    const desktopMenuDropdown = document.getElementById('desktop-user-menu-dropdown');
-    
-    if (desktopMenuButton && desktopMenuDropdown) {
-      desktopMenuButton.addEventListener('click', (e) => {
-        e.stopPropagation();
-        desktopMenuDropdown.classList.toggle('hidden');
-      });
-      
-      // Fermer le menu si on clique ailleurs
-      document.addEventListener('click', (e) => {
-        const target = e.target;
-        if (target instanceof Node && !desktopMenuButton.contains(target) && !desktopMenuDropdown.contains(target)) {
-          desktopMenuDropdown.classList.add('hidden');
-        }
-      });
-    }
-  }
+  const toggle = (btn, menu) => {
+    if (!btn || !menu) return;
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      menu.classList.toggle("hidden");
+    });
+    document.addEventListener("click", () => menu.classList.add("hidden"));
+  };
+
+  toggle(
+    document.getElementById("desktop-user-menu-button"),
+    document.getElementById("desktop-user-menu-dropdown")
+  );
+
+  toggle(
+    document.getElementById("mobile-user-button"),
+    document.getElementById("mobile-user-dropdown")
+  );
 </script>
 
 <style>
-  /* Enforce visibility rules to prevent duplicate navbars */
-  @media (min-width: 640px) {
-    .mobile-nav,
-    .mobile-top-bar {
-      display: none !important;
-    }
-    .desktop-nav {
-      display: block !important;
-    }
-  }
-
   @media (max-width: 639px) {
-    .mobile-nav,
-    .mobile-top-bar {
-      display: block !important;
-    }
-    .desktop-nav {
-      display: none !important;
-    }
-    
-    /* Ajouter un padding en bas pour la navbar mobile */
     body {
       padding-bottom: 64px;
     }
