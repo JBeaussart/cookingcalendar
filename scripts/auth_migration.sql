@@ -157,6 +157,9 @@ CREATE POLICY "Users can view own profile" ON user_profiles
 CREATE POLICY "Users can update own profile" ON user_profiles
   FOR UPDATE USING (auth.uid() = id);
 
+CREATE POLICY "Users can delete own profile" ON user_profiles
+  FOR DELETE USING (auth.uid() = id);
+
 -- Admins can view all profiles (utilise la fonction helper pour éviter la récursion)
 CREATE POLICY "Admins can view all profiles" ON user_profiles
   FOR SELECT USING (public.is_admin(auth.uid()));

@@ -208,7 +208,7 @@ const roleColor =
       </div>
 
       <!-- Actions -->
-      <div class="bg-white rounded-2xl shadow-xl p-6 sm:p-8">
+      <div class="bg-white rounded-2xl shadow-xl p-6 sm:p-8 mb-6">
         <h2 class="text-xl font-bold text-slate-900 mb-4">Actions</h2>
         <div class="space-y-3">
           <a
@@ -238,16 +238,32 @@ const roleColor =
           </form>
         </div>
       </div>
+
+      <!-- Zone de danger - Suppression de compte -->
+      <div class="bg-white rounded-2xl shadow-xl p-6 sm:p-8 border-2 border-red-200">
+        <button
+          id="delete-account-button"
+          type="button"
+          class="w-full px-4 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition shadow-lg hover:shadow-xl"
+        >
+          <i class="fas fa-trash-alt mr-2"></i>
+          Supprimer mon compte
+        </button>
+        <div id="delete-error" class="hidden text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-3 mt-4"></div>
+        <p class="text-sm text-slate-600 mt-2">
+          La suppression de votre compte est définitive et irréversible. Toutes vos données seront supprimées.
+        </p>
+      </div>
     </div>
   </div>
 </Layout>
 
 <script>
-  const changePasswordForm = document.getElementById("change-password-form");
+  const changePasswordForm = document.getElementById("change-password-form") as HTMLFormElement | null;
   const errorDiv = document.getElementById("password-error");
   const successDiv = document.getElementById("password-success");
 
-  if (changePasswordForm) {
+  if (changePasswordForm && errorDiv && successDiv) {
     changePasswordForm.addEventListener("submit", async (e) => {
       e.preventDefault();
 
@@ -257,7 +273,7 @@ const roleColor =
 
       const formData = new FormData(changePasswordForm);
       const currentPassword = formData.get("currentPassword");
-      const newPassword = formData.get("newPassword");
+      const newPassword = formData.get("newPassword") as string | null;
       const confirmPassword = formData.get("confirmPassword");
 
       // Validation côté client
@@ -267,14 +283,16 @@ const roleColor =
         return;
       }
 
-      if (newPassword.length < 6) {
+      if (!newPassword || newPassword.length < 6) {
         errorDiv.textContent = "Le nouveau mot de passe doit contenir au moins 6 caractères";
         errorDiv.classList.remove("hidden");
         return;
       }
 
       // Désactiver le bouton pendant la requête
-      const submitButton = changePasswordForm.querySelector('button[type="submit"]');
+      const submitButton = changePasswordForm.querySelector('button[type="submit"]') as HTMLButtonElement | null;
+      if (!submitButton) return;
+      
       const originalButtonText = submitButton.innerHTML;
       submitButton.disabled = true;
       submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Modification...';
@@ -310,8 +328,108 @@ const roleColor =
         errorDiv.textContent = "Une erreur est survenue. Veuillez réessayer.";
         errorDiv.classList.remove("hidden");
       } finally {
-        submitButton.disabled = false;
-        submitButton.innerHTML = originalButtonText;
+        if (submitButton) {
+          submitButton.disabled = false;
+          submitButton.innerHTML = originalButtonText;
+        }
+      }
+    });
+  }
+
+  // Gestion de la suppression de compte
+  const deleteAccountButton = document.getElementById("delete-account-button") as HTMLButtonElement | null;
+  const deleteErrorDiv = document.getElementById("delete-error");
+
+  if (deleteAccountButton && deleteErrorDiv) {
+    deleteAccountButton.addEventListener("click", async () => {
+      // Afficher une alerte de confirmation
+      const confirmed = confirm(
+        "⚠️ ATTENTION : Cette action est irréversible !\n\n" +
+        "La suppression de votre compte entraînera :\n" +
+        "• La suppression de toutes vos recettes\n" +
+        "• La suppression de votre planning\n" +
+        "• La suppression de toutes vos données\n\n" +
+        "Êtes-vous sûr de vouloir supprimer votre compte ?\n\n" +
+        "Tapez 'SUPPRIMER' dans la prochaine boîte de dialogue pour confirmer."
+      );
+
+      if (!confirmed) {
+        return;
+      }
+
+      // Demander une confirmation supplémentaire avec un mot-clé
+      const confirmation = prompt(
+        "Pour confirmer la suppression, veuillez taper 'SUPPRIMER' (en majuscules) :"
+      );
+
+      if (confirmation !== "SUPPRIMER") {
+        deleteErrorDiv.textContent = "Suppression annulée. Le mot de confirmation ne correspond pas.";
+        deleteErrorDiv.classList.remove("hidden");
+        setTimeout(() => {
+          deleteErrorDiv.classList.add("hidden");
+        }, 5000);
+        return;
+      }
+
+      // Masquer les messages précédents
+      deleteErrorDiv.classList.add("hidden");
+
+      // Désactiver le bouton pendant la requête
+      deleteAccountButton.disabled = true;
+      const originalText = deleteAccountButton.innerHTML;
+      deleteAccountButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Suppression en cours...';
+
+      try {
+        const response = await fetch("/api/delete-account", {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+
+        let data;
+        try {
+          data = await response.json();
+        } catch (jsonError) {
+          // Si la réponse n'est pas du JSON, c'est probablement une erreur serveur
+          const text = await response.text();
+          console.error("Erreur lors du parsing de la réponse:", text);
+          deleteErrorDiv.textContent = `Erreur serveur (${response.status}): ${text || "Réponse invalide"}`;
+          deleteErrorDiv.classList.remove("hidden");
+          deleteAccountButton.disabled = false;
+          deleteAccountButton.innerHTML = originalText;
+          return;
+        }
+
+        if (!response.ok) {
+          const errorMessage = data.error || data.details || "Une erreur est survenue lors de la suppression";
+          deleteErrorDiv.textContent = errorMessage + (data.code ? ` (Code: ${data.code})` : "");
+          deleteErrorDiv.classList.remove("hidden");
+          deleteAccountButton.disabled = false;
+          deleteAccountButton.innerHTML = originalText;
+        } else {
+          // Déconnecter l'utilisateur et rediriger vers la landing page
+          // On fait d'abord une déconnexion pour nettoyer la session côté client
+          try {
+            await fetch("/api/auth/logout", {
+              method: "POST",
+            });
+          } catch (logoutError) {
+            // Ignorer les erreurs de déconnexion, on redirige quand même
+            console.warn("Erreur lors de la déconnexion:", logoutError);
+          }
+          
+          // Rediriger vers la landing page
+          alert("Votre compte a été supprimé avec succès.");
+          // Utiliser replace pour éviter que l'utilisateur puisse revenir en arrière
+          window.location.replace("/");
+        }
+      } catch (error) {
+        console.error("Erreur lors de la suppression:", error);
+        deleteErrorDiv.textContent = `Une erreur est survenue: ${error instanceof Error ? error.message : "Erreur inconnue"}`;
+        deleteErrorDiv.classList.remove("hidden");
+        deleteAccountButton.disabled = false;
+        deleteAccountButton.innerHTML = originalText;
       }
     });
   }
