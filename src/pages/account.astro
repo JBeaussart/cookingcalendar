@@ -1,18 +1,10 @@
----
-// src/pages/account.astro
-import Layout from "../layouts/Layout.astro";
+---import Layout from "../layouts/Layout.astro";
 import { getServerSession, getAuthenticatedSupabase } from "../lib/auth";
 import { supabase } from "../supabase";
 
-// Vérifier si l'utilisateur est connecté
 const { user } = await getServerSession(Astro.request);
+if (!user) return Astro.redirect("/login", 302);
 
-// Si non connecté, rediriger vers la page de connexion
-if (!user) {
-  return Astro.redirect("/login", 302);
-}
-
-// Type assertion pour user
 type UserWithRole = {
   id: string;
   email?: string;
@@ -20,243 +12,159 @@ type UserWithRole = {
   user_role?: string;
   created_at?: string;
 };
+
 const userWithRole = user as UserWithRole;
 const userId = userWithRole.id;
 
-// Récupérer un client Supabase authentifié
 const { supabase: authSupabase } = await getAuthenticatedSupabase(Astro.request);
-const authenticatedSupabase = (authSupabase || supabase) as typeof supabase;
+const db = (authSupabase || supabase) as typeof supabase;
 
-// Récupérer le profil complet de l'utilisateur
-const { data: profile } = await authenticatedSupabase
+const { data: profile } = await db
   .from("user_profiles")
   .select("*")
   .eq("id", userId)
   .single();
 
-// Compter les recettes de l'utilisateur
-const { count: recipesCount } = await authenticatedSupabase
+const { count: recipesCount } = await db
   .from("recipes")
   .select("*", { count: "exact", head: true })
   .eq("user_id", userId);
 
-// Compter les recettes dans le planning
-const { count: planningCount } = await authenticatedSupabase
+const { count: planningCount } = await db
   .from("planning")
   .select("*", { count: "exact", head: true })
   .eq("user_id", userId)
   .not("recipe_id", "is", null);
 
-// Formater la date de création
-const formatDate = (dateString?: string) => {
-  if (!dateString) return "Non disponible";
-  const date = new Date(dateString);
-  return date.toLocaleDateString("fr-FR", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-};
+const formatDate = (date?: string) =>
+  date
+    ? new Date(date).toLocaleDateString("fr-FR", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      })
+    : "—";
 
-const roleLabel = 
-  (userWithRole.role || userWithRole.user_role) === "admin" ? "Administrateur" :
-  (userWithRole.role || userWithRole.user_role) === "premium" ? "Premium" :
+const role =
+  userWithRole.role || userWithRole.user_role || "free";
+
+const roleLabel =
+  role === "admin" ? "Administrateur" :
+  role === "premium" ? "Premium" :
   "Gratuit";
 
-const roleColor = 
-  (userWithRole.role || userWithRole.user_role) === "admin" ? "bg-purple-100 text-purple-700 border-purple-200" :
-  (userWithRole.role || userWithRole.user_role) === "premium" ? "bg-yellow-100 text-yellow-700 border-yellow-200" :
-  "bg-gray-100 text-gray-700 border-gray-200";
+const roleStyle =
+  role === "admin"
+    ? "bg-purple-100 text-purple-700"
+    : role === "premium"
+    ? "bg-sage-100 text-sage-700"
+    : "bg-gray-100 text-gray-700";
 ---
 
 <Layout title="Mon compte">
-  <div class="min-h-screen bg-gradient-to-br from-sage-50/30 via-sage-50/20 to-slate-50 pb-20">
-    <div class="max-w-4xl mx-auto px-4 py-8 sm:py-12">
-      <!-- En-tête -->
-      <div class="mb-8">
-        <h1 class="text-3xl sm:text-4xl font-bold text-slate-900 mb-2">Mon compte</h1>
-        <p class="text-slate-600">Gérez vos informations et préférences</p>
-      </div>
+  <div class="min-h-screen bg-sage-50 pb-24">
+    <div class="max-w-3xl mx-auto px-4 py-10 space-y-10">
 
-      <!-- Informations utilisateur -->
-      <div class="bg-white rounded-2xl shadow-xl p-6 sm:p-8 mb-6">
-        <div class="flex items-start gap-4 mb-6">
-          <div class={`w-16 h-16 rounded-xl flex items-center justify-center text-2xl ${
-            (userWithRole.role || userWithRole.user_role) === 'admin' ? 'bg-purple-100 text-purple-600' :
-            (userWithRole.role || userWithRole.user_role) === 'premium' ? 'bg-yellow-100 text-yellow-600' :
-            'bg-gray-100 text-gray-600'
-          }`}>
-            <i class="fas fa-user"></i>
-          </div>
-          <div class="flex-1">
-            <h2 class="text-xl font-bold text-slate-900 mb-1">Informations personnelles</h2>
-            <p class="text-sm text-slate-500">Vos données de compte</p>
-          </div>
+      <!-- HEADER -->
+      <header>
+        <h1 class="text-3xl font-bold text-gray-900 mb-1">
+          Mon compte
+        </h1>
+        <p class="text-gray-600">
+          Vos informations et paramètres essentiels
+        </p>
+      </header>
+
+      <!-- COMPTE -->
+      <section class="bg-white rounded-2xl border border-gray-200 p-6 space-y-4">
+        <div>
+          <p class="text-sm text-gray-500">Email</p>
+          <p class="font-medium">{userWithRole.email || profile?.email}</p>
         </div>
 
-        <div class="space-y-4">
-          <!-- Email -->
-          <div class="border-b border-gray-100 pb-4">
-            <label class="block text-sm font-medium text-slate-500 mb-1">Email</label>
-            <p class="text-base text-slate-900">{userWithRole.email || profile?.email || "Non disponible"}</p>
-          </div>
-
-          <!-- Statut -->
-          <div class="border-b border-gray-100 pb-4">
-            <label class="block text-sm font-medium text-slate-500 mb-2">Statut</label>
-            <span class={`inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold border ${roleColor}`}>
-              {roleLabel}
-            </span>
-          </div>
-
-          <!-- Date de création -->
-          <div>
-            <label class="block text-sm font-medium text-slate-500 mb-1">Membre depuis</label>
-            <p class="text-base text-slate-900">
-              {formatDate(profile?.created_at || userWithRole.created_at)}
-            </p>
-          </div>
+        <div class="flex items-center gap-3">
+          <span class={`px-3 py-1 rounded-full text-sm font-medium ${roleStyle}`}>
+            {roleLabel}
+          </span>
+          <span class="text-sm text-gray-500">
+            Membre depuis {formatDate(profile?.created_at || userWithRole.created_at)}
+          </span>
         </div>
-      </div>
+      </section>
 
-      <!-- Changement de mot de passe -->
-      <div class="bg-white rounded-2xl shadow-xl p-6 sm:p-8 mb-6">
-        <h2 class="text-xl font-bold text-slate-900 mb-4">Changer le mot de passe</h2>
+      <!-- STATS -->
+      <section class="grid grid-cols-2 gap-4">
+        <div class="bg-white rounded-xl border border-gray-200 p-4 text-center">
+          <p class="text-2xl font-bold">{recipesCount || 0}</p>
+          <p class="text-sm text-gray-600">Recettes créées</p>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 p-4 text-center">
+          <p class="text-2xl font-bold">{planningCount || 0}</p>
+          <p class="text-sm text-gray-600">Recettes planifiées</p>
+        </div>
+      </section>
+
+      <!-- MOT DE PASSE -->
+      <section class="bg-white rounded-2xl border border-gray-200 p-6">
+        <h2 class="text-lg font-semibold mb-4">
+          Changer de mot de passe
+        </h2>
+
         <form id="change-password-form" class="space-y-4">
-          <div>
-            <label for="current-password" class="block text-sm font-medium text-slate-700 mb-2">
-              Mot de passe actuel
-            </label>
-            <input
-              type="password"
-              id="current-password"
-              name="currentPassword"
-              required
-              class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sage-300 focus:border-transparent outline-none transition"
-              placeholder="Entrez votre mot de passe actuel"
-            />
-          </div>
+          <input type="password" name="currentPassword" placeholder="Mot de passe actuel"
+            class="w-full px-4 py-3 border rounded-lg" required />
+          <input type="password" name="newPassword" placeholder="Nouveau mot de passe"
+            class="w-full px-4 py-3 border rounded-lg" required minlength="6" />
+          <input type="password" name="confirmPassword" placeholder="Confirmer le mot de passe"
+            class="w-full px-4 py-3 border rounded-lg" required minlength="6" />
 
-          <div>
-            <label for="new-password" class="block text-sm font-medium text-slate-700 mb-2">
-              Nouveau mot de passe
-            </label>
-            <input
-              type="password"
-              id="new-password"
-              name="newPassword"
-              required
-              minlength="6"
-              class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sage-300 focus:border-transparent outline-none transition"
-              placeholder="Entrez votre nouveau mot de passe (min. 6 caractères)"
-            />
-          </div>
-
-          <div>
-            <label for="confirm-password" class="block text-sm font-medium text-slate-700 mb-2">
-              Confirmer le nouveau mot de passe
-            </label>
-            <input
-              type="password"
-              id="confirm-password"
-              name="confirmPassword"
-              required
-              minlength="6"
-              class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sage-300 focus:border-transparent outline-none transition"
-              placeholder="Confirmez votre nouveau mot de passe"
-            />
-          </div>
-
-          <div id="password-error" class="hidden text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-3"></div>
-          <div id="password-success" class="hidden text-sm text-green-600 bg-green-50 border border-green-200 rounded-lg p-3"></div>
+          <div id="password-error" class="hidden text-sm text-red-600"></div>
+          <div id="password-success" class="hidden text-sm text-green-600"></div>
 
           <button
             type="submit"
-            class="w-full px-4 py-3 bg-gradient-to-r from-sage-300 to-sage-500 text-white rounded-lg font-semibold hover:from-sage-300 hover:to-sage-600 transition shadow-lg hover:shadow-xl"
+            class="w-full py-3 bg-sage-600 text-white rounded-lg font-medium"
           >
-            <i class="fas fa-key mr-2"></i>
             Modifier le mot de passe
           </button>
         </form>
-      </div>
+      </section>
 
-      <!-- Statistiques -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-        <div class="bg-white rounded-xl shadow-lg p-6">
-          <div class="flex items-center gap-4">
-            <div class="w-12 h-12 rounded-lg bg-sage-100 text-sage-600 flex items-center justify-center">
-              <i class="fas fa-book text-xl"></i>
-            </div>
-            <div>
-              <p class="text-2xl font-bold text-slate-900">{recipesCount || 0}</p>
-              <p class="text-sm text-slate-500">Recettes créées</p>
-            </div>
-          </div>
-        </div>
+      <!-- ACTIONS -->
+      <section class="space-y-3">
+        <a href="/recipes" class="block w-full py-3 bg-sage-100 text-sage-700 rounded-lg text-center">
+          Voir mes recettes
+        </a>
+        <a href="/planning" class="block w-full py-3 border rounded-lg text-center">
+          Voir mon planning
+        </a>
+        <form method="post" action="/api/auth/logout">
+          <button class="w-full py-3 border border-red-200 text-red-600 rounded-lg">
+            Déconnexion
+          </button>
+        </form>
+      </section>
 
-        <div class="bg-white rounded-xl shadow-lg p-6">
-          <div class="flex items-center gap-4">
-            <div class="w-12 h-12 rounded-lg bg-sage-100 text-sage-600 flex items-center justify-center">
-              <i class="fas fa-calendar text-xl"></i>
-            </div>
-            <div>
-              <p class="text-2xl font-bold text-slate-900">{planningCount || 0}</p>
-              <p class="text-sm text-slate-500">Recettes planifiées</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Actions -->
-      <div class="bg-white rounded-2xl shadow-xl p-6 sm:p-8 mb-6">
-        <h2 class="text-xl font-bold text-slate-900 mb-4">Actions</h2>
-        <div class="space-y-3">
-          <a
-            href="/recipes"
-            class="block w-full px-4 py-3 bg-gradient-to-r from-sage-300 to-sage-500 text-white rounded-lg font-semibold text-center hover:from-sage-300 hover:to-sage-600 transition shadow-lg hover:shadow-xl"
-          >
-            <i class="fas fa-book mr-2"></i>
-            Voir mes recettes
-          </a>
-          
-          <a
-            href="/planning"
-            class="block w-full px-4 py-3 bg-white border-2 border-slate-200 text-slate-700 rounded-lg font-semibold text-center hover:bg-slate-50 transition"
-          >
-            <i class="fas fa-calendar mr-2"></i>
-            Voir mon planning
-          </a>
-
-          <form method="post" action="/api/auth/logout" class="w-full">
-            <button
-              type="submit"
-              class="block w-full px-4 py-3 bg-white border-2 border-red-200 text-red-600 rounded-lg font-semibold text-center hover:bg-red-50 transition"
-            >
-              <i class="fas fa-sign-out-alt mr-2"></i>
-              Déconnexion
-            </button>
-          </form>
-        </div>
-      </div>
-
-      <!-- Zone de danger - Suppression de compte -->
-      <div class="bg-white rounded-2xl shadow-xl p-6 sm:p-8 border-2 border-red-200">
+      <!-- DANGER -->
+      <section class="border border-red-200 bg-red-50 rounded-2xl p-6">
         <button
           id="delete-account-button"
-          type="button"
-          class="w-full px-4 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition shadow-lg hover:shadow-xl"
+          class="w-full py-3 bg-red-600 text-white rounded-lg font-medium"
         >
-          <i class="fas fa-trash-alt mr-2"></i>
           Supprimer mon compte
         </button>
-        <div id="delete-error" class="hidden text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-3 mt-4"></div>
-        <p class="text-sm text-slate-600 mt-2">
-          La suppression de votre compte est définitive et irréversible. Toutes vos données seront supprimées.
+        <div id="delete-error" class="hidden text-sm text-red-600 mt-3"></div>
+        <p class="text-sm text-red-700 mt-3">
+          Cette action est définitive et irréversible.
         </p>
-      </div>
+      </section>
+
     </div>
   </div>
 </Layout>
+
+<!-- JS inchangé : change-password + delete-account -->
+
 
 <script>
   const changePasswordForm = document.getElementById("change-password-form") as HTMLFormElement | null;

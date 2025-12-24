@@ -105,8 +105,25 @@ const isActive = (href: string) =>
             id="desktop-user-menu-dropdown"
             class="hidden absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden"
           >
-            <div class="px-4 py-3 border-b text-sm text-gray-600">
-              {userWithRole.email}
+            <div class="px-4 py-3 border-b">
+              <div class="text-sm text-gray-600 mb-2">
+                {userWithRole.email}
+              </div>
+              <div class="flex items-center gap-2">
+                {userRole === "admin" ? (
+                  <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-semibold bg-purple-100 text-purple-700">
+                    Admin
+                  </span>
+                ) : userRole === "premium" ? (
+                  <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-semibold bg-sage-100 text-sage-700">
+                    Premium
+                  </span>
+                ) : (
+                  <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-semibold bg-gray-100 text-gray-700">
+                    Free
+                  </span>
+                )}
+              </div>
             </div>
 
             <a href="/account" class="block px-4 py-2 text-sm hover:bg-gray-50">
@@ -261,6 +278,26 @@ const isActive = (href: string) =>
       id="mobile-user-dropdown"
       class="hidden absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden"
     >
+      <div class="px-4 py-3 border-b">
+        <div class="text-sm text-gray-600 mb-2">
+          {userWithRole.email}
+        </div>
+        <div class="flex items-center gap-2">
+          {userRole === "admin" ? (
+            <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-semibold bg-purple-100 text-purple-700">
+              Admin
+            </span>
+          ) : userRole === "premium" ? (
+            <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-semibold bg-sage-100 text-sage-700">
+              Premium
+            </span>
+          ) : (
+            <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-semibold bg-gray-100 text-gray-700">
+              Free
+            </span>
+          )}
+        </div>
+      </div>
       {isFreeUser && (
         <a
           href="/premium"
