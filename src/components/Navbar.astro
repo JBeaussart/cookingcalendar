@@ -17,65 +17,76 @@ const isActive = (href: string) =>
 <nav class="hidden sm:block sticky top-0 z-50 bg-white border-b border-gray-200">
   <div class="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
 
-    <!-- Left navigation -->
+    <!-- LEFT NAV -->
     <ul class="flex items-center gap-4">
+
+      <!-- Planning -->
       <li>
         <a
           href="/planning"
-          class={`text-sm font-medium px-3 py-2 rounded-lg ${
+          class={`flex items-center gap-2 text-sm font-medium px-3 py-2 rounded-lg ${
             isActive("/planning")
               ? "bg-sage-100 text-sage-700"
               : "text-gray-700 hover:bg-gray-100"
           }`}
         >
-          Planning
+          🗓️
+          <span>Planning</span>
         </a>
       </li>
 
+      <!-- Recettes -->
       <li>
         <a
           href="/recipes"
-          class={`text-sm font-medium px-3 py-2 rounded-lg ${
+          class={`flex items-center gap-2 text-sm font-medium px-3 py-2 rounded-lg ${
             isActive("/recipes")
               ? "bg-sage-100 text-sage-700"
               : "text-gray-700 hover:bg-gray-100"
           }`}
         >
-          Recettes
+          📖
+          <span>Recettes</span>
         </a>
       </li>
 
+      <!-- Courses -->
       <li>
         <a
           href="/shoppingList"
-          class={`text-sm font-medium px-3 py-2 rounded-lg ${
+          class={`flex items-center gap-2 text-sm font-medium px-3 py-2 rounded-lg ${
             isActive("/shoppingList")
               ? "bg-sage-100 text-sage-700"
               : "text-gray-700 hover:bg-gray-100"
           }`}
         >
-          Courses
+          🛒
+          <span>Courses</span>
         </a>
       </li>
 
+      <!-- Réception (premium/admin uniquement) -->
       {(userRole === "premium" || userRole === "admin") && (
         <li>
           <a
             href="/reception"
-            class={`text-sm font-medium px-3 py-2 rounded-lg ${
+            class={`flex items-center gap-2 text-sm font-medium px-3 py-2 rounded-lg ${
               isActive("/reception")
                 ? "bg-sage-100 text-sage-700"
                 : "text-gray-700 hover:bg-gray-100"
             }`}
           >
-            Réception
+            🎉
+            <span>Réception</span>
           </a>
         </li>
       )}
+
     </ul>
 
-    <!-- Right actions -->
+    <!-- RIGHT ACTIONS -->
     <div class="flex items-center gap-3">
+
       {isFreeUser && (
         <a
           href="/premium"
@@ -117,120 +128,118 @@ const isActive = (href: string) =>
           </div>
         </div>
       )}
+
     </div>
   </div>
 </nav>
 
-<!-- ================= MOBILE TOP (ACCOUNT) ================= -->
-{userWithRole && (
-  <div class="sm:hidden fixed top-3 right-3 z-50">
-    <button
-      id="mobile-user-button"
-      class="w-11 h-11 rounded-xl bg-white border border-gray-300 shadow flex items-center justify-center"
-    >
-      👤
-    </button>
-
-    <div
-      id="mobile-user-dropdown"
-      class="hidden absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden"
-    >
-      {isFreeUser && (
-        <a
-          href="/premium"
-          class="block px-4 py-3 text-sm text-sage-700 bg-sage-50"
-        >
-          Passer à Premium
-        </a>
-      )}
-
-      <a href="/account" class="block px-4 py-2 text-sm hover:bg-gray-50">
-        Mon profil
-      </a>
-
-      <form method="post" action="/api/auth/logout">
-        <button
-          type="submit"
-          class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-        >
-          Déconnexion
-        </button>
-      </form>
-    </div>
-  </div>
-)}
-
-<!-- ================= MOBILE BOTTOM NAV ================= -->
+<!-- ================= MOBILE BOTTOM NAV (SVG ORIGINAUX) ================= -->
 <nav class="sm:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-40">
   <ul class="flex justify-around h-16">
 
     <!-- Planning -->
     <li class="flex-1">
-      <a href="/planning" class={`flex flex-col items-center justify-center h-full text-xs ${
-        isActive("/planning") ? "text-sage-600" : "text-gray-500"
-      }`}>
-        <svg class="w-5 h-5 mb-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round"
-            d="M8 7V3m8 4V3M3 9h18M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-        </svg>        
+      <a
+        href="/planning"
+        class={`flex flex-col items-center justify-center h-full text-xs ${
+          isActive("/planning") ? "text-sage-600" : "text-gray-500"
+        }`}
+      >
+        <svg
+          class="w-5 h-5 mb-1"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M8 7V3m8 4V3M3 9h18M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        </svg>
         Planning
       </a>
     </li>
 
     <!-- Recettes -->
     <li class="flex-1">
-      <a href="/recipes" class={`flex flex-col items-center justify-center h-full text-xs ${
-        isActive("/recipes") ? "text-sage-600" : "text-gray-500"
-      }`}>
-        <svg class="w-5 h-5 mb-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round"
-            d="M12 6c-1.5-1-3.5-1.5-5.5-1.5S3 5 3 6.5v11
-               c0-1.5 2-2.5 4.5-2.5s4 .5 5.5 1.5
-               c1.5-1 3.5-1.5 5.5-1.5s4.5 1 4.5 2.5v-11
-               c0-1.5-2-2.5-4.5-2.5S13.5 5 12 6z" />
-        </svg>        
+      <a
+        href="/recipes"
+        class={`flex flex-col items-center justify-center h-full text-xs ${
+          isActive("/recipes") ? "text-sage-600" : "text-gray-500"
+        }`}
+      >
+        <svg
+          class="w-5 h-5 mb-1"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+          <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+        </svg>
         Recettes
       </a>
     </li>
 
     <!-- Courses -->
     <li class="flex-1">
-      <a href="/shoppingList" class={`flex flex-col items-center justify-center h-full text-xs ${
-        isActive("/shoppingList") ? "text-sage-600" : "text-gray-500"
-      }`}>
-        <svg class="w-5 h-5 mb-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round"
-            d="M3 3h2l.4 2M7 13h10l4-8H5.4
-               M7 13L5.4 5M7 13l-2 9m12-9l2 9
-               M9 21a1 1 0 100-2 1 1 0 000 2zm8 0a1 1 0 100-2 1 1 0 000 2z" />
-        </svg>        
+      <a
+        href="/shoppingList"
+        class={`flex flex-col items-center justify-center h-full text-xs ${
+          isActive("/shoppingList") ? "text-sage-600" : "text-gray-500"
+        }`}
+      >
+        <svg
+          class="w-5 h-5 mb-1"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <circle cx="9" cy="21" r="1" />
+          <circle cx="20" cy="21" r="1" />
+          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+        </svg>
         Courses
       </a>
     </li>
 
+    <!-- Réception (premium / admin uniquement) -->
+    {(userRole === "premium" || userRole === "admin") && (
+      <li class="flex-1">
+        <a
+          href="/reception"
+          class={`flex flex-col items-center justify-center h-full text-xs ${
+            isActive("/reception") ? "text-sage-600" : "text-gray-500"
+          }`}
+        >
+          <svg
+            class="w-5 h-5 mb-1"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+          </svg>
+          Réception
+        </a>
+      </li>
+    )}
+
   </ul>
 </nav>
 
-<script>
-  const toggle = (btn: HTMLElement | null, menu: HTMLElement | null) => {
-    if (!btn || !menu) return;
-    btn.addEventListener("click", (e: MouseEvent) => {
-      e.stopPropagation();
-      menu.classList.toggle("hidden");
-    });
-    document.addEventListener("click", () => menu.classList.add("hidden"));
-  };
-
-  toggle(
-    document.getElementById("desktop-user-menu-button"),
-    document.getElementById("desktop-user-menu-dropdown")
-  );
-
-  toggle(
-    document.getElementById("mobile-user-button"),
-    document.getElementById("mobile-user-dropdown")
-  );
-</script>
 
 <style>
   @media (max-width: 639px) {
