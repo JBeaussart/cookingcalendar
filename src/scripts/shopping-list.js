@@ -1,6 +1,6 @@
 import { supabase } from "../supabase.js";
 
-console.log("Shopping List script starting (external)...");
+// Shopping List script
 
 const listEl = document.getElementById("list");
 const emptyStateEl = document.getElementById("emptyState");
@@ -279,9 +279,7 @@ async function fetchCustomItems() {
         }
         const { items: rawCustoms } = await res.json();
 
-        console.log("Custom items data:", rawCustoms);
         customItems = (rawCustoms || []).map(decorateCustomItem);
-        console.log("Decorated custom items:", customItems);
         updateAndRender();
     } catch (e) {
         console.error("Error fetching custom items:", e);
@@ -357,13 +355,11 @@ function updateBulkButtons() {
 
 function render() {
     sortItems();
-    console.log("Render items:", items.length, items.map(i => `${i.item} (${i.sectionKey})`));
 
     listEl.innerHTML = "";
     updateBulkButtons();
 
     if (!Array.isArray(items) || items.length === 0) {
-        console.log("No items to render");
         listEl.classList.add("hidden");
         emptyStateEl.classList.remove("hidden");
         return;
@@ -379,7 +375,6 @@ function render() {
         const sectionKey = row.sectionKey || (isCustom ? "2:custom" : "1:autres");
         const sectionLabel = row.sectionLabel || (isCustom ? SECTION_CUSTOM : SECTION_FALLBACK);
 
-        // console.log("Row:", row.item, sectionKey, currentSectionKey);
 
         if (sectionKey !== currentSectionKey) {
             currentSectionKey = sectionKey;
@@ -478,7 +473,6 @@ function render() {
         li.appendChild(left);
         li.appendChild(right);
         listEl.appendChild(li);
-        console.log("Appended item:", txt);
 
         // Handle Check
         cb.addEventListener("change", async () => {
@@ -554,9 +548,6 @@ function render() {
             }
         });
     });
-    console.log("Render complete. listEl children:", listEl.children.length);
-    // console.log("listEl HTML:", listEl.innerHTML);
-    // listEl.style.border = "5px solid red";
 }
 
 // Helper to serialize computed items for API

@@ -203,7 +203,7 @@ const roleStyle =
       
       const originalButtonText = submitButton.innerHTML;
       submitButton.disabled = true;
-      submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Modification...';
+      submitButton.innerHTML = '<svg class="inline-block w-4 h-4 mr-2 animate-spin" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> Modification...';
 
       try {
         const response = await fetch("/api/auth/change-password", {
@@ -285,7 +285,7 @@ const roleStyle =
       // Désactiver le bouton pendant la requête
       deleteAccountButton.disabled = true;
       const originalText = deleteAccountButton.innerHTML;
-      deleteAccountButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Suppression en cours...';
+      deleteAccountButton.innerHTML = '<svg class="inline-block w-4 h-4 mr-2 animate-spin" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> Suppression en cours...';
 
       try {
         const response = await fetch("/api/delete-account", {
