@@ -633,6 +633,29 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
         return false;
       }
 
+      // Fonction pour générer une URL d'image optimisée via wsrv.nl (proxy gratuit)
+      function getOptimizedImageUrl(originalUrl, width = 400, quality = 75) {
+        // Ne pas optimiser les images locales/par défaut
+        if (!originalUrl || originalUrl.startsWith('/') || originalUrl.startsWith('./')) {
+          return originalUrl;
+        }
+        // Utiliser wsrv.nl pour redimensionner et compresser l'image
+        // - w: largeur max
+        // - h: hauteur max (calculée proportionnellement)
+        // - fit=cover: mode cover pour le crop
+        // - q: qualité (1-100)
+        // - output=webp: format WebP plus léger
+        const params = new URLSearchParams({
+          url: originalUrl,
+          w: width.toString(),
+          h: Math.round(width * 0.75).toString(), // Ratio 4:3
+          fit: 'cover',
+          q: quality.toString(),
+          output: 'webp'
+        });
+        return `https://wsrv.nl/?${params.toString()}`;
+      }
+
       function makeBadge(text, cls) {
         const span = document.createElement("span");
         span.className = `inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${cls}`;
@@ -709,10 +732,17 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
         img.decoding = "async";
         img.className =
           "h-full w-full object-cover transition-transform duration-500 group-hover:scale-110";
-        img.src = r.image || DEFAULT_IMG;
+        // Utiliser l'image optimisée pour les thumbnails (400px, qualité 75%)
+        const originalImageUrl = r.image || DEFAULT_IMG;
+        img.src = getOptimizedImageUrl(originalImageUrl, 400, 75);
         img.alt = r.title || "";
         img.onerror = () => {
-          img.src = DEFAULT_IMG;
+          // En cas d'erreur, fallback vers l'image originale puis l'image par défaut
+          if (img.src !== originalImageUrl && originalImageUrl !== DEFAULT_IMG) {
+            img.src = originalImageUrl;
+          } else {
+            img.src = DEFAULT_IMG;
+          }
         };
         imgWrap.appendChild(img);
         card.appendChild(imgWrap);
