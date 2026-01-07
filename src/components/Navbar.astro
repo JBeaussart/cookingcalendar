@@ -1,9 +1,13 @@
 ---
 import "../styles/global.css";
-import { getServerSession } from "../lib/auth";
 
+// Props: l'utilisateur est passé par le Layout (évite un appel DB)
+interface Props {
+  user?: { email?: string; role?: string; user_role?: string; id?: string } | null;
+}
+
+const { user } = Astro.props;
 const currentPath = Astro.url.pathname;
-const { user } = await getServerSession(Astro.request);
 
 const userWithRole = user as { email?: string; role?: string; user_role?: string } | null;
 const userRole = userWithRole?.role || userWithRole?.user_role;

@@ -1,8 +1,17 @@
 ---
 import Layout from "../layouts/Layout.astro";
+import { getServerSession } from "../lib/auth";
+
+// Vérifier si l'utilisateur est connecté
+const { user } = await getServerSession(Astro.request);
+
+// Si non connecté, rediriger vers la page d'accueil
+if (!user) {
+  return Astro.redirect("/", 302);
+}
 ---
 
-<Layout title="Liste de courses">
+<Layout title="Liste de courses" user={user}>
   <div class="min-h-screen bg-gradient-to-br from-sage-50/30 via-sage-50/20 to-slate-50">
     <div class="mx-auto max-w-3xl px-4 py-12">
       <!-- Header -->

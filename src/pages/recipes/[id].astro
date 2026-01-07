@@ -46,7 +46,7 @@ const recipe = await (async () => {
 const DEFAULT_IMG = "/images/default-recipe.jpg";
 ---
 
-<Layout title={recipe?.title || "Recette"}>
+<Layout title={recipe?.title || "Recette"} user={user}>
     <div
       class="min-h-screen bg-gradient-to-br from-sage-50/30 via-sage-50/20 to-slate-50 pb-20"
     >

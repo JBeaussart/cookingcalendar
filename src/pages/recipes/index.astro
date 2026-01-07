@@ -38,7 +38,7 @@ const DEFAULT_IMG = "/images/default-recipe.jpg";
 const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
 ---
 
-<Layout title="Recettes">
+<Layout title="Recettes" user={user}>
   <div class="min-h-screen bg-gradient-to-br from-sage-50/30 via-sage-50/20 to-slate-50 w-full overflow-x-hidden">
     <div class="w-full max-w-6xl mx-auto px-4 pt-12 pb-32">
       <!-- Header -->

@@ -1,7 +1,12 @@
 ---
 import Navbar from "../components/Navbar.astro";
 
-const { title = "Planificateur de repas" } = Astro.props;
+interface Props {
+  title?: string;
+  user?: { email?: string; role?: string; user_role?: string; id?: string } | null;
+}
+
+const { title = "Planificateur de repas", user = null } = Astro.props;
 ---
 
 <!doctype html>
@@ -14,51 +19,22 @@ const { title = "Planificateur de repas" } = Astro.props;
     <title>{title}</title>
   </head>
   <body>
-    <Navbar />
+    <Navbar user={user} />
     <slot />
   </body>
 </html>
 
 <script>
-  // Session refresh optimisé - seulement quand nécessaire
+  // Session refresh optimisé - UNIQUEMENT quand l'utilisateur revient après une longue absence
+  // Le refresh côté serveur est déjà géré par getServerSession
   (function() {
-    let lastRefresh = 0;
-    const MIN_INTERVAL = 15 * 60 * 1000; // 15 minutes minimum entre les refreshs
-    
-    async function refreshSession() {
-      const now = Date.now();
-      // Éviter les appels trop fréquents
-      if (now - lastRefresh < MIN_INTERVAL) return;
-      lastRefresh = now;
-      
-      try {
-        const response = await fetch('/api/auth/refresh', {
-          method: 'POST',
-          credentials: 'include',
-        });
-
-        if (!response.ok && response.status === 401) {
-          const path = window.location.pathname;
-          if (!path.includes('/login') && !path.includes('/signup') && path !== '/') {
-            window.location.href = '/login';
-          }
-        }
-      } catch (e) {
-        // Silently fail - network errors shouldn't block the user
-      }
-    }
-
-    // Refresh au chargement uniquement sur les pages protégées
-    const publicPages = ['/', '/login', '/signup', '/premium'];
-    if (!publicPages.includes(window.location.pathname)) {
-      refreshSession();
-    }
-
-    // Refresh quand l'utilisateur revient sur l'onglet (après 5+ min d'absence)
     let lastVisible = Date.now();
+    
+    // Refresh UNIQUEMENT quand l'utilisateur revient sur l'onglet après 30+ min d'absence
     document.addEventListener('visibilitychange', () => {
-      if (!document.hidden && Date.now() - lastVisible > 5 * 60 * 1000) {
-        refreshSession();
+      if (!document.hidden && Date.now() - lastVisible > 30 * 60 * 1000) {
+        // Recharger la page pour rafraîchir la session côté serveur
+        window.location.reload();
       }
       lastVisible = Date.now();
     });
