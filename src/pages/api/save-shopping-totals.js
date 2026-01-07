@@ -50,10 +50,9 @@ export async function GET({ request }) {
   }
 }
 
-// POST -> sauvegarde les items fournis
+// POST -> sauvegarde les items fournis (optimisé avec UPSERT)
 export async function POST({ request }) {
   try {
-    // Récupérer un client Supabase authentifié
     const { supabase: authSupabase, user } = await getAuthenticatedSupabase(request);
 
     if (!authSupabase || !user) {
@@ -67,24 +66,15 @@ export async function POST({ request }) {
     if (!body || !Array.isArray(body.items)) {
       return new Response(
         JSON.stringify({ ok: false, error: "Bad payload: items[]" }),
-        {
-          status: 400,
-          headers: { "content-type": "application/json" },
-        },
+        { status: 400, headers: { "content-type": "application/json" } },
       );
     }
 
     const items = body.items.map((it) => {
       const item = String(it?.item || "").trim();
       const unit = String(it?.unit || "").trim();
-      const entryKey =
-        typeof it?.entryKey === "string" && it.entryKey.trim()
-          ? it.entryKey.trim()
-          : "";
-      const q =
-        it?.quantity === null || typeof it?.quantity === "undefined"
-          ? undefined
-          : Number(it.quantity);
+      const entryKey = typeof it?.entryKey === "string" && it.entryKey.trim() ? it.entryKey.trim() : "";
+      const q = it?.quantity === null || typeof it?.quantity === "undefined" ? undefined : Number(it.quantity);
       return {
         item,
         unit,
@@ -94,25 +84,13 @@ export async function POST({ request }) {
       };
     });
 
-    // Récupérer l'ID du document existant ou créer
-    const { data: existing } = await authSupabase
+    // UPSERT - une seule requête au lieu de SELECT + UPDATE/INSERT
+    await authSupabase
       .from('shopping_totals')
-      .select('id')
-      .eq('user_id', user.id)
-      .limit(1)
-      .single();
-
-    if (existing) {
-      await authSupabase
-        .from('shopping_totals')
-        .update({ data: { items } })
-        .eq('id', existing.id)
-        .eq('user_id', user.id);
-    } else {
-      await authSupabase
-        .from('shopping_totals')
-        .insert({ data: { items }, user_id: user.id });
-    }
+      .upsert(
+        { user_id: user.id, data: { items } },
+        { onConflict: 'user_id' }
+      );
 
     return new Response(JSON.stringify({ ok: true, count: items.length }), {
       status: 200,
@@ -122,10 +100,7 @@ export async function POST({ request }) {
     console.error("POST /api/save-shopping-totals error:", e);
     return new Response(
       JSON.stringify({ ok: false, error: String(e?.message || e) }),
-      {
-        status: 500,
-        headers: { "content-type": "application/json" },
-      },
+      { status: 500, headers: { "content-type": "application/json" } },
     );
   }
 }

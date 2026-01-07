@@ -1,8 +1,10 @@
----import Layout from "../layouts/Layout.astro";
-import { getServerSession, getAuthenticatedSupabase } from "../lib/auth";
+---
+import Layout from "../layouts/Layout.astro";
+import { getServerSession } from "../lib/auth";
 import { supabase } from "../supabase";
 
-const { user } = await getServerSession(Astro.request);
+// Vérifier si l'utilisateur est connecté et récupérer le client Supabase en un seul appel
+const { user, supabase: authSupabase } = await getServerSession(Astro.request);
 if (!user) return Astro.redirect("/login", 302);
 
 type UserWithRole = {
@@ -16,7 +18,6 @@ type UserWithRole = {
 const userWithRole = user as UserWithRole;
 const userId = userWithRole.id;
 
-const { supabase: authSupabase } = await getAuthenticatedSupabase(Astro.request);
 const db = (authSupabase || supabase) as typeof supabase;
 
 const { data: profile } = await db

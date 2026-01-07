@@ -1,10 +1,10 @@
 ---
 import Layout from "../layouts/Layout.astro";
-import { getServerSession, getAuthenticatedSupabase } from "../lib/auth";
+import { getServerSession } from "../lib/auth";
 import { supabase } from "../supabase";
 
-// Vérifier si l'utilisateur est connecté
-const { user } = await getServerSession(Astro.request);
+// Vérifier si l'utilisateur est connecté et récupérer le client Supabase en un seul appel
+const { user, supabase: authSupabase } = await getServerSession(Astro.request);
 
 // Si non connecté, rediriger vers la page d'accueil
 if (!user) {
@@ -25,8 +25,6 @@ if (userRole !== "admin" && userRole !== "premium") {
   return Astro.redirect("/planning", 302);
 }
 
-// Récupérer un client Supabase authentifié
-const { supabase: authSupabase } = await getAuthenticatedSupabase(Astro.request);
 const authenticatedSupabase = authSupabase || supabase;
 
 type SlotKey = "aperitif" | "entree" | "plat" | "dessert";

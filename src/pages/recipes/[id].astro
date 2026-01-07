@@ -2,11 +2,11 @@
 // src/pages/recipes/[id].astro
 import Layout from "../../layouts/Layout.astro";
 import Modal from "../../components/Modal.astro";
-import { getServerSession, getAuthenticatedSupabase, isAdmin } from "../../lib/auth";
+import { getServerSession } from "../../lib/auth";
 import { supabase } from "../../supabase";
 
-// Vérifier si l'utilisateur est connecté
-const { user } = await getServerSession(Astro.request);
+// Vérifier si l'utilisateur est connecté et récupérer le client Supabase en un seul appel
+const { user, supabase: authSupabase } = await getServerSession(Astro.request);
 
 // Si non connecté, rediriger vers la page d'accueil
 if (!user) {
@@ -22,8 +22,6 @@ type UserWithRole = {
 const userWithRole = user as UserWithRole;
 const userId = userWithRole.id;
 
-// Récupérer un client Supabase authentifié
-const { supabase: authSupabase } = await getAuthenticatedSupabase(Astro.request);
 // Type assertion pour le client Supabase
 const authenticatedSupabase = (authSupabase || supabase) as typeof supabase;
 

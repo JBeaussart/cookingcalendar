@@ -170,39 +170,14 @@ export function setSessionCookies(response, tokens) {
 
 /**
  * Crée un client Supabase authentifié pour les endpoints API
- * Optimisé pour réutiliser le client créé dans getServerSession
+ * IMPORTANT: Cette fonction est un alias de getServerSession pour les APIs
+ * Pour éviter les doubles appels, utilisez getServerSession directement dans les pages
  * @param {Request} request - La requête HTTP
  * @returns {Promise<{supabase: object, user: object | null}>}
  */
 export async function getAuthenticatedSupabase(request) {
-  const { user, session, supabase: existingClient } = await getServerSession(request);
-  
-  if (!user || !session) {
-    return { supabase: null, user: null };
-  }
-
-  // Si on a déjà un client, on le réutilise
-  if (existingClient) {
-    return { supabase: existingClient, user };
-  }
-
-  // Sinon, on en crée un nouveau
-  const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!supabaseUrl || !supabaseAnonKey) {
-    return { supabase: null, user: null };
-  }
-
-  const authenticatedClient = createClient(supabaseUrl, supabaseAnonKey, {
-    global: {
-      headers: {
-        Authorization: `Bearer ${session.access_token}`,
-      },
-    },
-  });
-
-  return { supabase: authenticatedClient, user };
+  const { user, supabase: existingClient } = await getServerSession(request);
+  return { supabase: existingClient, user };
 }
 
 /**

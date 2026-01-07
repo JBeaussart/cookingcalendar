@@ -2,10 +2,10 @@
 /* src/pages/planning.astro (planning) */
 import Layout from "../layouts/Layout.astro";
 import { supabase } from "../supabase";
-import { getServerSession, getAuthenticatedSupabase } from "../lib/auth";
+import { getServerSession } from "../lib/auth";
 
-// Vérifier si l'utilisateur est connecté
-const { user } = await getServerSession(Astro.request);
+// Vérifier si l'utilisateur est connecté et récupérer le client Supabase en un seul appel
+const { user, supabase: authSupabase } = await getServerSession(Astro.request);
 
 // Si non connecté, rediriger vers la page d'accueil
 if (!user) {
@@ -19,8 +19,6 @@ type UserWithId = {
 const userWithId = user as UserWithId;
 const userId = userWithId.id;
 
-// Récupérer un client Supabase authentifié
-const { supabase: authSupabase } = await getAuthenticatedSupabase(Astro.request);
 // Type assertion pour le client Supabase
 const authenticatedSupabase = (authSupabase || supabase) as typeof supabase;
 
@@ -71,6 +69,22 @@ const entries = days.map((day) => {
   const rid = planningMap.get(day) || "";
   return { day, recipe: rid ? (recipesById.get(rid) ?? null) : null };
 });
+
+// Fonction pour optimiser les images via wsrv.nl
+function getOptimizedImageUrl(originalUrl: string | null | undefined, width = 400, quality = 75): string {
+  if (!originalUrl || originalUrl.startsWith('/') || originalUrl.startsWith('./')) {
+    return originalUrl || "/images/default-recipe.jpg";
+  }
+  const params = new URLSearchParams({
+    url: originalUrl,
+    w: width.toString(),
+    h: Math.round(width * 0.75).toString(),
+    fit: 'cover',
+    q: quality.toString(),
+    output: 'webp'
+  });
+  return `https://wsrv.nl/?${params.toString()}`;
+}
 ---
 
 <Layout title="Planning">
@@ -86,10 +100,8 @@ const entries = days.map((day) => {
       <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {
           entries.map(({ day, recipe }) => {
-            const img =
-              recipe?.image && String(recipe.image).trim()
-                ? recipe.image
-                : "/images/default-recipe.jpg";
+            const rawImg = recipe?.image && String(recipe.image).trim() ? recipe.image : "/images/default-recipe.jpg";
+            const img = getOptimizedImageUrl(rawImg, 400, 75);
             return (
               <div
                 class="group relative rounded-3xl bg-white shadow-lg shadow-slate-200/50 transition-all duration-300 hover:shadow-xl hover:shadow-slate-300/50 hover:scale-[1.02]"
