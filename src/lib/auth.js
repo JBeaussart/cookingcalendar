@@ -206,4 +206,3 @@ export function isAdmin(user) {
 export function isPremiumOrAdmin(user) {
   return hasRole(user, "premium");
 }
-
