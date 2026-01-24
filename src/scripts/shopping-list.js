@@ -349,9 +349,11 @@ function render() {
     listEl.appendChild(li);
 
     // Handle Check
-    cb.addEventListener("change", async () => {
+    cb.addEventListener("change", () => {
+      const newCheckedState = cb.checked;
+
       // Optimistic UI update
-      if (cb.checked) {
+      if (newCheckedState) {
         mainText.classList.add("line-through", "text-slate-400");
         mainText.classList.remove("text-slate-700");
       } else {
@@ -359,56 +361,70 @@ function render() {
         mainText.classList.add("text-slate-700");
       }
 
-      status("Enregistrement...");
-      try {
-        if (row.source === "custom") {
-          await fetch("/api/custom-items", {
-            method: "PATCH",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({ item: row.item, checked: cb.checked }),
-          });
-          // Update local state
-          const customItem = customItems.find(c => c.item.toLowerCase() === row.item.toLowerCase());
-          if (customItem) customItem.checked = cb.checked;
-        } else {
-          if (viewMode === 'condensed' && row.aggregated) {
-            const itemKey = `${String(row.item || "").trim().toLowerCase()}|||${String(row.unit || "").trim().toLowerCase()}`;
-            const expandedComputed = computedBase.flatMap(expandComputedEntry);
-            const updatedItems = expandedComputed.map(it => {
-              const itKey = `${String(it.item || "").trim().toLowerCase()}|||${String(it.unit || "").trim().toLowerCase()}`;
-              if (itKey === itemKey) return { ...it, checked: cb.checked };
-              return it;
-            });
-            const payload = serializeComputedItems(updatedItems);
-            await fetch("/api/save-shopping-totals", {
-              method: "POST",
+      // Update local state immediately
+      row.checked = newCheckedState;
+
+      // Save in background without blocking UI
+      (async () => {
+        try {
+          if (row.source === "custom") {
+            // Update local state
+            const customItem = customItems.find(c => c.item.toLowerCase() === row.item.toLowerCase());
+            if (customItem) customItem.checked = newCheckedState;
+
+            // Save to server
+            fetch("/api/custom-items", {
+              method: "PATCH",
               headers: { "content-type": "application/json" },
-              body: JSON.stringify({ items: payload }),
-            });
-            // Reload all data to ensure consistency
-            await fetchAllData();
-            return;
+              body: JSON.stringify({ item: row.item, checked: newCheckedState }),
+            }).catch(err => console.error("Error saving custom item:", err));
           } else {
-            const updatedItems = items.filter(it => it.source === "computed").map(it => {
-              if (it.entryKey === row.entryKey) return { ...it, checked: cb.checked };
-              return it;
-            });
-            const payload = serializeComputedItems(updatedItems);
-            await fetch("/api/save-shopping-totals", {
-              method: "POST",
-              headers: { "content-type": "application/json" },
-              body: JSON.stringify({ items: payload }),
-            });
-            // Reload all data to ensure consistency
-            await fetchAllData();
-            return;
+            if (viewMode === 'condensed' && row.aggregated) {
+              const itemKey = `${String(row.item || "").trim().toLowerCase()}|||${String(row.unit || "").trim().toLowerCase()}`;
+              const expandedComputed = computedBase.flatMap(expandComputedEntry);
+              const updatedItems = expandedComputed.map(it => {
+                const itKey = `${String(it.item || "").trim().toLowerCase()}|||${String(it.unit || "").trim().toLowerCase()}`;
+                if (itKey === itemKey) {
+                  // Update savedState for this item
+                  if (it.entryKey) savedState.set(it.entryKey, newCheckedState);
+                  const baseKey = makeKey(it);
+                  savedState.set(baseKey, newCheckedState);
+                  return { ...it, checked: newCheckedState };
+                }
+                return it;
+              });
+              const payload = serializeComputedItems(updatedItems);
+
+              // Save to server in background
+              fetch("/api/save-shopping-totals", {
+                method: "POST",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({ items: payload }),
+              }).catch(err => console.error("Error saving shopping totals:", err));
+            } else {
+              // Update savedState for this specific item
+              if (row.entryKey) savedState.set(row.entryKey, newCheckedState);
+              const baseKey = makeKey(row);
+              savedState.set(baseKey, newCheckedState);
+
+              const updatedItems = items.filter(it => it.source === "computed").map(it => {
+                if (it.entryKey === row.entryKey) return { ...it, checked: newCheckedState };
+                return it;
+              });
+              const payload = serializeComputedItems(updatedItems);
+
+              // Save to server in background
+              fetch("/api/save-shopping-totals", {
+                method: "POST",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({ items: payload }),
+              }).catch(err => console.error("Error saving shopping totals:", err));
+            }
           }
+        } catch (e) {
+          console.error("Error in checkbox handler:", e);
         }
-        status("✅ Sauvegardé");
-      } catch (e) {
-        console.error(e);
-        status("❌ Erreur");
-      }
+      })();
     });
   });
 }
@@ -479,78 +495,106 @@ addForm.addEventListener("submit", async (e) => {
   }
 });
 
-async function handleCheckAll() {
+function handleCheckAll() {
   if (!items.length) return;
-  status("Traitement...");
 
+  // Update UI immediately
+  items.forEach(item => {
+    item.checked = true;
+    if (item.source === "custom") {
+      const customItem = customItems.find(c => c.item.toLowerCase() === item.item.toLowerCase());
+      if (customItem) customItem.checked = true;
+    } else {
+      if (item.entryKey) savedState.set(item.entryKey, true);
+      const baseKey = makeKey(item);
+      savedState.set(baseKey, true);
+    }
+  });
+
+  // Re-render immediately
+  updateAndRender();
+  status("✅ Tout coché");
+
+  // Save in background
   const computedToSave = items.filter(it => it.source === "computed").map(it => ({ ...it, checked: true }));
   const customToSave = items.filter(it => it.source === "custom");
 
-  try {
-    const reqs = [];
-    if (computedToSave.length) {
-      const payload = serializeComputedItems(computedToSave);
-      reqs.push(fetch("/api/save-shopping-totals", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ items: payload }),
-      }));
+  (async () => {
+    try {
+      const reqs = [];
+      if (computedToSave.length) {
+        const payload = serializeComputedItems(computedToSave);
+        reqs.push(fetch("/api/save-shopping-totals", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ items: payload }),
+        }));
+      }
+
+      for (const c of customToSave) {
+        reqs.push(fetch("/api/custom-items", {
+          method: "PATCH",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ item: c.item, checked: true }),
+        }));
+      }
+
+      await Promise.all(reqs);
+    } catch (e) {
+      console.error("Error saving check all:", e);
     }
-
-    for (const c of customToSave) {
-      reqs.push(fetch("/api/custom-items", {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ item: c.item, checked: true }),
-      }));
-    }
-
-    await Promise.all(reqs);
-
-    // Reload all data to ensure consistency
-    await fetchAllData();
-    status("✅ Tout coché");
-  } catch (e) {
-    console.error(e);
-    status("❌ Erreur");
-  }
+  })();
 }
 
-async function handleUncheckAll() {
+function handleUncheckAll() {
   if (!items.length) return;
-  status("Traitement...");
 
+  // Update UI immediately
+  items.forEach(item => {
+    item.checked = false;
+    if (item.source === "custom") {
+      const customItem = customItems.find(c => c.item.toLowerCase() === item.item.toLowerCase());
+      if (customItem) customItem.checked = false;
+    } else {
+      if (item.entryKey) savedState.set(item.entryKey, false);
+      const baseKey = makeKey(item);
+      savedState.set(baseKey, false);
+    }
+  });
+
+  // Re-render immediately
+  updateAndRender();
+  status("✅ Tout décoché");
+
+  // Save in background
   const computedToSave = items.filter(it => it.source === "computed").map(it => ({ ...it, checked: false }));
   const customToSave = items.filter(it => it.source === "custom");
 
-  try {
-    const reqs = [];
-    if (computedToSave.length) {
-      const payload = serializeComputedItems(computedToSave);
-      reqs.push(fetch("/api/save-shopping-totals", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ items: payload }),
-      }));
+  (async () => {
+    try {
+      const reqs = [];
+      if (computedToSave.length) {
+        const payload = serializeComputedItems(computedToSave);
+        reqs.push(fetch("/api/save-shopping-totals", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ items: payload }),
+        }));
+      }
+
+      for (const c of customToSave) {
+        reqs.push(fetch("/api/custom-items", {
+          method: "PATCH",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ item: c.item, checked: false }),
+        }));
+      }
+
+      await Promise.all(reqs);
+    } catch (e) {
+      console.error("Error saving uncheck all:", e);
     }
-
-    for (const c of customToSave) {
-      reqs.push(fetch("/api/custom-items", {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ item: c.item, checked: false }),
-      }));
-    }
-
-    await Promise.all(reqs);
-
-    // Reload all data to ensure consistency
-    await fetchAllData();
-    status("✅ Tout décoché");
-  } catch (e) {
-    console.error(e);
-    status("❌ Erreur");
-  }
+  })();
 }
 
 btnCheckAll?.addEventListener("click", handleCheckAll);
