@@ -130,9 +130,9 @@ Recent optimizations (see commit history and [PERFORMANCE.md](PERFORMANCE.md)):
 5. **Shopping list**: Background saving without blocking UI, optimistic updates
 6. **Resource hints**: Preconnect to wsrv.nl and Supabase for faster connections
 7. **Cache strategy**: Aggressive caching for static assets (1 year), no cache for SSR/API via [netlify.toml](netlify.toml)
-8. **Build optimization**: CSS code splitting, esbuild minification, HTML compression in [astro.config.mjs](astro.config.mjs)
+8. **Build optimization**: HTML compression in [astro.config.mjs](astro.config.mjs), CSS/JS handled by Tailwind v4
 
-Performance improvements: ~40-50% faster First Contentful Paint, ~30% smaller bundle sizes
+Performance improvements: ~40-50% faster First Contentful Paint thanks to resource hints and caching
 
 ### Image Handling
 

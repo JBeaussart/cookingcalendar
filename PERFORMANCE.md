@@ -19,10 +19,9 @@ Ce document décrit les optimisations de performance implémentées dans l'appli
 - **Impact**: Temps de chargement réduit de 30-50% pour les visiteurs récurrents
 
 ### 3. Configuration de Build (astro.config.mjs)
-- **CSS Code Splitting**: Sépare le CSS par page pour charger uniquement le nécessaire
-- **Minification esbuild**: Minification rapide et efficace
 - **HTML Compression**: Réduit la taille des pages HTML
-- **Impact**: Réduction de 20-30% de la taille des bundles JavaScript et CSS
+- **Note**: Tailwind CSS v4 gère automatiquement le code splitting et la minification via son plugin Vite
+- **Impact**: HTML compressé, CSS et JS optimisés automatiquement par Astro et Tailwind
 
 ### 4. Optimisations Existantes (déjà présentes)
 - **Images lazy load**: `loading="lazy"` sur toutes les images
@@ -75,7 +74,7 @@ npx vite-bundle-visualizer dist
 
 ## Notes de Développement
 
-- Les `console.log` sont automatiquement supprimés en production
 - Les assets sont automatiquement versionnés pour le cache-busting
 - La compression Brotli est activée par défaut sur Netlify
 - Les headers de cache sont appliqués automatiquement via netlify.toml
+- Tailwind CSS v4 s'occupe automatiquement de l'optimisation CSS (minification, purge, etc.)
