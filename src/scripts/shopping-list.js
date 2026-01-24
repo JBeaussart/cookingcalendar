@@ -385,10 +385,9 @@ function render() {
               headers: { "content-type": "application/json" },
               body: JSON.stringify({ items: payload }),
             });
-            // Update saved state
-            for (const it of updatedItems) {
-              if (it.entryKey) savedState.set(it.entryKey, cb.checked);
-            }
+            // Reload all data to ensure consistency
+            await fetchAllData();
+            return;
           } else {
             const updatedItems = items.filter(it => it.source === "computed").map(it => {
               if (it.entryKey === row.entryKey) return { ...it, checked: cb.checked };
@@ -400,8 +399,9 @@ function render() {
               headers: { "content-type": "application/json" },
               body: JSON.stringify({ items: payload }),
             });
-            // Update saved state
-            if (row.entryKey) savedState.set(row.entryKey, cb.checked);
+            // Reload all data to ensure consistency
+            await fetchAllData();
+            return;
           }
         }
         status("✅ Sauvegardé");
@@ -506,11 +506,9 @@ async function handleCheckAll() {
     }
 
     await Promise.all(reqs);
-    
-    // Update local state
-    computedToSave.forEach(it => { if (it.entryKey) savedState.set(it.entryKey, true); });
-    customItems.forEach(c => c.checked = true);
-    updateAndRender();
+
+    // Reload all data to ensure consistency
+    await fetchAllData();
     status("✅ Tout coché");
   } catch (e) {
     console.error(e);
@@ -545,11 +543,9 @@ async function handleUncheckAll() {
     }
 
     await Promise.all(reqs);
-    
-    // Update local state
-    computedToSave.forEach(it => { if (it.entryKey) savedState.set(it.entryKey, false); });
-    customItems.forEach(c => c.checked = false);
-    updateAndRender();
+
+    // Reload all data to ensure consistency
+    await fetchAllData();
     status("✅ Tout décoché");
   } catch (e) {
     console.error(e);
