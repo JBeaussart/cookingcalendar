@@ -40,13 +40,6 @@
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"
 
-# Compress all text assets
-[[headers]]
-  for = "/*"
-  [headers.values]
-    # Brotli and Gzip compression enabled by default on Netlify
-    Content-Encoding = "br"
-
 # API routes should not be cached
 [[headers]]
   for = "/api/*"
