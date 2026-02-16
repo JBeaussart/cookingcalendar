@@ -249,7 +249,7 @@ const current = {
   </div>
 
   <script is:inline>
-    document.addEventListener("DOMContentLoaded", () => {
+    document.addEventListener("astro:page-load", () => {
       const status = (t) => {
         const el = document.getElementById("status");
         if (el) el.textContent = t || "";

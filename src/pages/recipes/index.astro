@@ -446,7 +446,7 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
   </Modal>
 
   <script is:inline>
-    document.addEventListener("DOMContentLoaded", () => {
+    document.addEventListener("astro:page-load", () => {
       const DEFAULT_IMG = "/images/default-recipe.jpg";
 
       // Données

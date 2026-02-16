@@ -412,7 +412,7 @@ function getOptimizedImageUrl(originalUrl: string | null | undefined, width = 40
     };
 
     if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", initMoveDropdowns, {
+      document.addEventListener("astro:page-load", initMoveDropdowns, {
         once: true,
       });
     } else {

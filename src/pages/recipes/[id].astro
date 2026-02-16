@@ -405,7 +405,7 @@ const DEFAULT_IMG = "/images/default-recipe.jpg";
     </div>
 
     <script is:inline>
-      document.addEventListener("DOMContentLoaded", () => {
+      document.addEventListener("astro:page-load", () => {
         // + depuis le planning
         const params = new URLSearchParams(window.location.search);
         const dayParam = (params.get("day") || "").toLowerCase();
