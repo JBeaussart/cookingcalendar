@@ -4,7 +4,7 @@ import { getServerSession } from "../lib/auth";
 import { supabase } from "../supabase";
 
 // Vérifier si l'utilisateur est connecté et récupérer le client Supabase en un seul appel
-const { user, supabase: authSupabase } = await getServerSession(Astro.request);
+const { user, profile, supabase: authSupabase } = await getServerSession(Astro.request);
 if (!user) return Astro.redirect("/login", 302);
 
 type UserWithRole = {
@@ -20,22 +20,11 @@ const userId = userWithRole.id;
 
 const db = (authSupabase || supabase) as typeof supabase;
 
-const { data: profile } = await db
-  .from("user_profiles")
-  .select("*")
-  .eq("id", userId)
-  .single();
-
-const { count: recipesCount } = await db
-  .from("recipes")
-  .select("*", { count: "exact", head: true })
-  .eq("user_id", userId);
-
-const { count: planningCount } = await db
-  .from("planning")
-  .select("*", { count: "exact", head: true })
-  .eq("user_id", userId)
-  .not("recipe_id", "is", null);
+// Requêtes indépendantes en parallèle
+const [{ count: recipesCount }, { count: planningCount }] = await Promise.all([
+  db.from("recipes").select("*", { count: "exact", head: true }).eq("user_id", userId),
+  db.from("planning").select("*", { count: "exact", head: true }).eq("user_id", userId).not("recipe_id", "is", null),
+]);
 
 const formatDate = (date?: string) =>
   date

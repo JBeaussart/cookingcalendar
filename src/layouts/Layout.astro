@@ -1,4 +1,5 @@
 ---
+import { ClientRouter } from "astro:transitions";
 import Navbar from "../components/Navbar.astro";
 
 interface Props {
@@ -24,6 +25,7 @@ const { title = "Planificateur de repas", user = null } = Astro.props;
     <link rel="icon" type="image/png" href="/favicon.png" />
     <meta name="generator" content={Astro.generator} />
     <title>{title}</title>
+    <ClientRouter />
   </head>
   <body>
     <Navbar user={user} />

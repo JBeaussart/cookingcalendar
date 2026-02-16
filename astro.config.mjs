@@ -15,6 +15,12 @@ export default defineConfig({
 
   adapter: netlify(),
 
+  // Prefetch les pages au survol des liens pour navigation plus rapide
+  prefetch: {
+    prefetchAll: true,
+    defaultStrategy: "hover",
+  },
+
   // Compression HTML pour réduire la taille
   compressHTML: true,
 });

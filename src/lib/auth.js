@@ -5,7 +5,7 @@ import { createClient } from '@supabase/supabase-js';
  * Récupère la session utilisateur depuis les cookies
  * Rafraîchit automatiquement les tokens expirés si un refresh token est disponible
  * @param {Request} request - La requête HTTP
- * @returns {Promise<{user: object | null, session: object | null, supabase: object | null, refreshed: boolean, newTokens: object | null}>}
+ * @returns {Promise<{user: object | null, profile: object | null, session: object | null, supabase: object | null, refreshed: boolean, newTokens: object | null}>}
  */
 export async function getServerSession(request) {
   try {
@@ -15,14 +15,14 @@ export async function getServerSession(request) {
     let refreshToken = extractTokenFromCookies(cookies, "sb-refresh-token");
 
     if (!accessToken && !refreshToken) {
-      return { user: null, session: null, supabase: null, refreshed: false, newTokens: null };
+      return { user: null, profile: null, session: null, supabase: null, refreshed: false, newTokens: null };
     }
 
     const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
     const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
 
     if (!supabaseUrl || !supabaseAnonKey) {
-      return { user: null, session: null, supabase: null, refreshed: false, newTokens: null };
+      return { user: null, profile: null, session: null, supabase: null, refreshed: false, newTokens: null };
     }
 
     // Créer un client Supabase de base (sans token pour le refresh)
@@ -85,21 +85,21 @@ export async function getServerSession(request) {
           } else {
             // Le refresh token est aussi expiré, déconnexion nécessaire
             console.error("Refresh token expired or invalid:", refreshError);
-            return { user: null, session: null, supabase: null, refreshed: false, newTokens: null };
+            return { user: null, profile: null, session: null, supabase: null, refreshed: false, newTokens: null };
           }
         } catch (refreshErr) {
           console.error("Error refreshing session:", refreshErr);
-          return { user: null, session: null, supabase: null, refreshed: false, newTokens: null };
+          return { user: null, profile: null, session: null, supabase: null, refreshed: false, newTokens: null };
         }
       } else {
         // Pas de refresh token disponible
-        return { user: null, session: null, supabase: null, refreshed: false, newTokens: null };
+        return { user: null, profile: null, session: null, supabase: null, refreshed: false, newTokens: null };
       }
     }
 
     // Si toujours pas d'utilisateur après refresh, retourner null
     if (!user) {
-      return { user: null, session: null, supabase: null, refreshed: false, newTokens: null };
+      return { user: null, profile: null, session: null, supabase: null, refreshed: false, newTokens: null };
     }
 
     // Récupérer le profil utilisateur avec le rôle
@@ -119,6 +119,7 @@ export async function getServerSession(request) {
         role: profile?.user_role || "free",
         user_role: profile?.user_role || "free", // Alias pour compatibilité
       },
+      profile, // Exposer le profil complet pour éviter un re-fetch
       session: { access_token: accessToken, refresh_token: refreshToken },
       supabase: client, // Retourner le client pour réutilisation
       refreshed: tokensRefreshed, // Indiquer si les tokens ont été rafraîchis
@@ -126,7 +127,7 @@ export async function getServerSession(request) {
     };
   } catch (error) {
     console.error("Error getting server session:", error);
-    return { user: null, session: null, supabase: null, refreshed: false, newTokens: null };
+    return { user: null, profile: null, session: null, supabase: null, refreshed: false, newTokens: null };
   }
 }
 
