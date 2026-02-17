@@ -1,7 +1,7 @@
 ---
 // src/pages/recipes/index.astro
 import Layout from "../../layouts/Layout.astro";
-import Modal from "../../components/Modal.astro";
+
 import { getServerSession } from "../../lib/auth";
 import { supabase } from "../../supabase";
 
@@ -34,7 +34,6 @@ const { data: recipesData } = await authenticatedSupabase
 
 const recipes = recipesData || [];
 
-const DEFAULT_IMG = "/images/default-recipe.jpg";
 const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
 ---
 
@@ -133,8 +132,8 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
           <!-- Action Buttons -->
           <div class="flex flex-row gap-3 items-center flex-shrink-0">
             <div class="relative">
-              <button
-                id="openAddModal"
+              <a
+                href="/recipes/new"
                 class="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-sage-300 to-sage-500 px-4 sm:px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-sage-300/30 transition-all hover:from-sage-300 hover:to-sage-600 hover:shadow-xl hover:shadow-sage-300/40 hover:scale-105 active:scale-95 flex-1 sm:flex-initial"
               >
                 <svg
@@ -150,14 +149,11 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
                     d="M12 4v16m8-8H4"></path>
                 </svg>
                 Ajouter
-              </button>
+              </a>
               {(userWithRole.role || userWithRole.user_role) !== "admin" && (userWithRole.role || userWithRole.user_role) !== "premium" && recipes.length < 20 && (
                 <div class="absolute top-full left-0 mt-2 whitespace-nowrap text-left">
-                  <span id="recipeCounter" class="text-xs font-medium text-slate-500 block">
+                  <span class="text-xs font-medium text-slate-500 block">
                     {recipes.length}/20 recettes
-                  </span>
-                  <span id="recipeWarningMessage" class="text-xs font-medium text-slate-500 block mt-0.5 hidden whitespace-nowrap">
-                    Dernière recette disponible avec le plan gratuit
                   </span>
                 </div>
               )}
@@ -289,161 +285,6 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
       <div id="recipes-data" data-recipes={RECIPES_ENC} class="hidden"></div>
     </div>
   </div>
-
-  <!-- Modale d’ajout -->
-  <Modal id="addModal" title="Ajouter une recette">
-    <form id="addRecipeForm" class="space-y-6">
-      <!-- Message de statut en haut du formulaire -->
-      <div
-        id="addStatus"
-        class="hidden rounded-xl border-2 p-4 text-sm font-medium text-center"
-        role="alert"
-      >
-      </div>
-      
-      <!-- General Info -->
-      <div class="grid gap-6 sm:grid-cols-2">
-        <div class="sm:col-span-2">
-          <label class="block text-sm font-bold text-slate-700 mb-2"
-            >Titre de la recette</label
-          >
-          <input
-            id="rTitle"
-            type="text"
-            placeholder="Ex: Lasagnes à la bolognaise"
-            class="w-full rounded-xl border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-200 transition-all"
-            required
-          />
-        </div>
-
-        <div class="sm:col-span-2">
-          <label class="block text-sm font-bold text-slate-700 mb-2"
-            >Image (URL)</label
-          >
-          <input
-            id="rImage"
-            type="url"
-            placeholder="https://exemple.com/image.jpg"
-            class="w-full rounded-xl border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-200 transition-all"
-          />
-        </div>
-
-        <div class="sm:col-span-2 flex flex-row items-end justify-between gap-4">
-          <div>
-            <label class="block text-sm font-bold text-slate-700 mb-2"
-              >Type de plat</label
-            >
-            <div class="flex items-center p-1 bg-slate-100 rounded-xl border border-slate-200 w-fit">
-              <button
-                type="button"
-                id="rSaltSalty"
-                data-value="salty"
-                class="salt-type-btn px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-all shadow-sm bg-white text-sage-300"
-              >
-                🧂 Salé
-              </button>
-              <button
-                type="button"
-                id="rSaltSweet"
-                data-value="sweet"
-                class="salt-type-btn px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-all text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
-              >
-                🍰 Sucré
-              </button>
-            </div>
-          </div>
-
-          {(userWithRole.role || userWithRole.user_role) === "admin" && (
-            <div class="flex items-center pb-0">
-              <div class="flex items-center p-1 bg-slate-100 rounded-xl border border-slate-200">
-                <button
-                  type="button"
-                  id="rMamanBtn"
-                  class="maman-form-btn px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-all text-slate-500 hover:text-slate-700 hover:bg-slate-200/50 flex items-center justify-center"
-                >
-                  <svg class="w-4 h-4 text-pink-400" viewBox="0 0 512 512" fill="currentColor"><path d="M226.5 92.9c14.3 42.9-.3 86.2-32.6 96.8s-70.1-15.6-84.4-58.5.3-86.2 32.6-96.8 70.1 15.6 84.4 58.5zM100.4 198.6c18.9 32.4 14.3 70.1-10.2 84.1s-59.7-.9-78.5-33.3S-2.7 179.3 21.8 165.3s59.7.9 78.6 33.3zM69.2 401.2C121.6 259.9 214.7 224 256 224s134.4 35.9 186.8 177.2c3.6 9.7 5.2 20.1 5.2 30.5v1.6c0 25.8-20.9 46.7-46.7 46.7-11.5 0-22.9-1.4-34-4.2l-88-22c-15.3-3.8-31.3-3.8-46.6 0l-88 22c-11.1 2.8-22.5 4.2-34 4.2-25.8 0-46.7-20.9-46.7-46.7v-1.6c0-10.4 1.6-20.8 5.2-30.5zM324.5 92.9c14.3-42.9 51.7-73.1 84.4-58.5s46.9 53.9 32.6 96.8-51.7 73.1-84.4 58.5-46.9-53.9-32.6-96.8zM400.1 165.3c24.5 14 29.1 51.7 10.2 84.1s-54 48.2-78.5 33.3-29.1-51.7-10.2-84.1 54-48.2 78.5-33.3z"/></svg>
-                  <span class="sm:inline ml-1">Ninette</span>
-                </button>
-              </div>
-              <input
-                id="rMaman"
-                type="checkbox"
-                class="sr-only"
-              />
-            </div>
-          )}
-        </div>
-      </div>
-
-      <!-- Ingredients -->
-      <div class="rounded-2xl bg-slate-50 p-5 ring-1 ring-slate-100">
-        <div class="flex items-center justify-between mb-4">
-          <label
-            class="text-sm font-bold text-slate-900 flex items-center gap-2"
-          >
-            <span
-              class="flex h-6 w-6 items-center justify-center rounded bg-white shadow-sm text-slate-500"
-              >🧂</span
-            >
-            Ingrédients
-          </label>
-          <button
-            type="button"
-            id="addIngRow"
-            class="text-xs font-bold text-sage-300 hover:text-sage-300 hover:bg-sage-50 px-3 py-1.5 rounded-lg transition-colors"
-          >
-            + Ajouter
-          </button>
-        </div>
-        <div id="ingList" class="space-y-3"></div>
-      </div>
-
-      <!-- Steps -->
-      <div class="rounded-2xl bg-slate-50 p-5 ring-1 ring-slate-100">
-        <div class="flex items-center justify-between mb-4">
-          <label
-            class="text-sm font-bold text-slate-900 flex items-center gap-2"
-          >
-            <span
-              class="flex h-6 w-6 items-center justify-center rounded bg-white shadow-sm text-slate-500"
-              >🍳</span
-            >
-            Étapes de préparation
-          </label>
-          <button
-            type="button"
-            id="addStepRow"
-            class="text-xs font-bold text-sage-300 hover:text-sage-300 hover:bg-sage-50 px-3 py-1.5 rounded-lg transition-colors"
-          >
-            + Ajouter
-          </button>
-        </div>
-        <div id="stepsList" class="space-y-3"></div>
-        <p class="text-xs text-slate-400 mt-2 text-center">
-          Utilisez les flèches pour réordonner les étapes
-        </p>
-      </div>
-
-      <!-- Footer Actions -->
-      <div
-        class="flex items-center justify-end gap-3 pt-4 border-t border-slate-100"
-      >
-        <button
-          type="button"
-          id="cancelAdd"
-          class="rounded-xl px-5 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-100 transition-colors"
-        >
-          Annuler
-        </button>
-        <button
-          type="submit"
-          class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-sage-300 to-sage-500 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-sage-300/20 hover:from-sage-300 hover:to-sage-600 hover:shadow-xl hover:scale-105 active:scale-95 transition-all"
-        >
-          <span>Enregistrer la recette</span>
-        </button>
-      </div>
-    </form>
-  </Modal>
 
   <script is:inline>
     document.addEventListener("astro:page-load", () => {
@@ -779,9 +620,8 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
           if (ALL.length === 0) {
             empty.innerHTML = `
               <p class="text-lg text-slate-600 mb-6">La cuisine est encore vide, le chef n'est pas passé par là 😉</p>
-              <button
-                type="button"
-                id="emptyStateAddBtn"
+              <a
+                href="/recipes/new"
                 class="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-sage-300 to-sage-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-sage-300/30 transition-all hover:from-sage-300 hover:to-sage-600 hover:shadow-xl hover:scale-105 active:scale-95"
               >
                 <svg
@@ -797,24 +637,8 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
                     d="M12 4v16m8-8H4"></path>
                 </svg>
                 Créer ma première recette
-              </button>
+              </a>
             `;
-            
-            // Ajouter l'événement au bouton après l'insertion dans le DOM
-            setTimeout(() => {
-              const emptyStateBtn = document.getElementById("emptyStateAddBtn");
-              if (emptyStateBtn) {
-                emptyStateBtn.addEventListener("click", () => {
-                  // Réinitialiser le formulaire et ouvrir la modale
-                  addRecipeForm.reset();
-                  ingList.innerHTML = "";
-                  stepsList.innerHTML = "";
-                  addIngredientRow();
-                  addStepRowEl();
-                  openModal();
-                });
-              }
-            }, 0);
           } else {
             // Si c'est une recherche qui ne trouve rien
             empty.innerHTML = `
@@ -998,321 +822,10 @@ const RECIPES_ENC = encodeURIComponent(JSON.stringify(recipes));
         }
       }
 
-      // ----- (le reste de ta modale d’ajout inchangé) -----
-      const addModal = document.getElementById("addModal");
-      const openAddModal = document.getElementById("openAddModal");
-      const closeAddModal = document.getElementById("addModal-close");
-      const cancelAdd = document.getElementById("cancelAdd");
-      const addStatus = document.getElementById("addStatus");
-
-      let __lockScrollY = 0;
-      function lockBodyScroll() {
-        __lockScrollY = window.scrollY || 0;
-        document.body.style.position = "fixed";
-        document.body.style.top = `-${__lockScrollY}px`;
-        document.body.style.left = "0";
-        document.body.style.right = "0";
-        document.body.style.width = "100%";
-      }
-      function unlockBodyScroll() {
-        const y = Math.abs(parseInt(document.body.style.top || "0", 10)) || 0;
-        document.body.style.position = "";
-        document.body.style.top = "";
-        document.body.style.left = "";
-        document.body.style.right = "";
-        document.body.style.width = "";
-        window.scrollTo(0, y);
-      }
-      function openModal() {
-        addModal.classList.remove("hidden");
-        lockBodyScroll();
-      }
-      function closeModal() {
-        addModal.classList.add("hidden");
-        const addStatus = document.getElementById("addStatus");
-        if (addStatus) {
-          addStatus.textContent = "";
-          addStatus.classList.add("hidden");
-        }
-        unlockBodyScroll();
-      }
-
-      openAddModal.addEventListener("click", () => {
-        addRecipeForm.reset();
-        ingList.innerHTML = "";
-        stepsList.innerHTML = "";
-        addIngredientRow();
-        addStepRowEl();
-        // Réinitialiser le message de statut
-        const addStatus = document.getElementById("addStatus");
-        if (addStatus) {
-          addStatus.textContent = "";
-          addStatus.classList.add("hidden");
-        }
-        // Réinitialiser le bouton Maman
-        if (rMaman && rMamanBtn) {
-          rMaman.checked = false;
-          rMamanBtn.className = "maman-form-btn px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-all text-slate-500 hover:text-slate-700 hover:bg-slate-200/50 flex items-center justify-center";
-        }
-        openModal();
-      });
-      closeAddModal.addEventListener("click", closeModal);
-      cancelAdd.addEventListener("click", (e) => {
-        e.preventDefault();
-        closeModal();
-      });
-      addModal.addEventListener("click", (e) => {
-        if (e.target === addModal.firstElementChild) closeModal();
-      });
-
-      const addRecipeForm = document.getElementById("addRecipeForm");
-      const rTitle = document.getElementById("rTitle");
-      const rImage = document.getElementById("rImage");
-      const rMaman = document.getElementById("rMaman"); // Peut être null si non-admin
-      const rMamanBtn = document.getElementById("rMamanBtn");
-      const rSaltSalty = document.getElementById("rSaltSalty");
-      const rSaltSweet = document.getElementById("rSaltSweet");
-      let currentSaltType = "salty"; // Valeur par défaut
-      
-      // Gérer les boutons Type de plat
-      if (rSaltSalty && rSaltSweet) {
-        const updateSaltButtons = (value) => {
-          currentSaltType = value;
-          if (value === "salty") {
-            rSaltSalty.className = "salt-type-btn px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-all shadow-sm bg-white text-sage-300";
-            rSaltSweet.className = "salt-type-btn px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-all text-slate-500 hover:text-sage-600 hover:bg-sage-50";
-          } else {
-            rSaltSalty.className = "salt-type-btn px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-all text-slate-500 hover:text-sage-300 hover:bg-sage-50";
-            rSaltSweet.className = "salt-type-btn px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-all shadow-sm bg-white text-sage-600";
-          }
-        };
-        
-        rSaltSalty.addEventListener("click", () => updateSaltButtons("salty"));
-        rSaltSweet.addEventListener("click", () => updateSaltButtons("sweet"));
-        updateSaltButtons("salty"); // État initial
-      }
-      
-      // Gérer le bouton "Recette de maman"
-      if (rMaman && rMamanBtn) {
-        const updateButton = () => {
-          if (rMaman.checked) {
-            rMamanBtn.className = "maman-form-btn px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-all shadow-sm bg-white text-pink-600 flex items-center justify-center";
-          } else {
-            rMamanBtn.className = "maman-form-btn px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-all text-slate-500 hover:text-slate-700 hover:bg-slate-200/50 flex items-center justify-center";
-          }
-        };
-        
-        // Toggle au clic sur le bouton
-        rMamanBtn.addEventListener("click", () => {
-          rMaman.checked = !rMaman.checked;
-          updateButton();
-        });
-        
-        rMaman.addEventListener("change", updateButton);
-        updateButton(); // État initial
-      }
-      const ingList = document.getElementById("ingList");
-      const addIngRow = document.getElementById("addIngRow");
-      const stepsList = document.getElementById("stepsList");
-      const addStepRow = document.getElementById("addStepRow");
-
-      function addIngredientRow(values = { item: "", quantity: "", unit: "" }) {
-        const row = document.createElement("div");
-        row.className =
-          "ingredient-row grid grid-cols-[1fr_auto_auto_auto] gap-2 items-start animate-fade-in";
-        row.innerHTML = `
-          <input 
-            type="text" 
-            placeholder="Ingrédient (ex: Farine)" 
-            class="w-full rounded-lg border-slate-200 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all" 
-            value="${values.item || ""}" 
-            required
-          >
-          <input 
-            type="number" 
-            step="any" 
-            placeholder="Qté" 
-            class="w-20 rounded-lg border-slate-200 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all" 
-            value="${values.quantity ?? ""}"
-          >
-          <input 
-            type="text" 
-            placeholder="Unité" 
-            class="w-20 rounded-lg border-slate-200 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all" 
-            value="${values.unit || ""}"
-          >
-          <button 
-            type="button" 
-            class="p-2 text-slate-400 hover:text-rose-500 transition-colors" 
-            title="Supprimer"
-          >
-            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m1 0H8m8 0l-1-3H9L8 7" /></svg>
-          </button>
-        `;
-
-        const delBtn = row.querySelector("button");
-        delBtn.addEventListener("click", () => row.remove());
-
-        ingList.appendChild(row);
-      }
-      addIngRow.addEventListener("click", () => addIngredientRow());
-
-      let dragSrc = null;
-      function addStepRowEl(value = "") {
-        const row = document.createElement("div");
-        row.className =
-          "step-row group flex items-start gap-3 bg-white rounded-xl border border-slate-200 p-3 shadow-sm hover:border-blue-300 transition-all animate-fade-in";
-        row.setAttribute("draggable", "true");
-        row.innerHTML = `
-          <div class="flex flex-col items-center gap-1 mt-1">
-            <button type="button" class="move-up p-1 text-slate-400 hover:text-slate-600 transition-colors" title="Monter">
-              <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" /></svg>
-            </button>
-            <div class="hidden sm:block cursor-grab active:cursor-grabbing text-slate-400 hover:text-slate-600" title="Glisser pour réordonner">
-              <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16" /></svg>
-            </div>
-            <button type="button" class="move-down p-1 text-slate-400 hover:text-slate-600 transition-colors" title="Descendre">
-              <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
-            </button>
-          </div>
-          <textarea
-            placeholder="Décrivez l'étape de préparation..."
-            class="flex-1 rounded-lg border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all resize-y min-h-[80px]"
-          >${value}</textarea>
-          <button
-            type="button"
-            class="step-delete mt-2 text-slate-400 hover:text-rose-500 transition-colors sm:opacity-0 sm:group-hover:opacity-100"
-            title="Supprimer"
-          >
-            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
-          </button>
-        `;
-        row.querySelector(".step-delete").addEventListener("click", () => row.remove());
-        row.querySelector(".move-up").addEventListener("click", () => {
-          const prev = row.previousElementSibling;
-          if (prev) stepsList.insertBefore(row, prev);
-        });
-        row.querySelector(".move-down").addEventListener("click", () => {
-          const next = row.nextElementSibling;
-          if (next) stepsList.insertBefore(next, row);
-        });
-
-        row.addEventListener("dragstart", (e) => {
-          dragSrc = row;
-          row.classList.add("opacity-50", "scale-[0.98]");
-          e.dataTransfer.effectAllowed = "move";
-        });
-        row.addEventListener("dragend", () => {
-          dragSrc = null;
-          row.classList.remove("opacity-50", "scale-[0.98]");
-        });
-        row.addEventListener("dragover", (e) => {
-          e.preventDefault();
-          e.dataTransfer.dropEffect = "move";
-        });
-        row.addEventListener("drop", (e) => {
-          e.preventDefault();
-          if (!dragSrc || dragSrc === row) return;
-          const rect = row.getBoundingClientRect();
-          const before = e.clientY < rect.top + rect.height / 2;
-          if (before) stepsList.insertBefore(dragSrc, row);
-          else stepsList.insertBefore(dragSrc, row.nextSibling);
-        });
-
-        stepsList.appendChild(row);
-      }
-      addStepRow.addEventListener("click", () => addStepRowEl());
-
-      addRecipeForm.addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const addStatus = document.getElementById("addStatus");
-        addStatus.textContent = "Enregistrement…";
-        addStatus.className = "rounded-xl border-2 border-blue-200 bg-blue-50 p-4 text-sm font-medium text-blue-700 text-center";
-        addStatus.classList.remove("hidden");
-
-        const ingRows = Array.from(ingList.querySelectorAll(".ingredient-row"));
-        const ingredients = ingRows
-          .map((row) => {
-            const [itemEl, qtyEl, unitEl] = row.querySelectorAll("input");
-            const item = itemEl.value.trim();
-            const qRaw = qtyEl.value.trim();
-            const quantity = qRaw === "" ? undefined : Number(qRaw);
-            const unit = unitEl.value.trim();
-            if (!item) return null;
-            const obj = { item };
-            if (!isNaN(quantity)) obj.quantity = quantity;
-            if (unit) obj.unit = unit;
-            return obj;
-          })
-          .filter(Boolean);
-
-        const stepInputs = Array.from(
-          stepsList.querySelectorAll(".step-row textarea"),
-        );
-        const steps = stepInputs.map((el) => el.value.trim()).filter(Boolean);
-
-        const rMaman = document.getElementById("rMaman");
-        const payload = {
-          title: rTitle.value.trim(),
-          image: rImage.value.trim(),
-          maman: rMaman ? !!rMaman.checked : false, // Seulement si admin
-          salt: currentSaltType === "salty",
-          ingredients,
-          steps,
-        };
-
-        try {
-          const res = await fetch("/api/add-recipe", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-          });
-          
-          if (!res.ok) {
-            const errorData = await res.json().catch(() => ({ error: "Erreur inconnue" }));
-            throw new Error(errorData.error || `Erreur HTTP ${res.status}`);
-          }
-          
-          addStatus.textContent = "✅ Recette ajoutée avec succès !";
-          addStatus.className = "rounded-xl border-2 border-green-200 bg-green-50 p-4 text-sm font-medium text-green-700 text-center";
-          addStatus.classList.remove("hidden");
-          
-          // Mettre à jour temporairement ALL.length pour mettre à jour tous les éléments
-          // (on recharge la page après, donc c'est juste pour l'affichage immédiat)
-          const responseData = await res.json();
-          if (responseData.ok) {
-            // Simuler l'ajout d'une recette pour mettre à jour l'affichage
-            ALL.push({ id: responseData.id });
-            // Mettre à jour le compteur, la bannière et le badge avant le rechargement
-            updateAllLimitElements();
-          }
-          
-          setTimeout(() => window.location.reload(), 1500);
-        } catch (err) {
-          console.error(err);
-          const errorMessage = err.message || "❌ Erreur lors de l'ajout";
-          
-          // Afficher le message d'erreur en haut du formulaire
-          addStatus.textContent = errorMessage;
-          addStatus.className = "rounded-xl border-2 border-red-300 bg-red-50 p-4 text-sm font-medium text-red-700 text-center";
-          addStatus.classList.remove("hidden");
-          
-          // Utiliser aussi le toast pour les erreurs importantes (comme la limite atteinte)
-          if (errorMessage.includes("limite") || errorMessage.includes("Limite")) {
-            showToast(errorMessage, 6000);
-          }
-          
-          // Faire défiler vers le haut pour voir le message
-          addStatus.scrollIntoView({ behavior: "smooth", block: "nearest" });
-        }
-      });
     });
   </script>
 
   <style is:global>
-    body.body-locked {
-      padding-right: calc(100vw - 100%);
-    }
     @media (max-width: 767px) {
       #grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));

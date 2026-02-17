@@ -283,6 +283,30 @@ const isActive = (href: string) =>
           </a>
         </li>
       )}
+
+      <!-- Compte -->
+      <li class="flex-1">
+        <a
+          href="/account"
+          class={`flex flex-col items-center justify-center h-full text-xs ${
+            isActive("/account") ? "text-sage-600" : "text-gray-500"
+          }`}
+        >
+          <svg
+            class="w-5 h-5 mb-1"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+            <circle cx="12" cy="7" r="4" />
+          </svg>
+          Compte
+        </a>
+      </li>
     </ul>
   ) : (
     <ul class="flex justify-around h-16">
@@ -365,76 +389,6 @@ const isActive = (href: string) =>
   )}
 </nav>
 
-<!-- ================= MOBILE TOP (ACCOUNT) ================= -->
-{userWithRole && (
-  <div class="sm:hidden fixed top-3 right-3 z-50">
-    <button
-      id="mobile-user-button"
-      class="w-11 h-11 rounded-xl bg-white border border-gray-300 shadow flex items-center justify-center"
-    >
-      <svg
-        class="w-6 h-6 text-gray-700"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      >
-        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-        <circle cx="12" cy="7" r="4" />
-      </svg>
-    </button>
-
-    <div
-      id="mobile-user-dropdown"
-      class="hidden absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden"
-    >
-      <div class="px-4 py-3 border-b">
-        <div class="text-sm text-gray-600 mb-2">
-          {userWithRole.email}
-        </div>
-        <div class="flex items-center gap-2">
-          {userRole === "admin" ? (
-            <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-semibold bg-purple-100 text-purple-700">
-              Admin
-            </span>
-          ) : userRole === "premium" ? (
-            <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-semibold bg-sage-100 text-sage-700">
-              Premium
-            </span>
-          ) : (
-            <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-semibold bg-gray-100 text-gray-700">
-              Free
-            </span>
-          )}
-        </div>
-      </div>
-      {isFreeUser && (
-        <a
-          href="/premium"
-          class="block px-4 py-3 text-sm text-sage-700 bg-sage-50"
-        >
-          Passer à Premium
-        </a>
-      )}
-
-      <a href="/account" class="block px-4 py-2 text-sm hover:bg-gray-50">
-        Mon profil
-      </a>
-
-      <form method="post" action="/api/auth/logout">
-        <button
-          type="submit"
-          class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-        >
-          Déconnexion
-        </button>
-      </form>
-    </div>
-  </div>
-)}
-
 <script>
   const toggle = (btn: HTMLElement | null, menu: HTMLElement | null) => {
     if (!btn || !menu) return;
@@ -448,11 +402,6 @@ const isActive = (href: string) =>
   toggle(
     document.getElementById("desktop-user-menu-button"),
     document.getElementById("desktop-user-menu-dropdown")
-  );
-
-  toggle(
-    document.getElementById("mobile-user-button"),
-    document.getElementById("mobile-user-dropdown")
   );
 </script>
 
