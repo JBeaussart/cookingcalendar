@@ -333,7 +333,7 @@ const DEFAULT_IMG = "/images/default-recipe.jpg";
                     </button>
                   </div>
                   <div id="stepsList" class="space-y-3"></div>
-                  <p class="text-xs text-slate-400 mt-2 text-center">Glissez les étapes pour les réorganiser</p>
+                  <p class="text-xs text-slate-400 mt-2 text-center">Utilisez les flèches pour réordonner les étapes</p>
                 </div>
 
                 <!-- Footer Actions -->
@@ -594,24 +594,38 @@ const DEFAULT_IMG = "/images/default-recipe.jpg";
             "step-row group flex items-start gap-3 bg-white rounded-xl border border-slate-200 p-3 shadow-sm hover:border-sage-300 transition-all animate-fade-in";
           row.setAttribute("draggable", "true");
           row.innerHTML = `
-          <div class="mt-2 cursor-grab active:cursor-grabbing text-slate-400 hover:text-slate-600" title="Glisser pour réordonner">
-            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16" /></svg>
+          <div class="flex flex-col items-center gap-1 mt-1">
+            <button type="button" class="move-up p-1 text-slate-400 hover:text-slate-600 transition-colors" title="Monter">
+              <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" /></svg>
+            </button>
+            <div class="hidden sm:block cursor-grab active:cursor-grabbing text-slate-400 hover:text-slate-600" title="Glisser pour réordonner">
+              <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16" /></svg>
+            </div>
+            <button type="button" class="move-down p-1 text-slate-400 hover:text-slate-600 transition-colors" title="Descendre">
+              <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+            </button>
           </div>
-          <textarea 
-            placeholder="Décrivez l’étape de préparation..." 
+          <textarea
+            placeholder="Décrivez l'étape de préparation..."
             class="flex-1 rounded-lg border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:bg-white focus:border-sage-300 focus:ring-2 focus:ring-sage-200 transition-all resize-y min-h-[80px]"
           >${value}</textarea>
-          <button 
-            type="button" 
-            class="mt-2 text-slate-400 hover:text-rose-500 transition-colors opacity-0 group-hover:opacity-100" 
+          <button
+            type="button"
+            class="step-delete mt-2 text-slate-400 hover:text-rose-500 transition-colors sm:opacity-0 sm:group-hover:opacity-100"
             title="Supprimer"
           >
             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
           </button>
         `;
-          row
-            .querySelector("button")
-            .addEventListener("click", () => row.remove());
+          row.querySelector(".step-delete").addEventListener("click", () => row.remove());
+          row.querySelector(".move-up").addEventListener("click", () => {
+            const prev = row.previousElementSibling;
+            if (prev) stepsList.insertBefore(row, prev);
+          });
+          row.querySelector(".move-down").addEventListener("click", () => {
+            const next = row.nextElementSibling;
+            if (next) stepsList.insertBefore(next, row);
+          });
 
           row.addEventListener("dragstart", (e) => {
             dragSrc = row;
